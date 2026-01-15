@@ -631,15 +631,37 @@
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
         
         function showResult() {
+            // 1. 점수 및 랭크 계산
             const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
             let rank = "F"; 
             if(rate >= 95) rank = "S"; else if(rate >= 90) rank = "A"; else if(rate >= 80) rank = "B"; else if(rate >= 70) rank = "C";
             
+            const finalScore = Math.round(score);
+            const finalScoreStr = finalScore.toString().padStart(6, '0'); // 6자리 문자열 (예: "095000")
+
+            // 2. 결과 화면 표시
             document.getElementById('res-rank').className = `res-rank ${rank}`;
             document.getElementById('res-rank').innerText = rank;
             document.getElementById('res-rate').innerText = rate.toFixed(2) + "%";
-            document.getElementById('res-score').innerText = Math.round(score).toString().padStart(6, '0');
+            document.getElementById('res-score').innerText = finalScoreStr;
             document.getElementById('res-combo').innerText = maxCombo;
+            
+            // ★ 3. 점수 저장 (가장 중요한 부분!)
+            // 플레이 모드일 때만 저장 (에디터 테스트 때는 저장 안 함)
+            if (songParam && diffParam) {
+                // 키 생성 (예: wb_score_CodeNameZero_hard_14)
+                const storageKey = `wb_score_${songParam}_${diffParam}`;
+                
+                // 기존 최고 점수 가져오기 (없으면 0)
+                const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
+                
+                // 신기록이면 저장!
+                if (finalScore > bestScore) {
+                    localStorage.setItem(storageKey, finalScoreStr);
+                    console.log(`New Record Saved: ${finalScoreStr}`); // 확인용 로그
+                }
+            }
+
             resultOverlay.style.display = 'flex';
         }
 
