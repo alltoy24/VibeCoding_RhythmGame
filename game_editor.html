@@ -74,6 +74,8 @@
     </div>
 
     <div id="sidebar">
+        <button onclick="location.href='index.html'" style="width:100%; background:#333; margin-bottom:10px; color:#aaa; font-size:11px;">🏠 GO TO SELECT</button>
+
         <h2>🎹 EDITOR v13.0</h2>
         <div class="control-group">
             <div class="group-title">1. Files</div>
@@ -178,6 +180,12 @@
         let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
         let gameAnimId, noteSpeed = 5.0;
         let scorePerHit = 0; 
+        
+        // ★ 변수들 (oh 추가됨)
+        let gameStartTime = 0; 
+        const START_DELAY = 2000; 
+        let lastNoteEndTime = 0; 
+        let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; // ★ Oh 추가
 
         // Init Editor
         for(let i=0; i<50; i++) measures.push({index: i, notes: []});
@@ -189,6 +197,7 @@
         const urlParams = new URLSearchParams(window.location.search);
         const songParam = urlParams.get('song');
         const diffParam = urlParams.get('diff');
+        const speedParam = urlParams.get('speed');
 
         if (songParam && diffParam) {
             document.getElementById('sidebar').style.display = 'none';
@@ -370,33 +379,48 @@
         }
 
         // ==========================================
-        //              GAME LOGIC
+        //              GAME LOGIC (FINAL)
         // ==========================================
         document.getElementById('btn-test').addEventListener('click', startTestMode);
         
         function startTestMode() {
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             if(!songParam) offset = parseInt(offsetInput.value) || 0;
-            noteSpeed = parseFloat(speedSlider.value);
+            
+            if (speedParam) {
+                noteSpeed = parseFloat(speedParam);
+            } else {
+                noteSpeed = parseFloat(speedSlider.value);
+            }
 
             gameNotes = [];
             let totalMaxHits = 0; 
+            lastNoteEndTime = 0;
+            
+            // ★ 카운터 초기화 (Oh 추가)
+            judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; 
 
             const msPerMeasure = (60000 / bpm) * 4;
             measures.forEach(m => {
                 m.notes.forEach(n => {
                     const time = (m.index * msPerMeasure) + (n.pos / 32) * msPerMeasure;
                     const duration = (n.len / 32) * msPerMeasure;
+                    
+                    const noteEndTime = time + offset + duration + START_DELAY;
+                    if (noteEndTime > lastNoteEndTime) {
+                        lastNoteEndTime = noteEndTime;
+                    }
+
                     gameNotes.push({ 
-                        time: time + offset, 
-                        endTime: time + offset + duration, 
+                        time: time + offset + START_DELAY, 
+                        endTime: noteEndTime, 
                         lane: n.lane, 
                         len: n.len, 
                         hit: false, holding: false, finished: false 
                     });
                     
-                    totalMaxHits++; // Head
-                    if(n.len > 0) totalMaxHits++; // Tail
+                    totalMaxHits++; 
+                    if(n.len > 0) totalMaxHits++; 
                 });
             });
             gameNotes.sort((a,b) => a.time - b.time);
@@ -414,7 +438,9 @@
             
             isGameTesting = true; gameFinished = false;
             audio.currentTime = 0; 
-            audio.play().then(() => gameLoop()).catch(() => { if(!songParam) stopTestMode(); });
+            gameStartTime = Date.now();
+
+            gameLoop();
         }
 
         function stopTestMode() {
@@ -445,10 +471,21 @@
             if(!isGameTesting) return;
             gameAnimId = requestAnimationFrame(gameLoop);
             
-            const currentTime = audio.currentTime * 1000;
+            const realTimeElapsed = Date.now() - gameStartTime;
+            let currentTime = 0;
+
+            if (realTimeElapsed < START_DELAY) {
+                currentTime = realTimeElapsed;
+            } else {
+                if (audio.paused && isGameTesting && !audio.ended) { 
+                    audio.play().catch(() => {}); 
+                }
+                currentTime = (audio.currentTime * 1000) + START_DELAY;
+            }
+
             const allNotesDone = gameNotes.length === 0 && activeNotes.length === 0;
             
-            if(!gameFinished && (audio.ended || (allNotesDone && totalHits > 0 && currentTime > 1000))) {
+            if(!gameFinished && (audio.ended || (allNotesDone && totalHits > 0 && currentTime > lastNoteEndTime + 1000))) {
                 gameFinished = true; setTimeout(showResult, 1000);
             }
 
@@ -472,7 +509,9 @@
                 if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
 
                 if(!n.hit && currentTime - n.time > 100) { 
-                    n.hit = true; n.finished = true; combo = 0; totalHits++; updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    n.hit = true; n.finished = true; combo = 0; totalHits++; 
+                    judgeStats.miss++; // Miss 카운트
+                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
                 } 
                 
                 if (n.hit && n.len > 0 && !n.finished) {
@@ -480,9 +519,11 @@
                         if (currentTime >= n.endTime) {
                             n.finished = true; 
                             totalHits++; 
-                            totalRateSum += 100; // Success Tail
+                            totalRateSum += 100; 
                             score += scorePerHit; 
-                            combo++; updateGameHUD(); createParticles(n.lane);
+                            combo++; 
+                            judgeStats.perfect++; // 롱노트 끝 Perfect
+                            updateGameHUD(); createParticles(n.lane);
                         }
                     }
                 }
@@ -508,33 +549,43 @@
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
-        // [수정된 판정 로직] 막 누르기 방지 (Anti-Spam) 적용
         function checkHit(lane) {
-            const currentTime = audio.currentTime * 1000;
-    
-            // 1. 해당 라인에서 아직 처리되지 않은 가장 가까운 노트 찾기
-            // (범위 제한 없이 일단 제일 앞에 있는 걸 가져옵니다)
+            const realTimeElapsed = Date.now() - gameStartTime;
+            let currentTime = 0;
+            if (realTimeElapsed < START_DELAY) currentTime = realTimeElapsed;
+            else currentTime = (audio.currentTime * 1000) + START_DELAY;
+
             const n = activeNotes.find(n => n.lane === lane && !n.hit && !n.finished);
 
             if (n) {
-                const diff = currentTime - n.time; // 음수면 빠름(Early), 양수면 느림(Late)
+                const diff = currentTime - n.time; 
                 const absDiff = Math.abs(diff);
 
-                // A. 정상 판정 범위 (기존 로직: ±120ms)
                 if (absDiff <= 120) {
                     n.hit = true; 
                     n.holding = true;
                     if (n.len === 0) n.finished = true;
 
                     totalHits++; 
-                    let judge="MISS", clr="#888", rate=0;
-            
-                    // 판정 기준
-                    if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; }
-                    else if(absDiff <= 64) { judge="GREAT"; clr="#69F0AE"; rate=90; }
-                    else if(absDiff <= 96) { judge="Okay"; clr="#FFD740"; rate=50; }
-                    else if(absDiff <= 120){ judge="Oh..."; clr="#FF5252"; rate=10; }
-                    else { judge="No.."; clr="#888"; rate=0; } // 사실상 여기 안옴(ㅋ)
+                    let judge="No...", clr="#888", rate=0;
+                    
+                    if(absDiff <= 32) { 
+                        judge="PERFECT"; clr="#00e5ff"; rate=100; 
+                        judgeStats.perfect++; 
+                    }
+                    else if(absDiff <= 64) { 
+                        judge="GREAT"; clr="#69F0AE"; rate=90; 
+                        judgeStats.great++; 
+                    }
+                    else if(absDiff <= 96) { 
+                        judge="Okay"; clr="#FFD740"; rate=50; 
+                        judgeStats.okay++; 
+                    }
+                    else if(absDiff <= 120){ 
+                        judge="Oh..."; clr="#FF5252"; rate=10; 
+                        judgeStats.oh++; // ★ Oh 카운트 (이게 누락됐었음)
+                    }
+                    else { judge="No..."; clr="#888"; rate=0; judgeStats.miss++;} 
 
                     if(rate > 0) { 
                         combo++; 
@@ -543,7 +594,7 @@
                         createParticles(lane); 
                         score += (rate / 100) * scorePerHit;
                     } else {
-                        combo = 0; // Oh... 콤보 끊김
+                        combo = 0; 
                     }
             
                     totalRateSum += rate; 
@@ -551,18 +602,15 @@
                     showJudge(judge, lane, clr); 
                     recentHits.push({ diff: diff, color: clr, life: 600, maxLife: 600 });
                 }
-                // B. 너무 빨리 눌렀을 때 (Anti-Spam: -500ms ~ -120ms)
-                // 노트가 오지도 않았는데 미리 치면 'MISS' 처리하고 노트를 날려버림
                 else if (diff < -120 && diff > -280) {
                     n.hit = true; 
-                    n.finished = true; // 노트 강제 종료 (삭제)
+                    n.finished = true; 
             
                     combo = 0; 
-                    totalHits++; // 전체 카운트 증가 (정확도 하락)
-                    // 점수 추가 없음 (0점)
-            
+                    totalHits++; 
+                    judgeStats.miss++; // 그냥 Miss 처리 (이건 카운트 안 하기도 하지만 여기선 Miss)
                     updateGameHUD(); 
-                    showJudge("No...", lane, "#888"); // 회색 판정
+                    showJudge("No...", lane, "#888"); 
                 }
             }
         }
@@ -570,7 +618,11 @@
         function checkRelease(lane) {
             const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
             if (n) {
-                const currentTime = audio.currentTime * 1000;
+                const realTimeElapsed = Date.now() - gameStartTime;
+                let currentTime = 0;
+                if (realTimeElapsed < START_DELAY) currentTime = realTimeElapsed;
+                else currentTime = (audio.currentTime * 1000) + START_DELAY;
+
                 const totalDuration = n.endTime - n.time; 
                 const remaining = n.endTime - currentTime; 
                 const allowedEarly = totalDuration * 0.25; 
@@ -579,15 +631,16 @@
                     n.finished = true; 
                     combo = 0; 
                     totalHits++; 
+                    judgeStats.miss++; 
                     updateGameHUD(); 
-                    showJudge("BREAK", lane, "#555");
+                    showJudge("No...", lane, "#555");
                 } else {
-                    // ★ 떼기 성공! (Snap Release)
                     n.finished = true;
                     totalHits++;
                     totalRateSum += 100; 
                     score += scorePerHit;
                     combo++;
+                    judgeStats.perfect++; 
                     createParticles(lane);
                     updateGameHUD();
                     showJudge("PERFECT", lane, "#00e5ff");
@@ -630,38 +683,49 @@
         function createParticles(lane) { for(let i=0; i<10; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
         
+        // ★ 결과 화면 (Oh 추가 완료)
         function showResult() {
-            // 1. 점수 및 랭크 계산
             const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
             let rank = "F"; 
             if(rate >= 95) rank = "S"; else if(rate >= 90) rank = "A"; else if(rate >= 80) rank = "B"; else if(rate >= 70) rank = "C";
             
             const finalScore = Math.round(score);
-            const finalScoreStr = finalScore.toString().padStart(6, '0'); // 6자리 문자열 (예: "095000")
+            const finalScoreStr = finalScore.toString().padStart(6, '0');
 
-            // 2. 결과 화면 표시
-            document.getElementById('res-rank').className = `res-rank ${rank}`;
-            document.getElementById('res-rank').innerText = rank;
-            document.getElementById('res-rate').innerText = rate.toFixed(2) + "%";
-            document.getElementById('res-score').innerText = finalScoreStr;
-            document.getElementById('res-combo').innerText = maxCombo;
-            
-            // ★ 3. 점수 저장 (가장 중요한 부분!)
-            // 플레이 모드일 때만 저장 (에디터 테스트 때는 저장 안 함)
             if (songParam && diffParam) {
-                // 키 생성 (예: wb_score_CodeNameZero_hard_14)
                 const storageKey = `wb_score_${songParam}_${diffParam}`;
-                
-                // 기존 최고 점수 가져오기 (없으면 0)
                 const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
-                
-                // 신기록이면 저장!
                 if (finalScore > bestScore) {
                     localStorage.setItem(storageKey, finalScoreStr);
-                    console.log(`New Record Saved: ${finalScoreStr}`); // 확인용 로그
                 }
             }
 
+            // HTML 생성 (Oh 포함 5개 박스)
+            resultOverlay.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <h2 style="margin:0; color:#fff; font-size:32px; text-shadow:0 0 10px #00e5ff;">${songParam ? decodeURIComponent(songParam) : "CUSTOM PLAY"}</h2>
+                    <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-top:5px;">${diffParam ? diffParam : "TEST MODE"}</div>
+                </div>
+                
+                <div class="${rank} res-rank" style="font-size:140px; margin: 10px 0; line-height:1;">${rank}</div>
+                
+                <div class="res-info" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; width:80%; max-width:600px; margin-bottom:30px;">
+                    <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">SCORE</div><div style="font-size:28px; font-weight:bold;">${finalScoreStr}</div></div>
+                    <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">RATE</div><div style="font-size:28px; font-weight:bold;">${rate.toFixed(2)}%</div></div>
+                    <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">MAX COMBO</div><div style="font-size:28px; font-weight:bold;">${maxCombo}</div></div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; width:90%; max-width:600px; background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; border:1px solid #333;">
+                    <div style="text-align:center"><div style="color:#00e5ff; font-weight:bold; font-size:12px; margin-bottom:5px;">PERFECT</div><div style="color:#fff; font-size:20px;">${judgeStats.perfect}</div></div>
+                    <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
+                    <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
+                    <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
+                    <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">NO...</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
+                </div>
+
+                <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
+            `;
+            
             resultOverlay.style.display = 'flex';
         }
 

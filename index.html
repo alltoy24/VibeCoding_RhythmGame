@@ -2,19 +2,42 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : SELECT</title>
+    <title>TrollBeat V6: Select</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Roboto:wght@400;700&display=swap');
         body { margin: 0; background: #050505; color: #fff; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
         
-        header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; }
+        header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
         h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5); }
         
-        /* 로딩/에러 메시지용 */
-        .status-msg { margin-top: 100px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
+        /* 배속 조절 UI (중앙) */
+        .speed-control { 
+            margin-top: 15px; 
+            background: rgba(255, 255, 255, 0.1); 
+            padding: 8px 25px; 
+            border-radius: 30px; 
+            border: 1px solid #333; 
+            display: flex; align-items: center; gap: 15px; 
+            backdrop-filter: blur(5px);
+            width: fit-content;
+        }
+        .speed-label { font-family: 'Orbitron'; color: #00e5ff; font-size: 16px; font-weight: bold; }
+        .speed-val { font-family: 'Orbitron'; color: #fff; font-size: 20px; min-width: 50px; text-align: right; }
+        input[type="range"] { accent-color: #00e5ff; cursor: pointer; width: 150px; }
+
+        /* ★ [추가됨] 에디터 이동 버튼 (우측 상단 구석) */
+        .btn-create { 
+            position: absolute; top: 20px; right: 30px; 
+            text-decoration: none; color: #666; font-family: 'Orbitron'; font-size: 12px; font-weight: bold;
+            border: 1px solid #333; padding: 10px 20px; border-radius: 20px; transition: 0.3s;
+            display: flex; align-items: center; gap: 5px;
+        }
+        .btn-create:hover { color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
+
+        .status-msg { margin-top: 50px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
 
-        .song-container { display: flex; gap: 30px; padding: 20px 50px; overflow-x: auto; width: 90%; height: 550px; align-items: center; scroll-behavior: smooth; margin-top: 20px; }
+        .song-container { display: flex; gap: 30px; padding: 20px 50px; overflow-x: auto; width: 90%; height: 550px; align-items: center; scroll-behavior: smooth; margin-top: 10px; }
         .song-container::-webkit-scrollbar { height: 10px; }
         .song-container::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
         
@@ -50,9 +73,17 @@
 </head>
 <body>
 
+    <a href="game_editor.html" class="btn-create">🛠 CREATE CHART</a>
+
     <header>
-        <h1>ARCADE SELECT</h1>
-        <div style="color:#666; letter-spacing:5px; font-size:14px;">CHOOSE YOUR STAGE</div>
+        <h1>TrollBeat V6</h1>
+        <div style="color:#666; letter-spacing:5px; font-size:14px; margin-bottom: 5px;">CHOOSE YOUR SONG</div>
+        
+        <div class="speed-control">
+            <span class="speed-label">NOTE SPEED</span>
+            <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="10.0">
+            <span class="speed-val" id="speed-display">10.0</span>
+        </div>
     </header>
 
     <div class="song-container" id="song-list">
@@ -60,26 +91,31 @@
     </div>
 
     <script>
-        // 페이지가 열리자마자 실행
+        const speedSlider = document.getElementById('speed-slider');
+        const speedDisplay = document.getElementById('speed-display');
+
+        const savedSpeed = localStorage.getItem('wb_user_speed');
+        if (savedSpeed) {
+            speedSlider.value = savedSpeed;
+            speedDisplay.innerText = parseFloat(savedSpeed).toFixed(1);
+        }
+
+        speedSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value).toFixed(1);
+            speedDisplay.innerText = val;
+            localStorage.setItem('wb_user_speed', val);
+        });
+
         window.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('song-list');
-            
             try {
-                // 1. song_list.json 읽어오기 (자동)
                 const response = await fetch('song_list.json');
-                
-                if (!response.ok) {
-                    throw new Error("song_list.json을 찾을 수 없습니다.");
-                }
-
+                if (!response.ok) throw new Error("song_list.json을 찾을 수 없습니다.");
                 const songs = await response.json();
-                list.innerHTML = ""; // 로딩 메시지 지우기
+                list.innerHTML = ""; 
 
-                // 2. 받아온 데이터로 카드 만들기
                 songs.forEach(song => {
                     const diffs = [];
-
-                    // 차트 파일명 분석
                     song.charts.forEach(filename => {
                         const lowerName = filename.toLowerCase();
                         let type = '';
@@ -90,7 +126,7 @@
                         if (type) {
                             const numMatch = filename.match(/_(\d+)\.json$/);
                             const level = numMatch ? numMatch[1] : null;
-                            const fileKey = filename.replace(/\.json$/i, ''); // 확장자 제거
+                            const fileKey = filename.replace(/\.json$/i, ''); 
 
                             diffs.push({
                                 type: type,
@@ -101,14 +137,12 @@
                         }
                     });
 
-                    // 난이도 정렬
                     const typeOrder = { 'normal': 1, 'hard': 2, 'troll': 3 };
                     diffs.sort((a, b) => {
                         if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
                         return a.level - b.level;
                     });
 
-                    // HTML 생성
                     const card = document.createElement('div');
                     card.className = 'song-card';
                     
@@ -139,16 +173,13 @@
 
             } catch (err) {
                 console.error(err);
-                list.innerHTML = `<div class="status-msg" style="color:#ff5555">
-                    ERROR: song_list.json을 읽을 수 없습니다.<br>
-                    <span style="font-size:14px">파일이 있는지, 형식이 올바른지 확인해주세요.</span>
-                </div>`;
+                list.innerHTML = `<div class="status-msg" style="color:#ff5555">ERROR: song_list.json Error</div>`;
             }
         });
 
         function play(folder, fileKey) {
-            // 엔진으로 이동 (game_editor.html로 이동하도록 설정됨)
-            window.location.href = `game_editor.html?song=${encodeURIComponent(folder)}&diff=${fileKey}`;
+            const speed = speedSlider.value;
+            window.location.href = `game_editor.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speed}`;
         }
     </script>
 </body>
