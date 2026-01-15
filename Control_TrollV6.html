@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>WEB BEAT : SELECT</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Roboto:wght@400;700&display=swap');
+        body { margin: 0; background: #050505; color: #fff; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
+        
+        header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; }
+        h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5); }
+        
+        .loader-box { margin: 20px 0; }
+        .btn-load { padding: 15px 40px; font-size: 18px; background: #333; color: #fff; border: 2px solid #555; border-radius: 50px; cursor: pointer; transition: 0.3s; font-family: 'Orbitron'; }
+        .btn-load:hover { border-color: #00e5ff; color: #00e5ff; box-shadow: 0 0 20px rgba(0,229,255,0.3); }
+        input[type="file"] { display: none; }
+
+        .song-container { display: flex; gap: 30px; padding: 20px 50px; overflow-x: auto; width: 90%; height: 500px; align-items: center; }
+        .song-card { min-width: 320px; height: 450px; background: #1a1a1a; border: 2px solid #333; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
+        .song-card:hover { transform: translateY(-10px); border-color: #00e5ff; box-shadow: 0 0 30px rgba(0,229,255,0.2); }
+        
+        .card-cover { width: 100%; height: 150px; background: #000; display: flex; align-items: center; justify-content: center; font-size: 50px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #333; }
+        .card-title { font-family: 'Orbitron'; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; }
+        .card-artist { color: #888; font-size: 14px; margin-bottom: 20px; }
+        
+        .diff-box { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+        
+        /* 버튼 스타일 수정 */
+        .btn-diff { 
+            padding: 12px 15px; border: none; border-radius: 8px; cursor: pointer; 
+            font-weight: bold; text-transform: uppercase; transition: 0.2s; 
+            display: flex; justify-content: space-between; align-items: center;
+            font-family: 'Orbitron', sans-serif; position: relative; overflow: hidden;
+        }
+        .btn-diff:hover { transform: scale(1.03); filter: brightness(1.2); }
+        
+        /* 난이도별 색상 */
+        .btn-diff.normal { background: linear-gradient(90deg, #00e5ff, #0099aa); color: #000; }
+        .btn-diff.hard { background: linear-gradient(90deg, #ff0055, #aa0033); color: #fff; }
+        .btn-diff.troll { background: linear-gradient(90deg, #8a2be2, #4b0082); color: #fff; }
+
+        .lv-badge { background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px; font-size: 0.9em; margin-left: 10px; }
+        .score-badge { font-family: 'Roboto', sans-serif; font-size: 14px; background: rgba(0,0,0,0.6); padding: 4px 8px; border-radius: 6px; color: #fff; font-weight: normal; }
+
+        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>ARCADE SELECT</h1>
+        <div style="color:#666; letter-spacing:5px;">CHOOSE YOUR STAGE</div>
+    </header>
+
+    <div class="loader-box">
+        <label for="folder-input" class="btn-load">📂 LOAD MAPS FOLDER</label>
+        <input type="file" id="folder-input" webkitdirectory directory multiple>
+    </div>
+
+    <div class="song-container" id="song-list"></div>
+
+    <script>
+        document.getElementById('folder-input').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            if(files.length === 0) return;
+
+            const songs = {};
+            const list = document.getElementById('song-list');
+            list.innerHTML = "";
+
+            // 1. 파일 스캔 및 분류
+            for (let file of files) {
+                const path = file.webkitRelativePath.split('/');
+                if (path.length < 3) continue; 
+                const songName = path[1];
+                const fileName = path[2].toLowerCase(); // 소문자로 변환
+
+                if (!songs[songName]) songs[songName] = { name: songName, diffs: [] };
+                
+                // .json 파일만 처리
+                if (fileName.endsWith('.json')) {
+                    let type = '';
+                    if (fileName.includes('normal')) type = 'normal';
+                    else if (fileName.includes('hard')) type = 'hard';
+                    else if (fileName.includes('troll')) type = 'troll';
+
+                    if (type) {
+                        // ★ 숫자 추출 로직 (예: hard_15.json -> 15)
+                        // 정규식: 숫자가 포함되어 있으면 추출
+                        const numMatch = fileName.match(/(\d+)/);
+                        const level = numMatch ? numMatch[0] : ''; // 숫자가 없으면 빈칸
+                        
+                        // 확장자(.json)를 뺀 실제 파일명 (파라미터 전달용)
+                        // 예: "hard_15.json" -> "hard_15"
+                        const fileKey = path[2].replace(/\.json$/i, ''); 
+
+                        songs[songName].diffs.push({ 
+                            type: type, 
+                            level: level, 
+                            fileKey: fileKey 
+                        });
+                    }
+                }
+            }
+
+            // 2. 카드 생성
+            Object.values(songs).forEach(song => {
+                if (song.diffs.length === 0) return;
+                
+                // 난이도 정렬 (Normal -> Hard -> Troll 순, 같은 타입이면 레벨 순)
+                const typeOrder = { 'normal': 1, 'hard': 2, 'troll': 3 };
+                song.diffs.sort((a, b) => {
+                    if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
+                    return (parseInt(a.level)||0) - (parseInt(b.level)||0);
+                });
+
+                const card = document.createElement('div');
+                card.className = 'song-card';
+                
+                let diffButtons = '';
+                song.diffs.forEach(d => {
+                    // 저장된 점수 불러오기 (키: 곡이름_파일키)
+                    const scoreKey = `wb_score_${song.name}_${d.fileKey}`;
+                    const savedScore = localStorage.getItem(scoreKey) || '000000';
+                    
+                    // 레벨 표시 (숫자가 있으면 Lv.XX, 없으면 그냥 이름만)
+                    const levelText = d.level ? `<span class="lv-badge">Lv.${d.level}</span>` : '';
+
+                    diffButtons += `
+                        <button class="btn-diff ${d.type}" onclick="play('${song.name}', '${d.fileKey}')">
+                            <span>${d.type.toUpperCase()} ${levelText}</span>
+                            <span class="score-badge">🏆 ${savedScore}</span>
+                        </button>`;
+                });
+
+                card.innerHTML = `
+                    <div class="card-cover">🎵</div>
+                    <div class="card-title">${song.name}</div>
+                    <div class="card-artist">Rhythm Game Track</div>
+                    <div class="diff-box">${diffButtons}</div>
+                `;
+                list.appendChild(card);
+            });
+        });
+
+        function play(song, fileKey) {
+            // 엔진으로 곡 이름과 파일 키(확장자 뺀 파일명)를 전달
+            window.location.href = `Control_TrollV6_Editor.html?song=${encodeURIComponent(song)}&diff=${fileKey}`;
+        }
+    </script>
+</body>
+</html>
