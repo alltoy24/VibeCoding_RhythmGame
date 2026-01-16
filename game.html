@@ -530,80 +530,96 @@
         }
 
         // ★ [안전장치 추가] 에러 나도 화면은 뜨게 만듦
-        function showResult() {
+        // ★ [업그레이드] 결과창 + 실시간 랭킹 표시
+        async function showResult() {
             try {
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
                 let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
                 const finalScore = Math.round(score).toString().padStart(6, '0');
+                
                 const urlParams = new URLSearchParams(window.location.search);
                 const songParam = urlParams.get('song');
                 const diffParam = urlParams.get('diff');
                 
-                let xpDisplay = "";
-                let badgeHtml = "";
-                let badgeType = null;
+                // 1. 점수 전송 & 레벨 저장 (기존 로직)
+                if (songParam && diffParam && userProfile) {
+                    const SERVER_BASE = SERVER_URL.replace('/api/score', ''); // 주소 정리
 
-                if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) { badgeType = "TB"; badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!!</div>"; } 
-                else if (combo === totalMaxHits && totalMaxHits > 0) { badgeType = "FC"; badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>"; }
+                    // 점수 전송
+                    fetch(SERVER_URL, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            userId: userProfile.sub,
+                            userName: userProfile.name,
+                            song: songParam,
+                            diff: diffParam,
+                            score: parseInt(finalScore)
+                        })
+                    });
 
-                if (songParam && diffParam) {
-                    try {
-                        const storageKey = `wb_score_${songParam}_${diffParam}`;
-                        const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
-                        if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
-
-                        const badgeKey = `wb_badge_${songParam}_${diffParam}`;
-                        const savedBadge = localStorage.getItem(badgeKey);
-                        if (badgeType === "TB") localStorage.setItem(badgeKey, "TB");
-                        else if (badgeType === "FC" && savedBadge !== "TB") localStorage.setItem(badgeKey, "FC");
-
-                        let level = 1;
-                        const match = diffParam.match(/_(\d+)/);
-                        if(match) level = parseInt(match[1]);
-                        const gainedXP = Math.round((finalScore / 10000) * (1 + level * 0.1));
-                        let currentXP = parseInt(localStorage.getItem('wb_user_xp') || "0");
-                        let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
-                        currentXP += gainedXP;
-                        let nextXP = currentLv * 500;
-                        let levelUpMsg = "";
-                        while(currentXP >= nextXP) { currentXP -= nextXP; currentLv++; nextXP = currentLv * 500; levelUpMsg = "<span style='color:#00ff00; margin-left:10px;'> LEVEL UP!</span>"; }
-                        localStorage.setItem('wb_user_xp', currentXP);
-                        localStorage.setItem('wb_user_lv', currentLv);
-                        xpDisplay = `<div style="margin-top:15px; color:#ffd700; font-size:24px; font-weight:bold; text-shadow:0 0 10px #ff5500;">+ ${gainedXP} XP ${levelUpMsg}</div>`;
-
-                        // ▼▼▼ [여기부터 추가] 랭킹 서버로 점수 전송 ▼▼▼
-                        if (userProfile) {
-                            // 1. 보낼 데이터 포장
-                            const rankingData = {
-                                userId: userProfile.sub,    // 구글 고유 ID (비밀)
-                                userName: userProfile.name, // 보여줄 이름
-                                song: songParam,            // 곡 제목
-                                diff: diffParam,            // 난이도
-                                score: parseInt(finalScore) // 점수 (숫자로 변환)
-                            };
-
-                            // 2. 서버 주소
-                            const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score";
-
-                            // 3. 전송 (fetch)
-                            fetch(SERVER_URL, {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify(rankingData)
-                            })
-                            .then(res => res.json())
-                            .then(data => {
-                                console.log("🏆 랭킹 등록 성공:", data);
-                                alert("랭킹이 등록되었습니다!"); // 테스트용 알림
-                            })
-                            .catch(err => {
-                                console.warn("서버 연결 실패 (아직 서버를 안 켜서 정상임):", err);
-                            });
-                        }
-                        // ▲▲▲ [여기까지 추가] ▲▲▲
-                    } catch(e) { console.error("Save Error:", e); }
+                    // 레벨 업데이트 전송
+                    const updatedLv = parseInt(localStorage.getItem('wb_user_lv') || 1);
+                    const updatedXp = parseInt(localStorage.getItem('wb_user_xp') || 0);
+                    fetch(`${SERVER_BASE}/api/user/update`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: userProfile.sub, level: updatedLv, xp: updatedXp })
+                    });
                 }
+
+                // ★ 2. 랭킹 데이터 가져오기 (비동기)
+                let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
+                try {
+                    const SERVER_BASE = SERVER_URL.replace('/api/score', '');
+                    const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
+                    const rankData = await res.json();
+                    
+                    if(rankData.length > 0) {
+                        rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);">
+                            <div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
+                        
+                        rankData.slice(0, 5).forEach((r, idx) => {
+                            const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
+                            const isMe = userProfile && r.userId === userProfile.sub ? "color:#ffd700;" : "color:#fff;";
+                            rankingHtml += `
+                                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}">
+                                    <span>${medal} ${r.userName}</span>
+                                    <span>${r.score}</span>
+                                </div>`;
+                        });
+                        rankingHtml += `</div>`;
+                    } else {
+                        rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>";
+                    }
+                } catch(e) { console.warn("Ranking Load Fail", e); }
+
+
+                // 3. 결과창 그리기
+                resultOverlay.innerHTML = `
+                    <div style="text-align:center; margin-bottom:10px;">
+                        <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-bottom:5px;">RESULT</div>
+                        <div class="${rank} res-rank">${rank}</div>
+                    </div>
+                    <div class="res-info">
+                        <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScore}</div></div>
+                        <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
+                        <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
+                    </div>
+                    
+                    ${rankingHtml}
+
+                    <button class="btn-close" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
+                `;
+                
+                resultOverlay.style.display = 'flex';
+
+            } catch(e) {
+                alert("Result Error: " + e.message);
+                location.href='index.html';
+            }
+        }
 
                 resultOverlay.innerHTML = `
                     <div style="text-align:center; margin-bottom:20px;">
