@@ -52,6 +52,9 @@
             position: absolute; top: 10px; left: 30px;
             display: flex; flex-direction: column; gap: 5px;
             font-family: 'Orbitron';
+
+            /* ★★★ 이 한 줄을 추가하세요! (화면 제일 앞으로 가져오기) ★★★ */
+            z-index: 100;
         }
         .lv-label { font-size: 30px; color: #ffd700; font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
         .xp-bar-bg { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
@@ -85,6 +88,8 @@
             text-decoration: none; color: #666; font-family: 'Orbitron'; font-size: 12px; font-weight: bold;
             border: 1px solid #333; padding: 10px 20px; border-radius: 20px; transition: 0.3s;
             display: flex; align-items: center; gap: 5px;
+
+            z-index: 100; /* ★ 얘도 추가 */
         }
         .btn-create:hover { color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
 
