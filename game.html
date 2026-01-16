@@ -81,12 +81,18 @@
 
     <script>
         // ==========================================
-        // ★ GOOGLE LOGIN SETUP (수정됨)
+        // ★ [중요] 서버 주소 설정 (여기를 꼭 수정하세요!)
+        // ==========================================
+        // 예시: "https://port-0-vibecoding-server-xxxx.cloudtype.app/api/score"
+        // (맨 뒤에 /api/score 를 꼭 붙여주세요!)
+        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+
+        // ==========================================
+        // ★ GOOGLE LOGIN SETUP
         // ==========================================
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
         let userProfile = null;
 
-        // ★ [추가된 부분] 페이지 열리자마자 저장된 로그인 정보 확인
         const storedProfile = localStorage.getItem('wb_auth_profile');
         if (storedProfile) {
             userProfile = JSON.parse(storedProfile);
@@ -94,34 +100,25 @@
         }
 
         window.onload = function() {
-            // 만약 로그인이 안 되어 있다면(index에서 안 하고 바로 들어옴), 그때만 버튼 로드
             if (!userProfile) {
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CLIENT_ID,
                     callback: handleCredentialResponse
                 });
             }
-        
-            // (기존 startGame 버튼 로직 등이 있다면 여기에 유지)
-            // ...
         };
 
         function handleCredentialResponse(response) {
-            // (게임 화면에서 굳이 로그인 버튼 눌렀을 때 처리)
             const responsePayload = parseJwt(response.credential);
             userProfile = responsePayload;
-            localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload)); // 여기서도 저장
-        
-            // 로그인 버튼 숨기기
+            localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
+            
             const btn = document.getElementById("google-login-btn");
             if(btn) btn.style.display = 'none';
-        
-            // 결과창 떠있으면 바로 전송
+            
             if(gameFinished) showResult();
         }
     
-        // ... (parseJwt 함수 및 나머지 게임 코드 그대로 유지)
-        // JWT 디코딩 함수 (필수)
         function parseJwt (token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -165,7 +162,7 @@
         }
 
         // ==========================================
-        //              GAME VARIABLES
+        //            GAME VARIABLES
         // ==========================================
         let audio = new Audio(); 
         let bpm = 130, offset = 0;
@@ -186,7 +183,7 @@
         const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
         
         let gameFinished = false;
-        let finishTimer = null; // 종료 타이머
+        let finishTimer = null;
         let gameState = 'LOADING'; 
         let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
         let activeKeys = [false, false, false, false];
@@ -202,7 +199,6 @@
 
         window.addEventListener('resize', () => { gameCanvas.height = window.innerHeight; });
 
-        // 오디오 종료 시 강제 종료
         audio.onended = () => {
             if (!gameFinished) finishGame();
         };
@@ -258,7 +254,6 @@
                         const time = (m.index + (n.pos * ratio / BASE_RES)) * msPerMeasure;
                         const duration = ((n.len || 0) * ratio / BASE_RES) * msPerMeasure;
                         
-                        // ★ [싱크 수정] 맵 오프셋만 적용 (시스템 보정 제거)
                         const noteTime = time + offset; 
                         const noteEndTime = noteTime + duration;
                         
@@ -266,7 +261,6 @@
                         
                         gameNotes.push({ time: noteTime, endTime: noteEndTime, lane: n.lane, len: (n.len || 0) * ratio, hit: false, holding: false, finished: false });
                         
-                        // 총 노트 수 카운트 (롱노트는 머리/꼬리 2개로 계산)
                         totalMaxHits++; 
                         if(n.len > 0) totalMaxHits++; 
                     });
@@ -290,20 +284,16 @@
             startTimestamp = Date.now();
             audio.currentTime = 0;
             
-            // ★ [안전장치] 어떤 이유로든 게임이 안 끝나면 강제 종료
             setTimeout(finishGame, (2000 + lastNoteEndTime + 5000));
 
             gameLoop();
         }
 
-        // ★ [핵심] 게임 종료 및 결과창 호출
         function finishGame() {
             if (gameFinished) return;
             gameFinished = true;
             console.log("Game Finished!");
             audio.pause();
-            
-            // ★ 즉시 결과창 표시 (딜레이 X)
             showResult();
         }
 
@@ -328,10 +318,9 @@
                 currentTime = audio.currentTime * 1000;
             }
 
-            // ★ [종료 조건] 모든 노트를 처리했으면(Hits + Misses == Max) 1초 뒤 종료
             if (!gameFinished && totalHits >= totalMaxHits) {
                 if (!finishTimer) {
-                    finishTimer = setTimeout(finishGame, 1000); // 여운 1초
+                    finishTimer = setTimeout(finishGame, 1000); 
                 }
             }
 
@@ -349,7 +338,6 @@
                 let tailY = headY;
                 if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
 
-                // 화면 밖 강제 Miss & 삭제
                 if (tailY > gameCanvas.height) {
                     if (!n.finished) {
                         n.finished = true;
@@ -363,7 +351,6 @@
                     continue; 
                 }
 
-                // 일반 Miss
                 if(!n.hit && !n.finished && currentTime > n.time + 250) { 
                     n.hit = true; n.finished = true; 
                     combo = 0; totalHits++; judgeStats.miss++; 
@@ -416,7 +403,6 @@
             if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
         });
 
-        // checkHit
         function checkHit(lane) {
             let currentTime = 0;
             if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
@@ -522,15 +508,15 @@
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.8; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,6,6); } } gameCtx.globalAlpha=1.0; }
 
         function checkFinish() {
-            // 이펙트 트리거
             if (totalHits >= totalMaxHits && totalMaxHits > 0) {
                 if (judgeStats.perfect === totalMaxHits) { finishEffect.innerHTML = "<div class='text-glitch' data-text='TROLL BEAT!!'>TROLL BEAT!!</div>"; playSfx('ap'); }
                 else if (combo === totalMaxHits) { finishEffect.innerHTML = "<div class='text-fc'>FULL COMBO</div>"; playSfx('fc'); }
             }
         }
 
-        // ★ [안전장치 추가] 에러 나도 화면은 뜨게 만듦
-        // ★ [업그레이드] 결과창 + 실시간 랭킹 표시
+        // ==========================================
+        // ★ [FIX] 랭킹 기능 통합 및 중복 제거 완료
+        // ==========================================
         async function showResult() {
             try {
                 finishEffect.innerHTML = "";
@@ -542,9 +528,9 @@
                 const songParam = urlParams.get('song');
                 const diffParam = urlParams.get('diff');
                 
-                // 1. 점수 전송 & 레벨 저장 (기존 로직)
+                // 1. 점수 & 레벨 서버 전송
                 if (songParam && diffParam && userProfile) {
-                    const SERVER_BASE = SERVER_URL.replace('/api/score', ''); // 주소 정리
+                    const SERVER_BASE = SERVER_URL.replace('/api/score', ''); 
 
                     // 점수 전송
                     fetch(SERVER_URL, {
@@ -559,7 +545,7 @@
                         })
                     });
 
-                    // 레벨 업데이트 전송
+                    // 레벨 전송
                     const updatedLv = parseInt(localStorage.getItem('wb_user_lv') || 1);
                     const updatedXp = parseInt(localStorage.getItem('wb_user_xp') || 0);
                     fetch(`${SERVER_BASE}/api/user/update`, {
@@ -569,7 +555,7 @@
                     });
                 }
 
-                // ★ 2. 랭킹 데이터 가져오기 (비동기)
+                // 2. 랭킹 데이터 가져오기
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
                 try {
                     const SERVER_BASE = SERVER_URL.replace('/api/score', '');
@@ -596,33 +582,16 @@
                 } catch(e) { console.warn("Ranking Load Fail", e); }
 
 
-                // 3. 결과창 그리기
+                // 3. 결과창 그리기 (뱃지, 상세판정 포함)
+                // 뱃지 HTML 생성
+                let badgeHtml = "";
+                if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) 
+                    badgeHtml = "<div class='res-badge badge-ap'>ALL PERFECT</div>";
+                else if (combo === totalMaxHits && totalMaxHits > 0) 
+                    badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
+
                 resultOverlay.innerHTML = `
                     <div style="text-align:center; margin-bottom:10px;">
-                        <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-bottom:5px;">RESULT</div>
-                        <div class="${rank} res-rank">${rank}</div>
-                    </div>
-                    <div class="res-info">
-                        <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScore}</div></div>
-                        <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
-                        <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
-                    </div>
-                    
-                    ${rankingHtml}
-
-                    <button class="btn-close" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
-                `;
-                
-                resultOverlay.style.display = 'flex';
-
-            } catch(e) {
-                alert("Result Error: " + e.message);
-                location.href='index.html';
-            }
-        }
-
-                resultOverlay.innerHTML = `
-                    <div style="text-align:center; margin-bottom:20px;">
                         <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-bottom:5px;">RESULT</div>
                         <div class="${rank} res-rank">${rank}</div>
                     </div>
@@ -632,25 +601,29 @@
                         <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
                         <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
                     </div>
-                    <div class="res-detail">
+
+                    <div class="res-detail" style="margin-bottom:20px;">
                         <div class="detail-item"><div class="detail-label" style="color:#00e5ff">PERFECT</div><div class="detail-val">${judgeStats.perfect}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#00ff00">GREAT</div><div class="detail-val">${judgeStats.great}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#ffff00">OKAY</div><div class="detail-val">${judgeStats.okay}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#ff5555">OH...</div><div class="detail-val">${judgeStats.oh}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#888">MISS</div><div class="detail-val">${judgeStats.miss}</div></div>
                     </div>
-                    <div id="google-login-btn" style="margin-top: 20px; display: flex; justify-content: center;"></div>
-                    ${xpDisplay}
-                    <button class="btn-close" onclick="location.href='index.html'">CONTINUE</button>
-                `;
+                    
+                    ${rankingHtml}
 
-                // ★ 그리고 HTML 설정한 바로 밑줄에 버튼 그리는 코드 추가
+                    <div id="google-login-btn-result" style="margin-top: 15px; display: flex; justify-content: center; min-height:40px;"></div>
+
+                    <button class="btn-close" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
+                `;
+                
                 resultOverlay.style.display = 'flex';
-                // (추가) 로그인 안 했으면 버튼 그리기
+
+                // 로그인 안 했으면 결과창에도 버튼 띄우기
                 if (!userProfile) {
                     google.accounts.id.renderButton(
-                        document.getElementById("google-login-btn"),
-                        { theme: "outline", size: "large" }
+                        document.getElementById("google-login-btn-result"),
+                        { theme: "filled_black", size: "large", shape: "pill" }
                     );
                 }
 
