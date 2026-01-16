@@ -558,6 +558,37 @@
                         localStorage.setItem('wb_user_xp', currentXP);
                         localStorage.setItem('wb_user_lv', currentLv);
                         xpDisplay = `<div style="margin-top:15px; color:#ffd700; font-size:24px; font-weight:bold; text-shadow:0 0 10px #ff5500;">+ ${gainedXP} XP ${levelUpMsg}</div>`;
+
+                        // ▼▼▼ [여기부터 추가] 랭킹 서버로 점수 전송 ▼▼▼
+                        if (userProfile) {
+                            // 1. 보낼 데이터 포장
+                            const rankingData = {
+                                userId: userProfile.sub,    // 구글 고유 ID (비밀)
+                                userName: userProfile.name, // 보여줄 이름
+                                song: songParam,            // 곡 제목
+                                diff: diffParam,            // 난이도
+                                score: parseInt(finalScore) // 점수 (숫자로 변환)
+                            };
+
+                            // 2. 서버 주소
+                            const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app";
+
+                            // 3. 전송 (fetch)
+                            fetch(SERVER_URL, {
+                                method: "POST",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify(rankingData)
+                            })
+                            .then(res => res.json())
+                            .then(data => {
+                                console.log("🏆 랭킹 등록 성공:", data);
+                                alert("랭킹이 등록되었습니다!"); // 테스트용 알림
+                            })
+                            .catch(err => {
+                                console.warn("서버 연결 실패 (아직 서버를 안 켜서 정상임):", err);
+                            });
+                        }
+                        // ▲▲▲ [여기까지 추가] ▲▲▲
                     } catch(e) { console.error("Save Error:", e); }
                 }
 
