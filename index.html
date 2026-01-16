@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>TrollBeat V6: Select</title>
+    <title>WEB BEAT : SELECT</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Roboto:wght@400;700&display=swap');
         body { margin: 0; background: #050505; color: #fff; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
@@ -10,22 +10,39 @@
         header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
         h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5); }
         
-        /* 배속 조절 UI (중앙) */
-        .speed-control { 
-            margin-top: 15px; 
+        /* ★ [추가됨] 플레이어 레벨 프로필 */
+        .profile-card {
+            position: absolute; top: 10px; left: 30px;
+            display: flex; flex-direction: column; gap: 5px;
+            font-family: 'Orbitron';
+        }
+        .lv-label { font-size: 30px; color: #ffd700; font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .xp-bar-bg { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, #00e5ff, #00ffaa); width: 0%; transition: width 1s ease-out; }
+        .xp-text { font-size: 12px; color: #aaa; margin-top: 2px; }
+
+        /* UI 컨트롤 박스 */
+        .control-bar { display: flex; gap: 15px; margin-top: 15px; }
+        .ui-box { 
             background: rgba(255, 255, 255, 0.1); 
-            padding: 8px 25px; 
+            padding: 8px 20px; 
             border-radius: 30px; 
             border: 1px solid #333; 
-            display: flex; align-items: center; gap: 15px; 
+            display: flex; align-items: center; gap: 10px; 
             backdrop-filter: blur(5px);
-            width: fit-content;
+            font-family: 'Orbitron';
         }
-        .speed-label { font-family: 'Orbitron'; color: #00e5ff; font-size: 16px; font-weight: bold; }
-        .speed-val { font-family: 'Orbitron'; color: #fff; font-size: 20px; min-width: 50px; text-align: right; }
-        input[type="range"] { accent-color: #00e5ff; cursor: pointer; width: 150px; }
+        .speed-label { color: #00e5ff; font-size: 14px; font-weight: bold; }
+        .speed-val { color: #fff; font-size: 18px; min-width: 40px; text-align: right; }
+        input[type="range"] { accent-color: #00e5ff; cursor: pointer; width: 120px; }
 
-        /* ★ [추가됨] 에디터 이동 버튼 (우측 상단 구석) */
+        .btn-util {
+            background: rgba(255, 255, 255, 0.1); border: 1px solid #333; color: #aaa;
+            padding: 8px 20px; border-radius: 30px; cursor: pointer; font-family: 'Orbitron'; font-size: 14px;
+            transition: 0.3s; text-decoration: none; display: flex; align-items: center;
+        }
+        .btn-util:hover { color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
+
         .btn-create { 
             position: absolute; top: 20px; right: 30px; 
             text-decoration: none; color: #666; font-family: 'Orbitron'; font-size: 12px; font-weight: bold;
@@ -33,6 +50,28 @@
             display: flex; align-items: center; gap: 5px;
         }
         .btn-create:hover { color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
+
+        /* 보정 오버레이 */
+        #calib-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 100;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .calib-circle {
+            width: 120px; height: 120px; border-radius: 50%;
+            border: 4px solid #444; margin-bottom: 20px;
+            transition: 0.1s; display: flex; align-items: center; justify-content: center;
+            font-size: 30px; font-family: 'Orbitron'; color: #444; cursor: pointer;
+        }
+        .calib-circle:hover { border-color: #666; color: #666; }
+        .calib-circle.flash { background: #fff; border-color: #fff; box-shadow: 0 0 50px #fff; }
+        .calib-circle.active { border-color: #00e5ff; color: #00e5ff; transform: scale(0.95); }
+
+        .manual-calib { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+        .btn-adj { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #333; background: transparent; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-adj:hover { border-color: #00e5ff; color: #00e5ff; }
+        #offset-input { background: transparent; border: none; border-bottom: 2px solid #00e5ff; color: #fff; font-size: 30px; font-family: 'Orbitron'; text-align: center; width: 120px; outline: none; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
         .status-msg { margin-top: 50px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
         @keyframes blink { 50% { opacity: 0.5; } }
@@ -52,21 +91,20 @@
         .diff-box::-webkit-scrollbar { width: 5px; }
         .diff-box::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
 
-        .btn-diff { 
-            width: 100%; padding: 12px 15px; border: none; border-radius: 8px; cursor: pointer; 
-            font-weight: bold; text-transform: uppercase; transition: 0.2s; 
-            display: flex; justify-content: space-between; align-items: center;
-            font-family: 'Orbitron', sans-serif; box-sizing: border-box;
-        }
+        .btn-diff { width: 100%; padding: 12px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron', sans-serif; box-sizing: border-box; }
         .btn-diff:hover { transform: scale(1.02); filter: brightness(1.2); }
-        
         .btn-diff.normal { background: linear-gradient(90deg, #00c6ff, #0072ff); color: #fff; }
         .btn-diff.hard { background: linear-gradient(90deg, #ff00cc, #333399); color: #fff; }
         .btn-diff.troll { background: linear-gradient(90deg, #8E2DE2, #4A00E0); color: #fff; }
 
         .left-part { display: flex; align-items: center; gap: 8px; }
         .lv-badge { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.8em; color: #ffd700; }
-        .score-badge { font-family: 'Roboto', sans-serif; font-size: 14px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); }
+        
+        /* ★ [추가] 뱃지 아이콘 스타일 */
+        .score-badge { font-family: 'Roboto', sans-serif; font-size: 14px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 6px; }
+        .badge-icon { font-size: 14px; font-weight: bold; text-shadow: 0 0 5px currentColor; }
+        .badge-fc { color: #00e5ff; } /* Full Combo */
+        .badge-tb { color: #d500f9; } /* Troll Beat */
 
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
     </style>
@@ -75,14 +113,38 @@
 
     <a href="game_editor.html" class="btn-create">🛠 CREATE CHART</a>
 
+    <div class="profile-card">
+        <div class="lv-label" id="user-lv">LV. 1</div>
+        <div class="xp-bar-bg">
+            <div class="xp-bar-fill" id="user-xp-fill"></div>
+        </div>
+        <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
+    </div>
+
+    <div id="calib-overlay" onclick="handleTap(event)">
+        <h2 style="font-family:'Orbitron'; color:#00e5ff; margin:0;">AUDIO SYNC</h2>
+        <div style="color:#666; font-size:12px; margin-bottom:20px;">TAP TO BEAT or ADJUST MANUALLY</div>
+        <div id="calib-circle" class="calib-circle">●</div>
+        <div id="calib-msg" style="color:#aaa; font-size:14px; text-align:center; height:20px;">Click circle to start test</div>
+        <div class="manual-calib" onclick="event.stopPropagation()">
+            <button class="btn-adj" onclick="adjustOffset(-1)">-</button>
+            <input type="number" id="offset-input" value="0" onchange="manualInput()">
+            <button class="btn-adj" onclick="adjustOffset(1)">+</button>
+        </div>
+        <div style="color:#444; font-size:12px; margin-top:5px;">MILLISECONDS (ms)</div>
+        <button class="btn-util" onclick="closeCalib(event)" style="margin-top:30px;">SAVE & CLOSE</button>
+    </div>
+
     <header>
-        <h1>TrollBeat V6</h1>
-        <div style="color:#666; letter-spacing:5px; font-size:14px; margin-bottom: 5px;">CHOOSE YOUR SONG</div>
-        
-        <div class="speed-control">
-            <span class="speed-label">NOTE SPEED</span>
-            <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="10.0">
-            <span class="speed-val" id="speed-display">10.0</span>
+        <h1>ARCADE SELECT</h1>
+        <div style="color:#666; letter-spacing:5px; font-size:14px; margin-bottom: 5px;">CHOOSE YOUR STAGE</div>
+        <div class="control-bar">
+            <div class="ui-box">
+                <span class="speed-label">SPEED</span>
+                <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0">
+                <span class="speed-val" id="speed-display">5.0</span>
+            </div>
+            <button class="btn-util" onclick="openCalib()">🔧 OFFSET</button>
         </div>
     </header>
 
@@ -94,6 +156,19 @@
         const speedSlider = document.getElementById('speed-slider');
         const speedDisplay = document.getElementById('speed-display');
 
+        // ★ 레벨 데이터 로드 및 표시
+        function updateProfile() {
+            const lv = parseInt(localStorage.getItem('wb_user_lv') || "1");
+            const xp = parseInt(localStorage.getItem('wb_user_xp') || "0");
+            const nextXp = lv * 500; 
+            
+            document.getElementById('user-lv').innerText = `LV. ${lv}`;
+            const percent = Math.min(100, (xp / nextXp) * 100);
+            document.getElementById('user-xp-fill').style.width = `${percent}%`;
+            document.getElementById('user-xp-text').innerText = `${xp} / ${nextXp} XP`;
+        }
+        updateProfile(); 
+
         const savedSpeed = localStorage.getItem('wb_user_speed');
         if (savedSpeed) {
             speedSlider.value = savedSpeed;
@@ -104,6 +179,83 @@
             const val = parseFloat(e.target.value).toFixed(1);
             speedDisplay.innerText = val;
             localStorage.setItem('wb_user_speed', val);
+        });
+
+        // 오디오 싱크 로직
+        let audioCtx; let calibInterval; let nextBeatTime = 0;
+        const BPM = 120; const INTERVAL_SEC = 60 / BPM; 
+        let tapDiffs = []; let isCalibrating = false;
+
+        function openCalib() {
+            document.getElementById('calib-overlay').style.display = 'flex';
+            const currentOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
+            document.getElementById('offset-input').value = currentOffset;
+            document.getElementById('calib-msg').innerText = "Click circle to start test";
+            tapDiffs = []; isCalibrating = false;
+        }
+        function closeCalib(e) {
+            if(e) e.stopPropagation();
+            document.getElementById('calib-overlay').style.display = 'none';
+            stopCalib();
+        }
+        function adjustOffset(amount) {
+            const input = document.getElementById('offset-input');
+            let val = parseInt(input.value) || 0;
+            val += amount; input.value = val; manualInput();
+        }
+        function manualInput() {
+            const input = document.getElementById('offset-input');
+            const val = parseInt(input.value) || 0;
+            localStorage.setItem('wb_global_offset', val);
+        }
+        function startCalib() {
+            if(isCalibrating) return;
+            isCalibrating = true; tapDiffs = [];
+            document.getElementById('calib-msg').innerText = "Listen & Tap!";
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            nextBeatTime = audioCtx.currentTime + 0.5;
+            scheduleBeep();
+        }
+        function stopCalib() { clearTimeout(calibInterval); isCalibrating = false; }
+        function scheduleBeep() {
+            if(!isCalibrating) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.frequency.value = 1000; gain.gain.value = 0.1;
+            osc.start(nextBeatTime); osc.stop(nextBeatTime + 0.05);
+            const delay = (nextBeatTime - audioCtx.currentTime) * 1000;
+            setTimeout(() => {
+                const circle = document.getElementById('calib-circle');
+                circle.classList.add('flash');
+                setTimeout(() => circle.classList.remove('flash'), 50);
+            }, delay);
+            nextBeatTime += INTERVAL_SEC;
+            calibInterval = setTimeout(scheduleBeep, delay + 200); 
+        }
+        function handleTap(e) {
+            if(e && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return;
+            if (!isCalibrating) { startCalib(); return; }
+            const tapTime = audioCtx.currentTime;
+            const timeFromPrev = (tapTime - (nextBeatTime - INTERVAL_SEC));
+            const timeToNext = (nextBeatTime - tapTime);
+            let diff = (Math.abs(timeFromPrev) < Math.abs(timeToNext)) ? timeFromPrev : -timeToNext;
+            if(Math.abs(diff) < 0.2) {
+                tapDiffs.push(diff * 1000); 
+                const circle = document.getElementById('calib-circle');
+                circle.classList.add('active');
+                setTimeout(() => circle.classList.remove('active'), 100);
+                const currentAvg = Math.round(tapDiffs.reduce((a,b)=>a+b, 0) / tapDiffs.length);
+                document.getElementById('offset-input').value = currentAvg;
+                localStorage.setItem('wb_global_offset', currentAvg);
+                if(tapDiffs.length >= 8) {
+                    stopCalib();
+                    document.getElementById('calib-msg').innerHTML = "<span style='color:#00e5ff'>AUTO SYNC COMPLETE!</span>";
+                }
+            }
+        }
+        window.addEventListener('keydown', (e) => {
+            if(e.code === 'Space' && document.getElementById('calib-overlay').style.display === 'flex') handleTap();
         });
 
         window.addEventListener('DOMContentLoaded', async () => {
@@ -152,21 +304,31 @@
                         const savedScore = localStorage.getItem(scoreKey) || '000000';
                         const levelHtml = d.levelRaw ? `<span class="lv-badge">Lv.${d.levelRaw}</span>` : '';
 
+                        // ★ [추가] 뱃지 로직
+                        const badgeKey = `wb_badge_${song.folder}_${d.fileKey}`;
+                        const badgeType = localStorage.getItem(badgeKey); // "FC" or "TB" or null
+                        
+                        let badgeHtml = "";
+                        if (badgeType === "TB") badgeHtml = "<span class='badge-icon badge-tb'>👑 TB</span>";
+                        else if (badgeType === "FC") badgeHtml = "<span class='badge-icon badge-fc'>★ FC</span>";
+
                         diffButtons += `
                             <button class="btn-diff ${d.type}" onclick="play('${song.folder}', '${d.fileKey}')">
                                 <div class="left-part">
                                     <span>${d.type.toUpperCase()}</span>
                                     ${levelHtml}
                                 </div>
-                                <span class="score-badge">🏆 ${savedScore}</span>
+                                <span class="score-badge">🏆 ${savedScore}${badgeHtml}</span>
                             </button>`;
                     });
 
                     card.innerHTML = `
                         <div class="card-cover">🎵</div>
-                        <div class="card-title">${song.title}</div>
-                        <div class="card-artist">${song.artist}</div>
-                        <div class="diff-box">${diffButtons}</div>
+                        <div class="card-info">
+                            <div class="card-title">${song.title}</div>
+                            <div class="card-artist">${song.artist}</div>
+                            <div class="diff-box">${diffButtons}</div>
+                        </div>
                     `;
                     list.appendChild(card);
                 });
@@ -179,7 +341,8 @@
 
         function play(folder, fileKey) {
             const speed = speedSlider.value;
-            window.location.href = `game_editor.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speed}`;
+            // ★ 게임 플레이어 파일로 이동
+            window.location.href = `game.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speed}`;
         }
     </script>
 </body>

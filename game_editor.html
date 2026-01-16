@@ -26,7 +26,13 @@
         #editor-view { flex: 1; display: flex; flex-direction: column; position: relative; }
         #editor-container { flex: 1; overflow-y: scroll; background: #0a0a0a; display: flex; justify-content: center; }
         #canvas-layer { position: relative; width: 400px; background: #000; cursor: crosshair; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        #play-head { position: absolute; left: 0; width: 100%; height: 2px; background: #ff0055; z-index: 5; display: none; pointer-events: none; box-shadow: 0 0 10px #ff0055; }
+        /* [수정됨] GPU 가속 적용 */
+        #play-head { 
+            position: absolute; left: 0; width: 100%; height: 2px; 
+            background: #ff0055; z-index: 5; display: none; pointer-events: none; 
+            box-shadow: 0 0 10px #ff0055;
+            will-change: transform; /* ★ 핵심: 그래픽 카드 사용 선언 */
+        }
         .lane-header { display: flex; width: 400px; margin: 0 auto; background: #222; font-weight: bold; font-size: 12px; text-align: center; border-bottom: 2px solid #444; }
         .lane-header div { flex: 1; padding: 8px 0; border-right: 1px solid #333; color: #888; }
 
@@ -149,7 +155,8 @@
         let measures = []; 
         let measureHeight = 400; 
         
-        const LANE_COUNT = 4, CANVAS_WIDTH = 400, LANE_WIDTH = 100, BASE_RES = 32;
+        const BASE_RES = 192; 
+        const LANE_COUNT = 4, CANVAS_WIDTH = 400, LANE_WIDTH = 100;
         
         const gridCanvas = document.getElementById('gridCanvas');
         const gridCtx = gridCanvas.getContext('2d');
@@ -181,19 +188,20 @@
         let gameAnimId, noteSpeed = 5.0;
         let scorePerHit = 0; 
         
-        // ★ 변수들 (oh 추가됨)
         let gameStartTime = 0; 
         const START_DELAY = 2000; 
         let lastNoteEndTime = 0; 
-        let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; // ★ Oh 추가
+        let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
 
         // Init Editor
         for(let i=0; i<50; i++) measures.push({index: i, notes: []});
         resizeEditor(); drawGrid();
 
-        // ==========================================
-        //       AUTO LOAD (Play Mode)
-        // ==========================================
+        // 최적화: 스크롤 이벤트
+        editorContainer.addEventListener('scroll', () => {
+            requestAnimationFrame(drawGrid);
+        });
+
         const urlParams = new URLSearchParams(window.location.search);
         const songParam = urlParams.get('song');
         const diffParam = urlParams.get('diff');
@@ -235,16 +243,21 @@
                 const maxIdx = data.measures[data.measures.length-1].index;
                 for(let i=0; i<=maxIdx + 5; i++) measures.push({index: i, notes: []});
                 data.measures.forEach(m => {
-                    if(measures[m.index]) measures[m.index].notes = m.notes.map(n => ({lane: n.lane, pos: n.pos, len: n.len || 0}));
+                    const fileSplit = m.split || 32; 
+                    const ratio = BASE_RES / fileSplit; 
+                    if(measures[m.index]) {
+                        measures[m.index].notes = m.notes.map(n => ({
+                            lane: n.lane,
+                            pos: Math.round(n.pos * ratio), 
+                            len: Math.round((n.len || 0) * ratio) 
+                        }));
+                    }
                 });
             }
         }
 
         function startAutoPlay() { document.getElementById('loading-screen').style.display = 'none'; startTestMode(); }
 
-        // ==========================================
-        //       EDITOR INPUT
-        // ==========================================
         let dragNote = null;
         let isDragging = false;
         let startY = 0;
@@ -284,20 +297,22 @@
             if(measureIdx >= measures.length) return;
 
             const split = parseInt(splitInput.value) || 16;
-            const snapIdx = Math.floor((y % measureHeight) / (measureHeight/split));
-            const pos32 = Math.round(snapIdx * (BASE_RES / split));
-            
+            const relativeY = (y % measureHeight) / measureHeight;
+            const snapIdx = Math.round(relativeY * split);
+            const pos192 = Math.round(snapIdx * (BASE_RES / split));
+            if (pos192 >= BASE_RES) return; 
+
             const m = measures[measureIdx];
-            const existingIdx = m.notes.findIndex(n => n.lane === lane && n.pos === pos32);
+            const existingIdx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 2);
 
             if(existingIdx === -1) {
-                const newNote = { lane, pos: pos32, len: 0 };
+                const newNote = { lane, pos: pos192, len: 0 };
                 m.notes.push(newNote);
                 dragNote = newNote; isDragging = true; startY = y;
                 playTick();
             } else {
                 dragNote = m.notes[existingIdx]; isDragging = true;
-                startY = (measureIdx * measureHeight) + (dragNote.pos / 32) * measureHeight;
+                startY = (measureIdx * measureHeight) + (dragNote.pos / BASE_RES) * measureHeight;
             }
             drawGrid();
         });
@@ -307,7 +322,7 @@
             const rect = gridCanvas.getBoundingClientRect();
             const y = e.clientY - rect.top;
             const distPx = Math.max(0, y - startY);
-            dragNote.len = Math.round((distPx / measureHeight) * 32);
+            dragNote.len = Math.round((distPx / measureHeight) * BASE_RES);
             drawGrid();
         });
 
@@ -324,8 +339,11 @@
             
             const m = measures[measureIdx];
             const split = parseInt(splitInput.value) || 16;
-            const pos32 = Math.round(Math.floor((y % measureHeight) / (measureHeight/split)) * (BASE_RES / split));
-            let idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos32) < 2);
+            const relativeY = (y % measureHeight) / measureHeight;
+            const snapIdx = Math.round(relativeY * split);
+            const pos192 = Math.round(snapIdx * (BASE_RES / split));
+
+            let idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5); 
             if(idx !== -1) m.notes.splice(idx, 1);
             drawGrid();
         });
@@ -359,7 +377,7 @@
             isEditPlaying = false;
             cancelAnimationFrame(editAnimId);
             playHead.style.display = 'none';
-            playHead.style.top = "0px";
+            playHead.style.transform = "translateY(0px)";
             editorContainer.scrollTop = 0;
         }
 
@@ -368,48 +386,81 @@
             const chartMs = currentMs - offset;
             const msPerMeasure = (60/bpm)*4*1000;
             const y = Math.max(0, (chartMs / msPerMeasure) * measureHeight);
-            playHead.style.top = y + "px";
+            playHead.style.transform = `translateY(${y}px)`;
             return y;
         }
+        
         function editLoop() {
             if(!isEditPlaying) return;
             const y = updatePlayHeadPos();
-            if(y > editorContainer.scrollTop + 500) editorContainer.scrollTop = y - 200;
+            if(y > editorContainer.scrollTop + (window.innerHeight/2)) {
+                editorContainer.scrollTop = y - (window.innerHeight/2);
+            }
             editAnimId = requestAnimationFrame(editLoop);
         }
 
-        // ==========================================
-        //              GAME LOGIC (FINAL)
-        // ==========================================
+        function drawGrid() {
+            gridCtx.fillStyle = "#000"; gridCtx.fillRect(0,0,400, gridCanvas.height);
+            const split = parseInt(splitInput.value) || 16;
+            const cellH = measureHeight / split;
+            const scrollY = editorContainer.scrollTop;
+            const viewHeight = editorContainer.clientHeight;
+            const startMeasureIdx = Math.max(0, Math.floor(scrollY / measureHeight));
+            const endMeasureIdx = Math.min(measures.length - 1, Math.ceil((scrollY + viewHeight) / measureHeight));
+
+            for (let i = startMeasureIdx; i <= endMeasureIdx; i++) {
+                const m = measures[i];
+                const y = i * measureHeight;
+                gridCtx.lineWidth = 1;
+                for(let j=0; j<split; j++) {
+                    const ly = y + j*cellH;
+                    gridCtx.strokeStyle = (j===0) ? "#888" : (j%(split/4)===0 ? "#555" : "#222");
+                    gridCtx.beginPath(); gridCtx.moveTo(0, ly); gridCtx.lineTo(400, ly); gridCtx.stroke();
+                }
+                m.notes.forEach(n => {
+                    const ny = y + (n.pos/BASE_RES)*measureHeight;
+                    const visualH = 10; 
+                    if(n.len > 0) {
+                        const tailY = ny + (n.len/BASE_RES)*measureHeight;
+                        gridCtx.fillStyle = COLORS[n.lane];
+                        gridCtx.globalAlpha = 0.5;
+                        gridCtx.fillRect(n.lane*100+10, ny + visualH/2, 80, tailY - ny);
+                        gridCtx.globalAlpha = 1.0;
+                    }
+                    gridCtx.fillStyle = COLORS[n.lane]; 
+                    gridCtx.fillRect(n.lane*100+1, ny, 98, visualH);
+                });
+                gridCtx.fillStyle="#fff"; gridCtx.font="12px Arial"; gridCtx.fillText(i+1, 5, y+15);
+                gridCtx.strokeStyle="#444"; gridCtx.lineWidth=1;
+                for(let k=1; k<4; k++) { gridCtx.beginPath(); gridCtx.moveTo(k*100,y); gridCtx.lineTo(k*100, y + measureHeight); gridCtx.stroke(); }
+            }
+        }
+
         document.getElementById('btn-test').addEventListener('click', startTestMode);
         
         function startTestMode() {
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             if(!songParam) offset = parseInt(offsetInput.value) || 0;
             
-            if (speedParam) {
-                noteSpeed = parseFloat(speedParam);
-            } else {
-                noteSpeed = parseFloat(speedSlider.value);
-            }
+            const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
+            offset += userGlobalOffset;
+
+            if (speedParam) noteSpeed = parseFloat(speedParam);
+            else noteSpeed = parseFloat(speedSlider.value);
 
             gameNotes = [];
             let totalMaxHits = 0; 
             lastNoteEndTime = 0;
-            
-            // ★ 카운터 초기화 (Oh 추가)
             judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; 
 
             const msPerMeasure = (60000 / bpm) * 4;
             measures.forEach(m => {
                 m.notes.forEach(n => {
-                    const time = (m.index * msPerMeasure) + (n.pos / 32) * msPerMeasure;
-                    const duration = (n.len / 32) * msPerMeasure;
+                    const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
+                    const duration = (n.len / BASE_RES) * msPerMeasure;
                     
                     const noteEndTime = time + offset + duration + START_DELAY;
-                    if (noteEndTime > lastNoteEndTime) {
-                        lastNoteEndTime = noteEndTime;
-                    }
+                    if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
 
                     gameNotes.push({ 
                         time: time + offset + START_DELAY, 
@@ -418,13 +469,11 @@
                         len: n.len, 
                         hit: false, holding: false, finished: false 
                     });
-                    
                     totalMaxHits++; 
                     if(n.len > 0) totalMaxHits++; 
                 });
             });
             gameNotes.sort((a,b) => a.time - b.time);
-            
             scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
 
             stopEditPlay();
@@ -474,12 +523,9 @@
             const realTimeElapsed = Date.now() - gameStartTime;
             let currentTime = 0;
 
-            if (realTimeElapsed < START_DELAY) {
-                currentTime = realTimeElapsed;
-            } else {
-                if (audio.paused && isGameTesting && !audio.ended) { 
-                    audio.play().catch(() => {}); 
-                }
+            if (realTimeElapsed < START_DELAY) currentTime = realTimeElapsed;
+            else {
+                if (audio.paused && isGameTesting && !audio.ended) audio.play().catch(() => {}); 
                 currentTime = (audio.currentTime * 1000) + START_DELAY;
             }
 
@@ -492,12 +538,12 @@
             gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 400, gameCanvas.height);
             drawLaneBeams();
 
-            gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1;
-            for(let i=1; i<4; i++) { gameCtx.beginPath(); gameCtx.moveTo(i*100, 0); gameCtx.lineTo(i*100, gameCanvas.height); gameCtx.stroke(); }
-            
             gameCtx.shadowBlur = 0; 
             gameCtx.shadowColor = '#00FFFF'; gameCtx.strokeStyle = '#00FFFF'; gameCtx.lineWidth = 4;
             gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke();
+
+            gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1;
+            for(let i=1; i<4; i++) { gameCtx.beginPath(); gameCtx.moveTo(i*100, 0); gameCtx.lineTo(i*100, gameCanvas.height); gameCtx.stroke(); }
 
             const NOTE_SPEED_PX = 100 * noteSpeed; 
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
@@ -508,22 +554,18 @@
                 let tailY = headY;
                 if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
 
+                if (tailY > gameCanvas.height) continue;
+
                 if(!n.hit && currentTime - n.time > 100) { 
                     n.hit = true; n.finished = true; combo = 0; totalHits++; 
-                    judgeStats.miss++; // Miss 카운트
-                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    judgeStats.miss++; updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
                 } 
                 
                 if (n.hit && n.len > 0 && !n.finished) {
                     if (activeKeys[n.lane]) {
                         if (currentTime >= n.endTime) {
-                            n.finished = true; 
-                            totalHits++; 
-                            totalRateSum += 100; 
-                            score += scorePerHit; 
-                            combo++; 
-                            judgeStats.perfect++; // 롱노트 끝 Perfect
-                            updateGameHUD(); createParticles(n.lane);
+                            n.finished = true; totalHits++; totalRateSum += 100; score += scorePerHit; 
+                            combo++; judgeStats.perfect++; updateGameHUD(); createParticles(n.lane);
                         }
                     }
                 }
@@ -531,10 +573,13 @@
                 if (!n.finished) {
                     if (n.len > 0) {
                         const drawHeadY = n.hit ? HIT_LINE_Y : headY;
-                        const bodyH = drawHeadY - tailY;
-                        if (drawHeadY > -50 && tailY < gameCanvas.height) {
+                        const clippedHeadY = Math.min(gameCanvas.height, drawHeadY);
+                        const clippedTailY = Math.max(-100, tailY);
+                        const bodyH = clippedHeadY - clippedTailY;
+
+                        if (bodyH > 0 && clippedHeadY > -50) {
                             gameCtx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                            gameCtx.fillRect(n.lane * 100 + 10, tailY, 80, bodyH);
+                            gameCtx.fillRect(n.lane * 100 + 10, clippedTailY, 80, bodyH);
                         }
                     }
                     if (!n.hit && headY > -50 && headY < gameCanvas.height) {
@@ -551,66 +596,27 @@
 
         function checkHit(lane) {
             const realTimeElapsed = Date.now() - gameStartTime;
-            let currentTime = 0;
-            if (realTimeElapsed < START_DELAY) currentTime = realTimeElapsed;
-            else currentTime = (audio.currentTime * 1000) + START_DELAY;
-
+            let currentTime = (realTimeElapsed < START_DELAY) ? realTimeElapsed : (audio.currentTime * 1000) + START_DELAY;
             const n = activeNotes.find(n => n.lane === lane && !n.hit && !n.finished);
-
+            
             if (n) {
                 const diff = currentTime - n.time; 
                 const absDiff = Math.abs(diff);
-
                 if (absDiff <= 120) {
-                    n.hit = true; 
-                    n.holding = true;
-                    if (n.len === 0) n.finished = true;
-
+                    n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
                     totalHits++; 
-                    let judge="No...", clr="#888", rate=0;
+                    let judge="No..", clr="#888", rate=0;
+                    if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+                    else if(absDiff <= 64) { judge="GREAT"; clr="#69F0AE"; rate=90; judgeStats.great++; }
+                    else if(absDiff <= 96) { judge="Okay"; clr="#FFD740"; rate=50; judgeStats.okay++; }
+                    else if(absDiff <= 120){ judge="Oh..."; clr="#FF5252"; rate=10; judgeStats.oh++; }
+                    else { judge="No.."; clr="#888"; rate=0; } 
                     
-                    if(absDiff <= 32) { 
-                        judge="PERFECT"; clr="#00e5ff"; rate=100; 
-                        judgeStats.perfect++; 
-                    }
-                    else if(absDiff <= 64) { 
-                        judge="GREAT"; clr="#69F0AE"; rate=90; 
-                        judgeStats.great++; 
-                    }
-                    else if(absDiff <= 96) { 
-                        judge="Okay"; clr="#FFD740"; rate=50; 
-                        judgeStats.okay++; 
-                    }
-                    else if(absDiff <= 120){ 
-                        judge="Oh..."; clr="#FF5252"; rate=10; 
-                        judgeStats.oh++; // ★ Oh 카운트 (이게 누락됐었음)
-                    }
-                    else { judge="No..."; clr="#888"; rate=0; judgeStats.miss++;} 
-
-                    if(rate > 0) { 
-                        combo++; 
-                        if(combo > maxCombo) maxCombo = combo; 
-                        totalOffsetDiff += diff; 
-                        createParticles(lane); 
-                        score += (rate / 100) * scorePerHit;
-                    } else {
-                        combo = 0; 
-                    }
-            
-                    totalRateSum += rate; 
-                    updateGameHUD(); 
-                    showJudge(judge, lane, clr); 
-                    recentHits.push({ diff: diff, color: clr, life: 600, maxLife: 600 });
-                }
-                else if (diff < -120 && diff > -280) {
-                    n.hit = true; 
-                    n.finished = true; 
-            
-                    combo = 0; 
-                    totalHits++; 
-                    judgeStats.miss++; // 그냥 Miss 처리 (이건 카운트 안 하기도 하지만 여기선 Miss)
-                    updateGameHUD(); 
-                    showJudge("No...", lane, "#888"); 
+                    if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; totalOffsetDiff += diff; createParticles(lane); score += (rate / 100) * scorePerHit; } 
+                    else { combo = 0; }
+                    totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); recentHits.push({ diff: diff, color: clr, life: 600, maxLife: 600 });
+                } else if (diff < -120 && diff > -240) {
+                    n.hit = true; n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No...", lane, "#888"); 
                 }
             }
         }
@@ -619,31 +625,14 @@
             const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
             if (n) {
                 const realTimeElapsed = Date.now() - gameStartTime;
-                let currentTime = 0;
-                if (realTimeElapsed < START_DELAY) currentTime = realTimeElapsed;
-                else currentTime = (audio.currentTime * 1000) + START_DELAY;
-
+                let currentTime = (realTimeElapsed < START_DELAY) ? realTimeElapsed : (audio.currentTime * 1000) + START_DELAY;
                 const totalDuration = n.endTime - n.time; 
                 const remaining = n.endTime - currentTime; 
-                const allowedEarly = totalDuration * 0.25; 
                 
-                if (remaining > allowedEarly) { 
-                    n.finished = true; 
-                    combo = 0; 
-                    totalHits++; 
-                    judgeStats.miss++; 
-                    updateGameHUD(); 
-                    showJudge("No...", lane, "#555");
+                if (remaining > totalDuration * 0.25) { 
+                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("BREAK", lane, "#555");
                 } else {
-                    n.finished = true;
-                    totalHits++;
-                    totalRateSum += 100; 
-                    score += scorePerHit;
-                    combo++;
-                    judgeStats.perfect++; 
-                    createParticles(lane);
-                    updateGameHUD();
-                    showJudge("PERFECT", lane, "#00e5ff");
+                    n.finished = true; totalHits++; totalRateSum += 100; score += scorePerHit; combo++; judgeStats.perfect++; createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff");
                 }
             }
         }
@@ -657,125 +646,84 @@
             document.getElementById('g-avg').innerText = `AVG: ${avg}ms`;
         }
         function showJudge(text, lane, color) { judgments.push({text, x: lane*100+50, y: HIT_LINE_Y-100, life: 40, maxLife: 40, color}); }
-        function drawGameFX() {
-            for(let i=judgments.length-1; i>=0; i--) {
-                const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y); gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1);
-            }
-        }
-        function drawHitErrorBar() {
-            const cx = 200, cy = HIT_LINE_Y + 50, width = 300;
-            gameCtx.fillStyle = "rgba(50, 50, 50, 0.8)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4);
-            gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 8, 2, 16);
-            for(let i = recentHits.length - 1; i >= 0; i--) {
-                const h = recentHits[i];
-                const px = (h.diff / 100) * (width / 2);
-                let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px));
-                gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife;
-                gameCtx.fillRect(drawX - 1, cy - 6, 2, 12);
-                gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1);
-            }
-        }
-        function drawLaneBeams() {
-            gameCtx.globalCompositeOperation = 'lighter';
-            for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, 0); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.5; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } }
-            gameCtx.globalCompositeOperation = 'source-over';
-        }
+        function drawGameFX() { for(let i=judgments.length-1; i>=0; i--) { const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y); gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1); } }
+        function drawHitErrorBar() { const cx = 200, cy = HIT_LINE_Y + 50, width = 300; gameCtx.fillStyle = "rgba(50, 50, 50, 0.8)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4); gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 8, 2, 16); for(let i = recentHits.length - 1; i >= 0; i--) { const h = recentHits[i]; const px = (h.diff / 100) * (width / 2); let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px)); gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife; gameCtx.fillRect(drawX - 1, cy - 6, 2, 12); gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1); } }
+        function drawLaneBeams() { gameCtx.globalCompositeOperation = 'lighter'; for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, 0); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.5; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } } gameCtx.globalCompositeOperation = 'source-over'; }
         function createParticles(lane) { for(let i=0; i<10; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
         
-        // ★ 결과 화면 (Oh 추가 완료)
+        // ★ [수정됨] showResult - 경험치(XP) 지급 로직 추가
         function showResult() {
             const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
             let rank = "F"; 
             if(rate >= 95) rank = "S"; else if(rate >= 90) rank = "A"; else if(rate >= 80) rank = "B"; else if(rate >= 70) rank = "C";
-            
             const finalScore = Math.round(score);
             const finalScoreStr = finalScore.toString().padStart(6, '0');
 
             if (songParam && diffParam) {
                 const storageKey = `wb_score_${songParam}_${diffParam}`;
                 const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
-                if (finalScore > bestScore) {
-                    localStorage.setItem(storageKey, finalScoreStr);
+                if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
+
+                // ★ 경험치 계산 및 저장 (Level System)
+                // 난이도 추정: diffParam에서 숫자만 추출 (예: 'hard_8' -> 8)
+                let level = 1;
+                const match = diffParam.match(/_(\d+)/);
+                if(match) level = parseInt(match[1]);
+
+                // 공식: (점수 / 10000) * (1 + 레벨 * 0.1)
+                const gainedXP = Math.round((finalScore / 10000) * (1 + level * 0.1));
+                
+                // 로컬 스토리지 업데이트
+                let currentXP = parseInt(localStorage.getItem('wb_user_xp') || "0");
+                let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
+                
+                currentXP += gainedXP;
+                
+                // 레벨업 체크 (필요 경험치 = 레벨 * 500)
+                let nextXP = currentLv * 500;
+                let levelUpMsg = "";
+                while(currentXP >= nextXP) {
+                    currentXP -= nextXP;
+                    currentLv++;
+                    nextXP = currentLv * 500;
+                    levelUpMsg = "LEVEL UP! ";
                 }
+                
+                localStorage.setItem('wb_user_xp', currentXP);
+                localStorage.setItem('wb_user_lv', currentLv);
+
+                // 결과창에 XP 표시 추가
+                var xpDisplay = `<div style="color:#ffd700; margin-top:10px; font-size:20px; font-weight:bold;">+ ${gainedXP} XP ${levelUpMsg}</div>`;
+            } else {
+                var xpDisplay = "";
             }
 
-            // HTML 생성 (Oh 포함 5개 박스)
             resultOverlay.innerHTML = `
-                <div style="text-align:center; margin-bottom:20px;">
-                    <h2 style="margin:0; color:#fff; font-size:32px; text-shadow:0 0 10px #00e5ff;">${songParam ? decodeURIComponent(songParam) : "CUSTOM PLAY"}</h2>
-                    <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-top:5px;">${diffParam ? diffParam : "TEST MODE"}</div>
-                </div>
-                
+                <div style="text-align:center; margin-bottom:20px;"><h2 style="margin:0; color:#fff; font-size:32px; text-shadow:0 0 10px #00e5ff;">${songParam ? decodeURIComponent(songParam) : "CUSTOM PLAY"}</h2><div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-top:5px;">${diffParam ? diffParam : "TEST MODE"}</div></div>
                 <div class="${rank} res-rank" style="font-size:140px; margin: 10px 0; line-height:1;">${rank}</div>
-                
                 <div class="res-info" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; width:80%; max-width:600px; margin-bottom:30px;">
                     <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">SCORE</div><div style="font-size:28px; font-weight:bold;">${finalScoreStr}</div></div>
                     <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">RATE</div><div style="font-size:28px; font-weight:bold;">${rate.toFixed(2)}%</div></div>
                     <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">MAX COMBO</div><div style="font-size:28px; font-weight:bold;">${maxCombo}</div></div>
                 </div>
-
                 <div style="display:flex; justify-content:space-between; width:90%; max-width:600px; background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; border:1px solid #333;">
                     <div style="text-align:center"><div style="color:#00e5ff; font-weight:bold; font-size:12px; margin-bottom:5px;">PERFECT</div><div style="color:#fff; font-size:20px;">${judgeStats.perfect}</div></div>
                     <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
                     <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
                     <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
-                    <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">NO...</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
+                    <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">MISS</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
                 </div>
-
+                ${xpDisplay}
                 <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
             `;
-            
             resultOverlay.style.display = 'flex';
         }
 
         function closeResult() { stopTestMode(); if(songParam) window.location.href="index.html"; }
-
-        function drawGrid() {
-            gridCtx.fillStyle = "#000"; gridCtx.fillRect(0,0,400, gridCanvas.height);
-            const split = parseInt(splitInput.value) || 16;
-            const cellH = measureHeight / split;
-            measures.forEach((m, i) => {
-                const y = i * measureHeight;
-                gridCtx.lineWidth = 1;
-                for(let j=0; j<split; j++) {
-                    const ly = y + j*cellH;
-                    gridCtx.strokeStyle = (j===0) ? "#888" : (j%(split/4)===0 ? "#555" : "#222");
-                    gridCtx.beginPath(); gridCtx.moveTo(0, ly); gridCtx.lineTo(400, ly); gridCtx.stroke();
-                }
-                m.notes.forEach(n => {
-                    const ny = y + (n.pos/32)*measureHeight;
-                    const visualH = 10; 
-                    if(n.len > 0) {
-                        const tailY = ny + (n.len/32)*measureHeight;
-                        gridCtx.fillStyle = COLORS[n.lane];
-                        gridCtx.globalAlpha = 0.5;
-                        gridCtx.fillRect(n.lane*100+10, ny + visualH/2, 80, tailY - ny);
-                        gridCtx.globalAlpha = 1.0;
-                    }
-                    gridCtx.fillStyle = COLORS[n.lane]; 
-                    gridCtx.fillRect(n.lane*100+1, ny, 98, visualH);
-                });
-                gridCtx.fillStyle="#fff"; gridCtx.font="12px Arial"; gridCtx.fillText(i+1, 5, y+15);
-            });
-            gridCtx.strokeStyle="#444"; gridCtx.lineWidth=1;
-            for(let i=1; i<4; i++) { gridCtx.beginPath(); gridCtx.moveTo(i*100,0); gridCtx.lineTo(i*100, gridCanvas.height); gridCtx.stroke(); }
-        }
-        
-        document.getElementById('btn-export').addEventListener('click', () => {
-            const data = { title: "Custom Chart", bpm, offset, measures: measures.filter(m=>m.notes.length>0).map(m=>({...m, split:32})) };
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'}));
-            a.download = 'chart.json'; a.click();
-        });
+        document.getElementById('btn-export').addEventListener('click', () => { const data = { title: "Custom Chart", bpm, offset, measures: measures.filter(m=>m.notes.length>0).map(m=>({...m, split:BASE_RES})) }; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); a.download = 'chart.json'; a.click(); });
         const ac = new (window.AudioContext||window.webkitAudioContext)();
-        function playTick() {
-            if(ac.state==='suspended') ac.resume();
-            const o = ac.createOscillator(); const g = ac.createGain();
-            o.connect(g); g.connect(ac.destination);
-            o.frequency.value = 1200; g.gain.value = 0.1;
-            o.start(); o.stop(ac.currentTime+0.05);
-        }
+        function playTick() { if(ac.state==='suspended') ac.resume(); const o = ac.createOscillator(); const g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 1200; g.gain.value = 0.1; o.start(); o.stop(ac.currentTime+0.05); }
     </script>
 </body>
 </html>
