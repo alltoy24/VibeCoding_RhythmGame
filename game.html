@@ -79,17 +79,21 @@
     </div>
 
     <script>
-        // Web Audio API
+        // ==========================================
+        // ★ Web Audio API
+        // ==========================================
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const soundBuffers = {};
+
         async function loadSound(name, url) {
             try {
                 const response = await fetch(url);
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 soundBuffers[name] = audioBuffer;
-            } catch (e) { console.warn(`Sound error: ${url}`); }
+            } catch (e) { console.warn(`Sound load failed: ${url}`); }
         }
+
         loadSound('hit', 'sfx/hit.mp3');
         loadSound('hold_start', 'sfx/hold_start.mp3');
         loadSound('hold_end', 'sfx/hold_end.mp3');
@@ -102,14 +106,16 @@
             const source = audioCtx.createBufferSource();
             source.buffer = soundBuffers[name];
             const gainNode = audioCtx.createGain();
-            gainNode.gain.value = 0.7;
+            gainNode.gain.value = 0.7; 
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             source.start(0);
         }
 
-        // Game State
-        let audio = new Audio();
+        // ==========================================
+        //              GAME VARIABLES
+        // ==========================================
+        let audio = new Audio(); 
         let bpm = 130, offset = 0;
         const BASE_RES = 192; 
         
@@ -121,27 +127,33 @@
         gameCanvas.width = 450;
         gameCanvas.height = window.innerHeight;
         const HIT_LINE_Y = window.innerHeight * 0.85; 
-        const TRACK_X_OFFSET = 25; // 트랙 시작점 (중앙 정렬)
+        const TRACK_X_OFFSET = 25; 
         const LANE_WIDTH = 100;
-        const NOTE_WIDTH = 90;     // 노트 너비 (LANE_WIDTH - 10)
-        const NOTE_X_PADDING = 5;  // 노트 여백
+        const NOTE_WIDTH = 90;     
+        const NOTE_X_PADDING = 5;  
         const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
         
         let gameFinished = false;
+        let finishTimer = null; // 종료 타이머
+        let gameState = 'LOADING'; 
         let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
         let activeKeys = [false, false, false, false];
         let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
         let gameAnimId, noteSpeed = 5.0;
         let scorePerHit = 0; 
         
-        let gameStartTime = 0; 
+        let startTimestamp = 0;
         const START_DELAY = 2000; 
         let lastNoteEndTime = 0; 
         let totalMaxHits = 0; 
         let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
-        let isAudioPlaying = false; 
 
         window.addEventListener('resize', () => { gameCanvas.height = window.innerHeight; });
+
+        // 오디오 종료 시 강제 종료
+        audio.onended = () => {
+            if (!gameFinished) finishGame();
+        };
 
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
@@ -183,8 +195,9 @@
 
         function parseChartData(data) {
             if(data.bpm) bpm = data.bpm;
-            if(data.offset) offset += (data.offset || 0);
+            if(data.offset) offset += (data.offset || 0); 
             gameNotes = []; totalMaxHits = 0;
+            
             if(data.measures) {
                 const msPerMeasure = (60000 / bpm) * 4;
                 data.measures.forEach(m => {
@@ -192,11 +205,18 @@
                     m.notes.forEach(n => {
                         const time = (m.index + (n.pos * ratio / BASE_RES)) * msPerMeasure;
                         const duration = ((n.len || 0) * ratio / BASE_RES) * msPerMeasure;
-                        const noteTime = time + offset + START_DELAY;
+                        
+                        // ★ [싱크 수정] 맵 오프셋만 적용 (시스템 보정 제거)
+                        const noteTime = time + offset; 
                         const noteEndTime = noteTime + duration;
+                        
                         if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
+                        
                         gameNotes.push({ time: noteTime, endTime: noteEndTime, lane: n.lane, len: (n.len || 0) * ratio, hit: false, holding: false, finished: false });
-                        totalMaxHits++; if(n.len > 0) totalMaxHits++; 
+                        
+                        // 총 노트 수 카운트 (롱노트는 머리/꼬리 2개로 계산)
+                        totalMaxHits++; 
+                        if(n.len > 0) totalMaxHits++; 
                     });
                 });
             }
@@ -212,9 +232,27 @@
             activeNotes = []; particles = []; recentHits = []; judgments = [];
             finishEffect.innerHTML = "";
             updateGameHUD();
+            
+            gameState = 'COUNTDOWN';
             gameStartTime = Date.now();
-            isAudioPlaying = false;
+            startTimestamp = Date.now();
+            audio.currentTime = 0;
+            
+            // ★ [안전장치] 어떤 이유로든 게임이 안 끝나면 강제 종료
+            setTimeout(finishGame, (2000 + lastNoteEndTime + 5000));
+
             gameLoop();
+        }
+
+        // ★ [핵심] 게임 종료 및 결과창 호출
+        function finishGame() {
+            if (gameFinished) return;
+            gameFinished = true;
+            console.log("Game Finished!");
+            audio.pause();
+            
+            // ★ 즉시 결과창 표시 (딜레이 X)
+            showResult();
         }
 
         function gameLoop() {
@@ -222,20 +260,27 @@
             gameAnimId = requestAnimationFrame(gameLoop);
             
             const now = Date.now();
-            const rawTime = now - gameStartTime;
-            let currentTime = 0;
+            const rawTime = now - startTimestamp;
+            let currentTime = -9999;
 
-            if (rawTime < START_DELAY) {
-                currentTime = rawTime; 
-            } else {
-                if (!isAudioPlaying) { audio.play().catch(()=>{}); isAudioPlaying = true; }
-                if (audio.currentTime > 0) currentTime = (audio.currentTime * 1000) + START_DELAY;
-                else currentTime = rawTime;
+            if (gameState === 'COUNTDOWN') {
+                currentTime = rawTime - START_DELAY;
+                if (rawTime >= START_DELAY) {
+                    gameState = 'WAIT_AUDIO';
+                    audio.play().catch(e => console.error("Play Fail", e));
+                }
+            } else if (gameState === 'WAIT_AUDIO') {
+                currentTime = 0;
+                if (audio.currentTime > 0) gameState = 'PLAYING';
+            } else if (gameState === 'PLAYING') {
+                currentTime = audio.currentTime * 1000;
             }
 
-            const allNotesDone = gameNotes.length === 0 && activeNotes.length === 0;
-            if(!gameFinished && (audio.ended || (allNotesDone && totalHits > 0 && currentTime > lastNoteEndTime + 1500))) {
-                gameFinished = true; setTimeout(showResult, 500);
+            // ★ [종료 조건] 모든 노트를 처리했으면(Hits + Misses == Max) 1초 뒤 종료
+            if (!gameFinished && totalHits >= totalMaxHits) {
+                if (!finishTimer) {
+                    finishTimer = setTimeout(finishGame, 1000); // 여운 1초
+                }
             }
 
             gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 450, gameCanvas.height);
@@ -252,14 +297,29 @@
                 let tailY = headY;
                 if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
 
-                if (tailY > gameCanvas.height) continue; 
+                // 화면 밖 강제 Miss & 삭제
+                if (tailY > gameCanvas.height) {
+                    if (!n.finished) {
+                        n.finished = true;
+                        if (!n.hit) {
+                            n.hit = true; 
+                            combo = 0; totalHits++; judgeStats.miss++; 
+                            if(n.len > 0) totalHits++; 
+                            updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                        }
+                    }
+                    continue; 
+                }
 
-                if(!n.hit && currentTime > n.time + 120) { 
+                // 일반 Miss
+                if(!n.hit && !n.finished && currentTime > n.time + 250) { 
                     n.hit = true; n.finished = true; 
                     combo = 0; totalHits++; judgeStats.miss++; 
-                    updateGameHUD(); showJudge("MISS", n.lane, "#888"); checkFinish();
-                } 
-                
+                    if(n.len > 0) totalHits++; 
+                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    checkFinish();
+                }
+
                 if (n.hit && n.len > 0 && !n.finished) {
                     if (activeKeys[n.lane]) {
                         if (currentTime >= n.endTime) {
@@ -338,29 +398,19 @@
         function checkRelease(lane) {
             const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
             if (n) {
-                // 현재 시간 (오디오 기준 + 딜레이)
                 let currentTime = 0;
-                if (Date.now() - gameStartTime < START_DELAY) currentTime = Date.now() - gameStartTime;
-                else currentTime = (audio.currentTime * 1000) + START_DELAY;
+                if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
+                else currentTime = (Date.now() - startTimestamp) - START_DELAY;
 
                 const remaining = n.endTime - currentTime; 
                 const totalDuration = n.endTime - n.time;
-
-                // ★ [판정 완화 핵심]
-                // 1. 남은 시간이 300ms(0.3초) 이하면 OK (끝부분 여유)
-                // 2. 혹은 전체 길이의 50% 이상 눌렀으면 OK (짧은 롱노트 보정)
                 const safeZone = Math.max(300, totalDuration * 0.5); 
                 
                 if (remaining > safeZone) { 
-                    // 허용 범위보다 너무 빨리 뗐을 때만 MISS (BREAK)
-                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; 
-                    updateGameHUD(); showJudge("BREAK", lane, "#555");
+                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("BREAK", lane, "#555");
                 } else {
-                    // 그 외엔 전부 PERFECT 인정
-                    n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; 
-                    combo++; judgeStats.perfect++; 
-                    createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff");
-                    playSfx('hold_end');
+                    n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; combo++; judgeStats.perfect++; 
+                    createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff"); playSfx('hold_end');
                 }
                 checkFinish();
             }
@@ -371,25 +421,16 @@
             document.getElementById('g-score').innerText = Math.round(score).toString().padStart(6, '0');
             let currentRate = 100.00;
             if (totalHits > 0) {
-                currentRate = (totalRateSum / (totalHits * 100)) * 100;
+                currentRate = Math.min(100, (totalRateSum / (totalHits * 100)) * 100);
             }
             document.getElementById('g-rate').innerText = currentRate.toFixed(2) + "%";
         }
 
         function drawJudgmentLine() {
-            gameCtx.shadowBlur = 10; gameCtx.shadowColor = '#00e5ff'; 
-            gameCtx.strokeStyle = '#00e5ff'; gameCtx.lineWidth = 3;
-            gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(450, HIT_LINE_Y); gameCtx.stroke();
-            gameCtx.shadowBlur = 0;
-            
+            gameCtx.shadowBlur = 10; gameCtx.shadowColor = '#00e5ff'; gameCtx.strokeStyle = '#00e5ff'; gameCtx.lineWidth = 3;
+            gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(450, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0;
             gameCtx.strokeStyle = '#333'; gameCtx.lineWidth = 2;
-            for(let i=0; i<=4; i++) { 
-                gameCtx.beginPath(); 
-                const lineX = TRACK_X_OFFSET + (i * 100);
-                gameCtx.moveTo(lineX, 0); 
-                gameCtx.lineTo(lineX, gameCanvas.height); 
-                gameCtx.stroke(); 
-            }
+            for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = TRACK_X_OFFSET + i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); }
         }
 
         function drawLaneBeams() {
@@ -397,11 +438,8 @@
             for(let i=0; i<4; i++) { 
                 if(activeKeys[i]) { 
                     const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); 
-                    grd.addColorStop(0, COLORS[i] + '80'); 
-                    grd.addColorStop(1, "transparent"); 
-                    gameCtx.fillStyle=grd; 
-                    const beamX = TRACK_X_OFFSET + (i * 100);
-                    gameCtx.fillRect(beamX, 0, 100, HIT_LINE_Y); 
+                    grd.addColorStop(0, COLORS[i] + '80'); grd.addColorStop(1, "transparent"); 
+                    gameCtx.fillStyle=grd; gameCtx.fillRect(TRACK_X_OFFSET + i*100, 0, 100, HIT_LINE_Y); 
                 } 
             }
             gameCtx.globalCompositeOperation = 'source-over';
@@ -413,8 +451,7 @@
         function drawGameFX() {
             for(let i=judgments.length-1; i>=0; i--) {
                 const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; 
-                gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; 
-                gameCtx.fillText(j.text, j.x, j.y - (30 - j.life)); 
+                gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y - (30 - j.life)); 
                 gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1);
             }
         }
@@ -433,98 +470,84 @@
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.8; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,6,6); } } gameCtx.globalAlpha=1.0; }
 
         function checkFinish() {
-            if (totalHits >= totalMaxHits) {
+            // 이펙트 트리거
+            if (totalHits >= totalMaxHits && totalMaxHits > 0) {
                 if (judgeStats.perfect === totalMaxHits) { finishEffect.innerHTML = "<div class='text-glitch' data-text='TROLL BEAT!!'>TROLL BEAT!!</div>"; playSfx('ap'); }
                 else if (combo === totalMaxHits) { finishEffect.innerHTML = "<div class='text-fc'>FULL COMBO</div>"; playSfx('fc'); }
             }
         }
 
+        // ★ [안전장치 추가] 에러 나도 화면은 뜨게 만듦
         function showResult() {
-            finishEffect.innerHTML = "";
-            
-            // Rate 계산
-            let finalRate = 0;
-            if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
-            
-            let rank = "F"; 
-            if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
-            const finalScore = Math.round(score);
-            const finalScoreStr = finalScore.toString().padStart(6, '0');
-            const urlParams = new URLSearchParams(window.location.search);
-            const songParam = urlParams.get('song');
-            const diffParam = urlParams.get('diff');
-            
-            let xpDisplay = "";
-            let badgeHtml = "";
-            let badgeType = null;
+            try {
+                finishEffect.innerHTML = "";
+                let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
+                let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
+                const finalScore = Math.round(score).toString().padStart(6, '0');
+                const urlParams = new URLSearchParams(window.location.search);
+                const songParam = urlParams.get('song');
+                const diffParam = urlParams.get('diff');
+                
+                let xpDisplay = "";
+                let badgeHtml = "";
+                let badgeType = null;
 
-            // 뱃지 상태 결정
-            if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) {
-                badgeType = "TB";
-                badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!!</div>";
-            } else if (combo === totalMaxHits && totalMaxHits > 0) {
-                badgeType = "FC";
-                badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
-            }
+                if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) { badgeType = "TB"; badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!!</div>"; } 
+                else if (combo === totalMaxHits && totalMaxHits > 0) { badgeType = "FC"; badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>"; }
 
-            if (songParam && diffParam) {
-                try {
-                    const storageKey = `wb_score_${songParam}_${diffParam}`;
-                    const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
-                    if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
+                if (songParam && diffParam) {
+                    try {
+                        const storageKey = `wb_score_${songParam}_${diffParam}`;
+                        const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
+                        if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
 
-                    // ★ [추가] 뱃지 저장 로직 (더 높은 등급으로 덮어쓰기)
-                    const badgeKey = `wb_badge_${songParam}_${diffParam}`;
-                    const savedBadge = localStorage.getItem(badgeKey);
-                    
-                    if (badgeType === "TB") {
-                        localStorage.setItem(badgeKey, "TB");
-                    } else if (badgeType === "FC" && savedBadge !== "TB") {
-                        localStorage.setItem(badgeKey, "FC");
-                    }
+                        const badgeKey = `wb_badge_${songParam}_${diffParam}`;
+                        const savedBadge = localStorage.getItem(badgeKey);
+                        if (badgeType === "TB") localStorage.setItem(badgeKey, "TB");
+                        else if (badgeType === "FC" && savedBadge !== "TB") localStorage.setItem(badgeKey, "FC");
 
-                    // 경험치 로직
-                    let level = 1;
-                    const match = diffParam.match(/_(\d+)/);
-                    if(match) level = parseInt(match[1]);
-
-                    const gainedXP = Math.round((finalScore / 10000) * (1 + level * 0.1));
-                    let currentXP = parseInt(localStorage.getItem('wb_user_xp') || "0");
-                    let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
-                    currentXP += gainedXP;
-                    let nextXP = currentLv * 500;
-                    let levelUpMsg = "";
-                    while(currentXP >= nextXP) { currentXP -= nextXP; currentLv++; nextXP = currentLv * 500; levelUpMsg = "<span style='color:#00ff00; margin-left:10px;'> LEVEL UP!</span>"; }
-                    localStorage.setItem('wb_user_xp', currentXP);
-                    localStorage.setItem('wb_user_lv', currentLv);
-                    xpDisplay = `<div style="margin-top:15px; color:#ffd700; font-size:24px; font-weight:bold; text-shadow:0 0 10px #ff5500;">+ ${gainedXP} XP ${levelUpMsg}</div>`;
-                } catch(e) {
-                    console.error("Storage Error:", e);
+                        let level = 1;
+                        const match = diffParam.match(/_(\d+)/);
+                        if(match) level = parseInt(match[1]);
+                        const gainedXP = Math.round((finalScore / 10000) * (1 + level * 0.1));
+                        let currentXP = parseInt(localStorage.getItem('wb_user_xp') || "0");
+                        let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
+                        currentXP += gainedXP;
+                        let nextXP = currentLv * 500;
+                        let levelUpMsg = "";
+                        while(currentXP >= nextXP) { currentXP -= nextXP; currentLv++; nextXP = currentLv * 500; levelUpMsg = "<span style='color:#00ff00; margin-left:10px;'> LEVEL UP!</span>"; }
+                        localStorage.setItem('wb_user_xp', currentXP);
+                        localStorage.setItem('wb_user_lv', currentLv);
+                        xpDisplay = `<div style="margin-top:15px; color:#ffd700; font-size:24px; font-weight:bold; text-shadow:0 0 10px #ff5500;">+ ${gainedXP} XP ${levelUpMsg}</div>`;
+                    } catch(e) { console.error("Save Error:", e); }
                 }
-            }
 
-            resultOverlay.innerHTML = `
-                <div style="text-align:center; margin-bottom:20px;">
-                    <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-bottom:5px;">RESULT</div>
-                    <div class="${rank} res-rank">${rank}</div>
-                </div>
-                ${badgeHtml}
-                <div class="res-info">
-                    <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScoreStr}</div></div>
-                    <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
-                    <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
-                </div>
-                <div class="res-detail">
-                    <div class="detail-item"><div class="detail-label" style="color:#00e5ff">PERFECT</div><div class="detail-val">${judgeStats.perfect}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#00ff00">GREAT</div><div class="detail-val">${judgeStats.great}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#ffff00">OKAY</div><div class="detail-val">${judgeStats.okay}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#ff5555">OH...</div><div class="detail-val">${judgeStats.oh}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#888">MISS</div><div class="detail-val">${judgeStats.miss}</div></div>
-                </div>
-                ${xpDisplay}
-                <button class="btn-close" onclick="location.href='index.html'">CONTINUE</button>
-            `;
-            resultOverlay.style.display = 'flex';
+                resultOverlay.innerHTML = `
+                    <div style="text-align:center; margin-bottom:20px;">
+                        <div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-bottom:5px;">RESULT</div>
+                        <div class="${rank} res-rank">${rank}</div>
+                    </div>
+                    ${badgeHtml}
+                    <div class="res-info">
+                        <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScore}</div></div>
+                        <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
+                        <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
+                    </div>
+                    <div class="res-detail">
+                        <div class="detail-item"><div class="detail-label" style="color:#00e5ff">PERFECT</div><div class="detail-val">${judgeStats.perfect}</div></div>
+                        <div class="detail-item"><div class="detail-label" style="color:#00ff00">GREAT</div><div class="detail-val">${judgeStats.great}</div></div>
+                        <div class="detail-item"><div class="detail-label" style="color:#ffff00">OKAY</div><div class="detail-val">${judgeStats.okay}</div></div>
+                        <div class="detail-item"><div class="detail-label" style="color:#ff5555">OH...</div><div class="detail-val">${judgeStats.oh}</div></div>
+                        <div class="detail-item"><div class="detail-label" style="color:#888">MISS</div><div class="detail-val">${judgeStats.miss}</div></div>
+                    </div>
+                    ${xpDisplay}
+                    <button class="btn-close" onclick="location.href='index.html'">CONTINUE</button>
+                `;
+                resultOverlay.style.display = 'flex';
+            } catch(e) {
+                alert("Result Error: " + e.message);
+                location.href='index.html';
+            }
         }
     </script>
 </body>

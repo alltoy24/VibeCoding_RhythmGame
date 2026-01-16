@@ -2,12 +2,11 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : ENGINE (Final Complete)</title>
+    <title>WEB BEAT : EDITOR (Final Fix)</title>
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
         
-        /* Sidebar */
         #sidebar { width: 320px; background: var(--panel); padding: 15px; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 12px; z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7); }
         h2 { margin: 0 0 10px 0; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 5px; font-size: 20px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
         .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; }
@@ -22,26 +21,23 @@
         .row { display: flex; gap: 5px; align-items: center; } .row > * { flex: 1; }
         .val-label { font-size: 12px; color: var(--accent); font-weight: bold; width: 40px; text-align: right; }
 
-        /* Editor View */
         #editor-view { flex: 1; display: flex; flex-direction: column; position: relative; }
         #editor-container { flex: 1; overflow-y: scroll; background: #0a0a0a; display: flex; justify-content: center; }
         #canvas-layer { position: relative; width: 400px; background: #000; cursor: crosshair; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
-        /* [수정됨] GPU 가속 적용 */
         #play-head { 
             position: absolute; left: 0; width: 100%; height: 2px; 
             background: #ff0055; z-index: 5; display: none; pointer-events: none; 
             box-shadow: 0 0 10px #ff0055;
-            will-change: transform; /* ★ 핵심: 그래픽 카드 사용 선언 */
+            will-change: transform;
         }
         .lane-header { display: flex; width: 400px; margin: 0 auto; background: #222; font-weight: bold; font-size: 12px; text-align: center; border-bottom: 2px solid #444; }
         .lane-header div { flex: 1; padding: 8px 0; border-right: 1px solid #333; color: #888; }
 
-        /* Game View */
         #game-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; }
         #game-canvas-container { position: relative; width: 400px; height: 100%; border-left: 2px solid #333; border-right: 2px solid #333; }
         canvas.game { display: block; width: 100%; height: 100%; }
         
-        #game-hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; }
+        #game-hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; }
         .hud-item { flex: 1; }
         .hud-text { font-family: 'Impact', sans-serif; font-size: 32px; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); letter-spacing: 1px; }
         .hud-sub { font-size: 12px; color: #888; font-weight: bold; }
@@ -51,18 +47,23 @@
         #test-msg { position: absolute; bottom: 20px; color: #555; font-size: 12px; animation: blink 2s infinite; }
         @keyframes blink { 50% { opacity: 0.3; } }
         
-        /* Result Screen */
-        #result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 60; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        #result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
         .res-rank { font-family: 'Impact', sans-serif; font-size: 120px; color: #fff; text-shadow: 0 0 20px currentColor; margin-bottom: 20px; }
         .res-rank.S { color: #00e5ff; } .res-rank.A { color: #00ff00; } .res-rank.B { color: #ffff00; } 
         .res-rank.C { color: #ff8800; } .res-rank.F { color: #ff0000; }
         
-        .res-info { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 40px; font-size: 24px; font-weight: bold; margin-bottom: 40px; }
-        .res-label { color: #888; text-align: left; } .res-val { color: #fff; text-align: right; }
-        .btn-close { padding: 15px 40px; font-size: 18px; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: 900; }
+        .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 40px; font-size: 24px; font-weight: bold; margin-bottom: 40px; }
+        .res-box { text-align: center; }
+        .res-label { color: #888; font-size: 14px; margin-bottom: 5px; } .res-val { color: #fff; font-size: 24px; font-weight: bold; }
+
+        .res-detail { display: flex; justify-content: space-between; width: 90%; max-width: 500px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #333; }
+        .detail-item { text-align: center; }
+        .detail-label { font-size: 12px; font-weight: bold; margin-bottom: 5px; }
+        .detail-val { font-size: 20px; color: #fff; }
+
+        .btn-close { margin-top: 40px; padding: 15px 40px; font-size: 18px; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: 900; }
         .btn-close:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.5); }
 
-        /* Loading Screen */
         #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
         .loading-text { font-family: 'Impact'; font-size: 40px; margin-bottom: 20px; animation: blink 1s infinite; }
         .btn-start-game { padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ff0055; color: white; border: none; border-radius: 50px; cursor: pointer; display: none; }
@@ -110,7 +111,7 @@
         </div>
         <div class="control-group">
             <div class="group-title">4. Test Play</div>
-            <div class="row"><span>Speed:</span><input type="range" id="test-speed" min="1" max="10" step="0.5" value="5.0"><span id="speed-val" class="val-label">x5.0</span></div>
+            <div class="row"><span>Speed:</span><input type="range" id="test-speed" min="1" max="20" step="0.5" value="5.0"><span id="speed-val" class="val-label">x5.0</span></div>
             <button id="btn-test" class="test-btn">🎮 GAME START (Enter)</button>
         </div>
         <button id="btn-export" style="background:#28a745; color:white; margin-top:auto; padding:12px; border:none;">💾 EXPORT JSON</button>
@@ -135,21 +136,48 @@
                 <div class="hud-item" style="text-align:right"><span class="hud-sub">COMBO</span><br><span id="g-combo" class="hud-text">0</span></div>
             </div>
             <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
-            <div id="result-overlay">
-                <div id="res-rank" class="res-rank S">S</div>
-                <div class="res-info">
-                    <span class="res-label">RATE</span> <span id="res-rate" class="res-val">100%</span>
-                    <span class="res-label">SCORE</span> <span id="res-score" class="res-val">000000</span>
-                    <span class="res-label">MAX COMBO</span> <span id="res-combo" class="res-val">0</span>
-                </div>
-                <button class="btn-close" onclick="closeResult()">CONTINUE</button>
-            </div>
+            <div id="result-overlay"></div>
         </div>
         <div id="test-msg">[ESC] Back to Editor</div>
     </div>
 
     <script>
-        // --- Shared State ---
+        // ==========================================
+        // ★ Web Audio API (Game & Editor Shared)
+        // ==========================================
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const soundBuffers = {};
+
+        async function loadSound(name, url) {
+            try {
+                const response = await fetch(url);
+                const arrayBuffer = await response.arrayBuffer();
+                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+                soundBuffers[name] = audioBuffer;
+            } catch (e) { console.warn(`Sound error: ${url}`); }
+        }
+        
+        loadSound('hit', 'sfx/hit.mp3');
+        loadSound('hold_start', 'sfx/hold_start.mp3');
+        loadSound('hold_end', 'sfx/hold_end.mp3');
+        loadSound('fc', 'sfx/full_combo.mp3');
+        loadSound('ap', 'sfx/all_perfect.mp3');
+
+        function playSfx(name) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (!soundBuffers[name]) return;
+            const source = audioCtx.createBufferSource();
+            source.buffer = soundBuffers[name];
+            const gainNode = audioCtx.createGain();
+            gainNode.gain.value = 0.7;
+            source.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            source.start(0);
+        }
+
+        // ==========================================
+        //              EDITOR LOGIC
+        // ==========================================
         let audio = new Audio();
         let bpm = 130, offset = 0;
         let measures = []; 
@@ -169,6 +197,13 @@
         const offsetInput = document.getElementById('offset');
         const bpmInput = document.getElementById('bpm');
 
+        // Init Editor
+        for(let i=0; i<50; i++) measures.push({index: i, notes: []});
+        resizeEditor(); drawGrid();
+
+        editorContainer.addEventListener('scroll', () => { requestAnimationFrame(drawGrid); });
+
+        // Game View Elements
         const gameView = document.getElementById('game-view');
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
@@ -177,10 +212,9 @@
         gameCanvas.width = 400;
         gameCanvas.height = window.innerHeight;
         const HIT_LINE_Y = window.innerHeight * 0.85; 
-
         const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
         
-        // Game Variables
+        // Game State Variables
         let isGameTesting = false, gameFinished = false;
         let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
         let activeKeys = [false, false, false, false];
@@ -188,19 +222,12 @@
         let gameAnimId, noteSpeed = 5.0;
         let scorePerHit = 0; 
         
-        let gameStartTime = 0; 
+        let startTimestamp = 0;
         const START_DELAY = 2000; 
         let lastNoteEndTime = 0; 
+        let totalMaxHits = 0;
         let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
-
-        // Init Editor
-        for(let i=0; i<50; i++) measures.push({index: i, notes: []});
-        resizeEditor(); drawGrid();
-
-        // 최적화: 스크롤 이벤트
-        editorContainer.addEventListener('scroll', () => {
-            requestAnimationFrame(drawGrid);
-        });
+        let forceFinishTimer = null; 
 
         const urlParams = new URLSearchParams(window.location.search);
         const songParam = urlParams.get('song');
@@ -338,12 +365,14 @@
             if(measureIdx >= measures.length) return;
             
             const m = measures[measureIdx];
-            const split = parseInt(splitInput.value) || 16;
-            const relativeY = (y % measureHeight) / measureHeight;
-            const snapIdx = Math.round(relativeY * split);
-            const pos192 = Math.round(snapIdx * (BASE_RES / split));
+            let idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - (Math.round(((y % measureHeight)/measureHeight)*(parseInt(splitInput.value)||16))*(BASE_RES/(parseInt(splitInput.value)||16)))) < 5); 
+            if(idx === -1) { 
+                 const split = parseInt(splitInput.value) || 16;
+                 const relativeY = (y % measureHeight) / measureHeight;
+                 const pos192 = Math.round(Math.round(relativeY * split) * (BASE_RES / split));
+                 idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5);
+            }
 
-            let idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5); 
             if(idx !== -1) m.notes.splice(idx, 1);
             drawGrid();
         });
@@ -359,9 +388,8 @@
 
         function toggleEditPlay() {
             if (!audio.src && !songParam) return alert("먼저 MP3 파일을 불러와주세요.");
-            if (isEditPlaying) {
-                stopEditPlay();
-            } else {
+            if (isEditPlaying) { stopEditPlay(); } 
+            else {
                 offset = parseInt(offsetInput.value) || 0;
                 audio.play().then(() => {
                     isEditPlaying = true;
@@ -436,12 +464,18 @@
             }
         }
 
+        // ==========================================
+        //              GAME LOGIC
+        // ==========================================
         document.getElementById('btn-test').addEventListener('click', startTestMode);
         
         function startTestMode() {
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             if(!songParam) offset = parseInt(offsetInput.value) || 0;
             
+            // BPM 안전장치
+            if(isNaN(bpm) || bpm <= 0) bpm = 130;
+
             const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
             offset += userGlobalOffset;
 
@@ -449,7 +483,7 @@
             else noteSpeed = parseFloat(speedSlider.value);
 
             gameNotes = [];
-            let totalMaxHits = 0; 
+            totalMaxHits = 0; 
             lastNoteEndTime = 0;
             judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; 
 
@@ -459,11 +493,13 @@
                     const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
                     const duration = (n.len / BASE_RES) * msPerMeasure;
                     
-                    const noteEndTime = time + offset + duration + START_DELAY;
+                    const noteTime = time + offset; 
+                    const noteEndTime = noteTime + duration;
+                    
                     if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
 
                     gameNotes.push({ 
-                        time: time + offset + START_DELAY, 
+                        time: noteTime, 
                         endTime: noteEndTime, 
                         lane: n.lane, 
                         len: n.len, 
@@ -486,8 +522,19 @@
             updateGameHUD();
             
             isGameTesting = true; gameFinished = false;
-            audio.currentTime = 0; 
+            
+            gameState = 'COUNTDOWN';
+            startTimestamp = Date.now();
             gameStartTime = Date.now();
+            audio.currentTime = 0;
+
+            // ★ [시한폭탄] 게임 강제 종료 타이머 (마지막 노트 + 4초)
+            const absoluteEndTime = 2000 + lastNoteEndTime + 4000;
+            if (forceFinishTimer) clearTimeout(forceFinishTimer);
+            forceFinishTimer = setTimeout(() => {
+                console.log("Force Finish Timer Triggered");
+                finishGame();
+            }, absoluteEndTime);
 
             gameLoop();
         }
@@ -495,8 +542,21 @@
         function stopTestMode() {
             isGameTesting = false; audio.pause(); audio.currentTime = 0;
             cancelAnimationFrame(gameAnimId);
+            if (forceFinishTimer) clearTimeout(forceFinishTimer);
+            
             if (songParam) window.location.href = "index.html"; 
             else { gameView.style.display = 'none'; document.getElementById('sidebar').style.display = 'flex'; }
+        }
+
+        // ★ [안전한 게임 종료]
+        function finishGame() {
+            if (!isGameTesting || gameFinished) return;
+            gameFinished = true;
+            if (forceFinishTimer) clearTimeout(forceFinishTimer);
+            audio.pause();
+            console.log("Game Finished!");
+            // 안전하게 결과창 호출
+            setTimeout(showResult, 500);
         }
 
         const KEY_MAP = ['d', 'f', 'j', 'k'];
@@ -504,46 +564,51 @@
             if(e.code === 'Space' && !isGameTesting && !songParam) { e.preventDefault(); toggleEditPlay(); }
             if(e.code === 'Enter' && !isGameTesting && !songParam) startTestMode();
             if(e.code === 'Escape' && isGameTesting && !songParam) stopTestMode();
-            if(isGameTesting) {
+            if(isGameTesting && !gameFinished) {
                 const lane = KEY_MAP.indexOf(e.key.toLowerCase());
                 if(lane !== -1 && !activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
             }
         });
         window.addEventListener('keyup', e => {
-            if(isGameTesting) {
+            if(isGameTesting && !gameFinished) {
                 const lane = KEY_MAP.indexOf(e.key.toLowerCase());
                 if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
             }
         });
 
         function gameLoop() {
-            if(!isGameTesting) return;
+            if(!isGameTesting || gameFinished) return;
             gameAnimId = requestAnimationFrame(gameLoop);
             
-            const realTimeElapsed = Date.now() - gameStartTime;
-            let currentTime = 0;
+            const now = Date.now();
+            const rawTime = now - startTimestamp;
+            let currentTime = -9999;
 
-            if (realTimeElapsed < START_DELAY) currentTime = realTimeElapsed;
-            else {
-                if (audio.paused && isGameTesting && !audio.ended) audio.play().catch(() => {}); 
-                currentTime = (audio.currentTime * 1000) + START_DELAY;
+            if (gameState === 'COUNTDOWN') {
+                currentTime = rawTime - START_DELAY; 
+                if (rawTime >= START_DELAY) {
+                    gameState = 'WAIT_AUDIO';
+                    audio.play().catch(e => console.error("Play Fail", e));
+                }
+            } else if (gameState === 'WAIT_AUDIO') {
+                currentTime = 0;
+                if (audio.currentTime > 0) gameState = 'PLAYING';
+            } else if (gameState === 'PLAYING') {
+                currentTime = audio.currentTime * 1000;
             }
 
-            const allNotesDone = gameNotes.length === 0 && activeNotes.length === 0;
-            
-            if(!gameFinished && (audio.ended || (allNotesDone && totalHits > 0 && currentTime > lastNoteEndTime + 1000))) {
-                gameFinished = true; setTimeout(showResult, 1000);
+            // ★ [빠른 종료] 노트가 다 떨어졌으면 1초 뒤 종료
+            if (gameNotes.length === 0 && activeNotes.length === 0) {
+                // 오디오가 끝났거나, 마지막 노트 시간보다 1초 지났으면
+                if (audio.ended || currentTime > lastNoteEndTime + 1000) {
+                    finishGame();
+                }
             }
 
             gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 400, gameCanvas.height);
+            
             drawLaneBeams();
-
-            gameCtx.shadowBlur = 0; 
-            gameCtx.shadowColor = '#00FFFF'; gameCtx.strokeStyle = '#00FFFF'; gameCtx.lineWidth = 4;
-            gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke();
-
-            gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1;
-            for(let i=1; i<4; i++) { gameCtx.beginPath(); gameCtx.moveTo(i*100, 0); gameCtx.lineTo(i*100, gameCanvas.height); gameCtx.stroke(); }
+            drawJudgmentLine();
 
             const NOTE_SPEED_PX = 100 * noteSpeed; 
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
@@ -554,29 +619,46 @@
                 let tailY = headY;
                 if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
 
-                if (tailY > gameCanvas.height) continue;
+                // ★ [강제 청소] 화면 밖 노트 삭제 (좀비 방지)
+                if (tailY > gameCanvas.height) {
+                    if (!n.finished) {
+                        n.finished = true;
+                        if (!n.hit) { 
+                            n.hit = true; combo = 0; totalHits++; judgeStats.miss++; 
+                            if(n.len > 0) totalHits++; 
+                            updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                        }
+                    }
+                    continue;
+                }
 
-                if(!n.hit && currentTime - n.time > 100) { 
+                // 일반 Miss
+                if(!n.hit && !n.finished && currentTime > n.time + 250) { 
                     n.hit = true; n.finished = true; combo = 0; totalHits++; 
-                    judgeStats.miss++; updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    judgeStats.miss++; 
+                    if(n.len > 0) totalHits++; 
+                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    checkFinish();
                 } 
                 
+                // Hold Hit Logic
                 if (n.hit && n.len > 0 && !n.finished) {
                     if (activeKeys[n.lane]) {
                         if (currentTime >= n.endTime) {
                             n.finished = true; totalHits++; totalRateSum += 100; score += scorePerHit; 
                             combo++; judgeStats.perfect++; updateGameHUD(); createParticles(n.lane);
+                            playSfx('hold_end'); checkFinish();
                         }
                     }
                 }
 
+                // Draw Note
                 if (!n.finished) {
                     if (n.len > 0) {
                         const drawHeadY = n.hit ? HIT_LINE_Y : headY;
                         const clippedHeadY = Math.min(gameCanvas.height, drawHeadY);
                         const clippedTailY = Math.max(-100, tailY);
                         const bodyH = clippedHeadY - clippedTailY;
-
                         if (bodyH > 0 && clippedHeadY > -50) {
                             gameCtx.fillStyle = "rgba(255, 255, 255, 0.5)";
                             gameCtx.fillRect(n.lane * 100 + 10, clippedTailY, 80, bodyH);
@@ -594,130 +676,122 @@
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
+        // ★ [CheckHit 수정] Earliest First (시간 순서대로 처리)
         function checkHit(lane) {
-            const realTimeElapsed = Date.now() - gameStartTime;
-            let currentTime = (realTimeElapsed < START_DELAY) ? realTimeElapsed : (audio.currentTime * 1000) + START_DELAY;
-            const n = activeNotes.find(n => n.lane === lane && !n.hit && !n.finished);
+            let currentTime = 0;
+            if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
+            else currentTime = (Date.now() - startTimestamp) - START_DELAY;
+
+            const HIT_WINDOW = 250; 
+            const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
+            if (candidates.length === 0) return;
+
+            // ★ [수정] 가장 먼저 오는(시간이 작은) 노트 선택
+            const n = candidates.reduce((prev, curr) => prev.time < curr.time ? prev : curr);
+            const absDiff = Math.abs(currentTime - n.time);
+
+            n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
+            totalHits++; 
+            if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
+
+            let judge="MISS", clr="#888", rate=0;
+            if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+            else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
+            else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
+
+            if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
+            else { combo = 0; }
             
-            if (n) {
-                const diff = currentTime - n.time; 
-                const absDiff = Math.abs(diff);
-                if (absDiff <= 120) {
-                    n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
-                    totalHits++; 
-                    let judge="No..", clr="#888", rate=0;
-                    if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
-                    else if(absDiff <= 64) { judge="GREAT"; clr="#69F0AE"; rate=90; judgeStats.great++; }
-                    else if(absDiff <= 96) { judge="Okay"; clr="#FFD740"; rate=50; judgeStats.okay++; }
-                    else if(absDiff <= 120){ judge="Oh..."; clr="#FF5252"; rate=10; judgeStats.oh++; }
-                    else { judge="No.."; clr="#888"; rate=0; } 
-                    
-                    if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; totalOffsetDiff += diff; createParticles(lane); score += (rate / 100) * scorePerHit; } 
-                    else { combo = 0; }
-                    totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); recentHits.push({ diff: diff, color: clr, life: 600, maxLife: 600 });
-                } else if (diff < -120 && diff > -240) {
-                    n.hit = true; n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No...", lane, "#888"); 
-                }
-            }
+            totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); 
+            recentHits.push({ diff: currentTime - n.time, color: clr, life: 600, maxLife: 600 });
+            if(n.finished) checkFinish();
         }
 
         function checkRelease(lane) {
             const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
             if (n) {
-                const realTimeElapsed = Date.now() - gameStartTime;
-                let currentTime = (realTimeElapsed < START_DELAY) ? realTimeElapsed : (audio.currentTime * 1000) + START_DELAY;
-                const totalDuration = n.endTime - n.time; 
+                let currentTime = 0;
+                if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
+                else currentTime = (Date.now() - startTimestamp) - START_DELAY;
+
                 const remaining = n.endTime - currentTime; 
+                const totalDuration = n.endTime - n.time;
+                const safeZone = Math.max(300, totalDuration * 0.5); 
                 
-                if (remaining > totalDuration * 0.25) { 
-                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("BREAK", lane, "#555");
+                if (remaining > safeZone) { 
+                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; 
+                    updateGameHUD(); showJudge("BREAK", lane, "#555");
                 } else {
-                    n.finished = true; totalHits++; totalRateSum += 100; score += scorePerHit; combo++; judgeStats.perfect++; createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff");
+                    n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; 
+                    combo++; judgeStats.perfect++; 
+                    createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff");
+                    playSfx('hold_end');
                 }
+                checkFinish();
             }
         }
 
         function updateGameHUD() {
             document.getElementById('g-combo').innerText = combo;
             document.getElementById('g-score').innerText = Math.round(score).toString().padStart(6, '0');
-            const rate = totalHits > 0 ? (totalRateSum / totalHits).toFixed(2) : "100.00";
-            document.getElementById('g-rate').innerText = rate + "%";
+            const rate = totalHits > 0 ? (totalRateSum / (totalHits * 100)) * 100 : 100;
+            document.getElementById('g-rate').innerText = rate.toFixed(2) + "%";
             const avg = totalHits > 0 ? (totalOffsetDiff/totalHits).toFixed(1) : "0.0";
             document.getElementById('g-avg').innerText = `AVG: ${avg}ms`;
         }
         function showJudge(text, lane, color) { judgments.push({text, x: lane*100+50, y: HIT_LINE_Y-100, life: 40, maxLife: 40, color}); }
         function drawGameFX() { for(let i=judgments.length-1; i>=0; i--) { const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y); gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1); } }
         function drawHitErrorBar() { const cx = 200, cy = HIT_LINE_Y + 50, width = 300; gameCtx.fillStyle = "rgba(50, 50, 50, 0.8)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4); gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 8, 2, 16); for(let i = recentHits.length - 1; i >= 0; i--) { const h = recentHits[i]; const px = (h.diff / 100) * (width / 2); let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px)); gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife; gameCtx.fillRect(drawX - 1, cy - 6, 2, 12); gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1); } }
-        function drawLaneBeams() { gameCtx.globalCompositeOperation = 'lighter'; for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, 0); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.5; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } } gameCtx.globalCompositeOperation = 'source-over'; }
         function createParticles(lane) { for(let i=0; i<10; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
-        
-        // ★ [수정됨] showResult - 경험치(XP) 지급 로직 추가
+        function drawJudgmentLine() { gameCtx.shadowBlur = 10; gameCtx.shadowColor = '#00e5ff'; gameCtx.strokeStyle = '#00e5ff'; gameCtx.lineWidth = 3; gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0; gameCtx.strokeStyle = '#333'; gameCtx.lineWidth = 2; for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); } }
+        function drawLaneBeams() { gameCtx.globalCompositeOperation = 'lighter'; for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, 0); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.5; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } } gameCtx.globalCompositeOperation = 'source-over'; }
+
+        function checkFinish() {
+            // 이펙트만 처리
+        }
+
+        // ★ [안전장치 추가된 showResult]
         function showResult() {
-            const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
-            let rank = "F"; 
-            if(rate >= 95) rank = "S"; else if(rate >= 90) rank = "A"; else if(rate >= 80) rank = "B"; else if(rate >= 70) rank = "C";
-            const finalScore = Math.round(score);
-            const finalScoreStr = finalScore.toString().padStart(6, '0');
-
-            if (songParam && diffParam) {
-                const storageKey = `wb_score_${songParam}_${diffParam}`;
-                const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
-                if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
-
-                // ★ 경험치 계산 및 저장 (Level System)
-                // 난이도 추정: diffParam에서 숫자만 추출 (예: 'hard_8' -> 8)
-                let level = 1;
-                const match = diffParam.match(/_(\d+)/);
-                if(match) level = parseInt(match[1]);
-
-                // 공식: (점수 / 10000) * (1 + 레벨 * 0.1)
-                const gainedXP = Math.round((finalScore / 10000) * (1 + level * 0.1));
+            try {
+                const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
+                let rank = "F"; 
+                if(rate >= 95) rank = "S"; else if(rate >= 90) rank = "A"; else if(rate >= 80) rank = "B"; else if(rate >= 70) rank = "C";
+                const finalScore = Math.round(score);
+                const finalScoreStr = finalScore.toString().padStart(6, '0');
                 
-                // 로컬 스토리지 업데이트
-                let currentXP = parseInt(localStorage.getItem('wb_user_xp') || "0");
-                let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
-                
-                currentXP += gainedXP;
-                
-                // 레벨업 체크 (필요 경험치 = 레벨 * 500)
-                let nextXP = currentLv * 500;
-                let levelUpMsg = "";
-                while(currentXP >= nextXP) {
-                    currentXP -= nextXP;
-                    currentLv++;
-                    nextXP = currentLv * 500;
-                    levelUpMsg = "LEVEL UP! ";
+                let xpDisplay = ""; // 변수 선언
+
+                if (songParam && diffParam) {
+                    const storageKey = `wb_score_${songParam}_${diffParam}`;
+                    const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
+                    if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
                 }
-                
-                localStorage.setItem('wb_user_xp', currentXP);
-                localStorage.setItem('wb_user_lv', currentLv);
 
-                // 결과창에 XP 표시 추가
-                var xpDisplay = `<div style="color:#ffd700; margin-top:10px; font-size:20px; font-weight:bold;">+ ${gainedXP} XP ${levelUpMsg}</div>`;
-            } else {
-                var xpDisplay = "";
+                resultOverlay.innerHTML = `
+                    <div style="text-align:center; margin-bottom:20px;"><h2 style="margin:0; color:#fff; font-size:32px; text-shadow:0 0 10px #00e5ff;">${songParam ? decodeURIComponent(songParam) : "CUSTOM PLAY"}</h2><div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-top:5px;">${diffParam ? diffParam : "TEST MODE"}</div></div>
+                    <div class="${rank} res-rank" style="font-size:140px; margin: 10px 0; line-height:1;">${rank}</div>
+                    <div class="res-info" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; width:80%; max-width:600px; margin-bottom:30px;">
+                        <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">SCORE</div><div style="font-size:28px; font-weight:bold;">${finalScoreStr}</div></div>
+                        <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">RATE</div><div style="font-size:28px; font-weight:bold;">${rate.toFixed(2)}%</div></div>
+                        <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">MAX COMBO</div><div style="font-size:28px; font-weight:bold;">${maxCombo}</div></div>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; width:90%; max-width:600px; background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; border:1px solid #333;">
+                        <div style="text-align:center"><div style="color:#00e5ff; font-weight:bold; font-size:12px; margin-bottom:5px;">PERFECT</div><div style="color:#fff; font-size:20px;">${judgeStats.perfect}</div></div>
+                        <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
+                        <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
+                        <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
+                        <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">MISS</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
+                    </div>
+                    ${xpDisplay}
+                    <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
+                `;
+                resultOverlay.style.display = 'flex';
+            } catch(e) {
+                alert("Result Error: " + e.message);
+                location.href='index.html';
             }
-
-            resultOverlay.innerHTML = `
-                <div style="text-align:center; margin-bottom:20px;"><h2 style="margin:0; color:#fff; font-size:32px; text-shadow:0 0 10px #00e5ff;">${songParam ? decodeURIComponent(songParam) : "CUSTOM PLAY"}</h2><div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-top:5px;">${diffParam ? diffParam : "TEST MODE"}</div></div>
-                <div class="${rank} res-rank" style="font-size:140px; margin: 10px 0; line-height:1;">${rank}</div>
-                <div class="res-info" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; width:80%; max-width:600px; margin-bottom:30px;">
-                    <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">SCORE</div><div style="font-size:28px; font-weight:bold;">${finalScoreStr}</div></div>
-                    <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">RATE</div><div style="font-size:28px; font-weight:bold;">${rate.toFixed(2)}%</div></div>
-                    <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">MAX COMBO</div><div style="font-size:28px; font-weight:bold;">${maxCombo}</div></div>
-                </div>
-                <div style="display:flex; justify-content:space-between; width:90%; max-width:600px; background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; border:1px solid #333;">
-                    <div style="text-align:center"><div style="color:#00e5ff; font-weight:bold; font-size:12px; margin-bottom:5px;">PERFECT</div><div style="color:#fff; font-size:20px;">${judgeStats.perfect}</div></div>
-                    <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
-                    <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
-                    <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
-                    <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">MISS</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
-                </div>
-                ${xpDisplay}
-                <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
-            `;
-            resultOverlay.style.display = 'flex';
         }
 
         function closeResult() { stopTestMode(); if(songParam) window.location.href="index.html"; }
