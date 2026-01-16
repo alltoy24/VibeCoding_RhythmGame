@@ -9,7 +9,44 @@
         
         header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
         h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5); }
-        
+        /* 로그인 버튼 스타일 (사이버펑크 스타일) */
+        .custom-login-btn {
+            margin-top: 15px; /* 레벨바 아래 여백 */
+            padding: 10px 30px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #00e5ff; /* 님 게임의 포인트 컬러 (형광 하늘색) */
+            color: #fff;
+            font-family: 'Segoe UI', sans-serif; /* 게임 폰트에 맞게 수정 가능 */
+            font-size: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 5px; /* 살짝 둥글게 */
+            box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .custom-login-btn:hover {
+            background: #00e5ff;
+            color: #000;
+            box-shadow: 0 0 20px #00e5ff;
+            transform: scale(1.05);
+        }
+
+        /* 로그아웃 상태일 때 (빨간색 등) 다르게 하고 싶으면 추가 */
+        .btn-logout {
+            border-color: #ff0055;
+            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+        }
+        .btn-logout:hover {
+            background: #ff0055;
+            box-shadow: 0 0 20px #ff0055;
+        }
+
         /* ★ [추가됨] 플레이어 레벨 프로필 */
         .profile-card {
             position: absolute; top: 10px; left: 30px;
@@ -120,6 +157,9 @@
             <div class="xp-bar-fill" id="user-xp-fill"></div>
         </div>
         <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
+        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuthClick()">
+            LOGIN
+        </button>
     </div>
 
     <div id="calib-overlay" onclick="handleTap(event)">
@@ -159,54 +199,52 @@
     </div>
 
     <script>
-        // ==========================================
-        // ★ GOOGLE LOGIN (INDEX PAGE)
-        // ==========================================
-        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-
+        // 페이지 로드 시 로그인 상태 체크
         window.onload = function() {
-            // 1. 이미 로그인된 상태인지 확인
-            const storedProfile = localStorage.getItem('wb_auth_profile');
-            if (storedProfile) {
-                const profile = JSON.parse(storedProfile);
-                showWelcome(profile);
-            } else {
-                // 2. 로그인 안 되어 있으면 구글 라이브러리 로드
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: handleCredentialResponse
-                });
-                google.accounts.id.renderButton(
-                    document.getElementById("google-login-btn"),
-                    { theme: "outline", size: "large" }
-                );
-            }
+            checkLoginStatus();
+            // (기존의 게임 로딩 함수들이 있다면 여기에...)
         };
 
-        function handleCredentialResponse(response) {
-            const responsePayload = parseJwt(response.credential);
+        function checkLoginStatus() {
+            const btn = document.getElementById('main-login-btn');
+            const nameDisplay = document.getElementById('user-name-display');
+            const storedProfile = localStorage.getItem('wb_auth_profile');
+
+            if (storedProfile) {
+                // [상태: 로그인 됨]
+                const profile = JSON.parse(storedProfile);
         
-            // ★ 핵심: 로그인 정보를 브라우저에 저장해둠! (이제 game.html에서도 볼 수 있음)
-            localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
+                // 1. 버튼을 'LOGOUT'으로 변경
+                btn.innerText = "LOGOUT";
+                btn.classList.add('btn-logout'); // 빨간색 스타일 적용 (선택사항)
         
-            showWelcome(responsePayload);
+                // 2. 이름 표시 (선택사항)
+                nameDisplay.innerText = `AGENT: ${profile.name}`;
+        
+            } else {
+                // [상태: 비로그인]
+                // 1. 버튼을 'LOGIN'으로 변경
+                btn.innerText = "LOGIN";
+                btn.classList.remove('btn-logout');
+                nameDisplay.innerText = "GUEST MODE";
+            }
         }
 
-        function showWelcome(profile) {
-            document.getElementById("google-login-btn").style.display = 'none';
-            const msgDiv = document.getElementById("welcome-msg");
-            msgDiv.style.display = 'block';
-            msgDiv.innerHTML = `🎵 <b>${profile.name}</b>님, 준비되셨나요?`;
-        }
-
-        // JWT 디코딩 함수 (필수)
-        function parseJwt (token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
+        // 버튼 클릭 시 실행되는 함수
+        function handleAuthClick() {
+            const storedProfile = localStorage.getItem('wb_auth_profile');
+    
+            if (storedProfile) {
+                // 이미 로그인 상태면 -> 로그아웃 처리
+                if(confirm("로그아웃 하시겠습니까?")) {
+                    localStorage.removeItem('wb_auth_profile');
+                    localStorage.removeItem('wb_user_xp'); // (선택) 경험치 등도 초기화 할거면
+                    location.reload(); // 새로고침
+                }
+            } else {
+                // 로그인 안 된 상태면 -> 로그인 페이지로 이동!
+                location.href = 'login.html';
+            }
         }
 
         const speedSlider = document.getElementById('speed-slider');
