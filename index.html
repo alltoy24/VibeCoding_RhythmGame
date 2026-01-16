@@ -50,7 +50,9 @@
         .rank-info { flex: 1; display: flex; flex-direction: column; }
         .rank-name { font-weight: bold; color: #fff; font-size: 15px; }
         .rank-lv { font-size: 11px; color: #00e5ff; background: rgba(0, 229, 255, 0.1); padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; width: fit-content;}
-        rank-score { font-family: 'Orbitron'; font-size: 18px; color: #fff; font-weight: bold; }
+        
+        /* [오타 수정] 점 앞에 .이 빠져있어서 추가했습니다 */
+        .rank-score { font-family: 'Orbitron'; font-size: 18px; color: #fff; font-weight: bold; }
 
         /* 기존 버튼 옆에 붙일 작은 랭킹 아이콘 */
         .btn-rank-icon {
@@ -111,6 +113,9 @@
         .xp-bar-bg { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
         .xp-bar-fill { height: 100%; background: linear-gradient(90deg, #00e5ff, #00ffaa); width: 0%; transition: width 1s ease-out; }
         .xp-text { font-size: 12px; color: #aaa; margin-top: 2px; }
+        
+        /* 이름 표시용 태그 추가 */
+        #user-name-display { font-size: 12px; color: #888; font-weight: bold; margin-bottom: 5px; }
 
         /* UI 컨트롤 박스 */
         .control-bar { display: flex; gap: 15px; margin-top: 15px; }
@@ -213,6 +218,9 @@
             <div class="xp-bar-fill" id="user-xp-fill"></div>
         </div>
         <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
+        
+        <div id="user-name-display">GUEST MODE</div>
+
         <button id="main-login-btn" class="custom-login-btn" onclick="handleAuthClick()">
             LOGIN
         </button>
@@ -254,7 +262,24 @@
         <div class="status-msg">LOADING SONGS...</div>
     </div>
 
+    <div id="rank-modal">
+        <div class="rank-box">
+            <div class="rank-header">
+                <span id="rank-title">TOP 50 RANKING</span>
+                <button class="rank-close" onclick="closeRank()">×</button>
+            </div>
+            <div class="rank-list" id="rank-list-container">
+                <div style="text-align:center; padding:20px; color:#666;">LOADING...</div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ==========================================
+        // ★ [가장 중요] 여기에 님의 클라우드타입 주소를 꼭 넣으세요!
+        // ==========================================
+        const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app"; 
+
         // 페이지 로드 시 로그인 상태 체크
         window.onload = function() {
             checkLoginStatus();
@@ -272,17 +297,27 @@
         
                 // 1. 버튼을 'LOGOUT'으로 변경
                 btn.innerText = "LOGOUT";
-                btn.classList.add('btn-logout'); // 빨간색 스타일 적용 (선택사항)
+                btn.classList.add('btn-logout'); 
         
-                // 2. 이름 표시 (선택사항)
-                nameDisplay.innerText = `AGENT: ${profile.name}`;
-        
+                // 2. 이름 표시
+                if(nameDisplay) nameDisplay.innerText = `AGENT: ${profile.name}`;
+                
+                // 3. 서버에서 내 최신 레벨 가져오기
+                // API_BASE가 없으면 여기서 에러남!
+                fetch(`${API_BASE}/api/user/${profile.sub}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        localStorage.setItem('wb_user_lv', data.level);
+                        localStorage.setItem('wb_user_xp', data.xp);
+                        updateProfile();
+                    })
+                    .catch(err => console.log("서버 연결 실패 (오프라인 모드)", err));
+
             } else {
                 // [상태: 비로그인]
-                // 1. 버튼을 'LOGIN'으로 변경
                 btn.innerText = "LOGIN";
                 btn.classList.remove('btn-logout');
-                nameDisplay.innerText = "GUEST MODE";
+                if(nameDisplay) nameDisplay.innerText = "GUEST MODE";
             }
         }
 
@@ -294,8 +329,8 @@
                 // 이미 로그인 상태면 -> 로그아웃 처리
                 if(confirm("로그아웃 하시겠습니까?")) {
                     localStorage.removeItem('wb_auth_profile');
-                    localStorage.removeItem('wb_user_xp'); // (선택) 경험치 등도 초기화 할거면
-                    location.reload(); // 새로고침
+                    localStorage.removeItem('wb_user_xp'); 
+                    location.reload(); 
                 }
             } else {
                 // 로그인 안 된 상태면 -> 로그인 페이지로 이동!
@@ -454,15 +489,13 @@
                         const savedScore = localStorage.getItem(scoreKey) || '000000';
                         const levelHtml = d.levelRaw ? `<span class="lv-badge">Lv.${d.levelRaw}</span>` : '';
 
-                        // ★ [추가] 뱃지 로직
                         const badgeKey = `wb_badge_${song.folder}_${d.fileKey}`;
-                        const badgeType = localStorage.getItem(badgeKey); // "FC" or "TB" or null
+                        const badgeType = localStorage.getItem(badgeKey); 
                         
                         let badgeHtml = "";
                         if (badgeType === "TB") badgeHtml = "<span class='badge-icon badge-tb'>👑 TB</span>";
                         else if (badgeType === "FC") badgeHtml = "<span class='badge-icon badge-fc'>★ FC</span>";
 
-                        // (수정: 버튼 옆에 랭킹 버튼 추가)
                         diffButtons += `
                             <div style="display:flex; align-items:center; width:100%; margin-bottom:10px;">
                                 <button class="btn-diff ${d.type}" style="flex:1;" onclick="play('${song.folder}', '${d.fileKey}')">
@@ -497,7 +530,6 @@
 
         function play(folder, fileKey) {
             const speed = speedSlider.value;
-            // ★ 게임 플레이어 파일로 이동
             window.location.href = `game.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speed}`;
         }
 
@@ -512,6 +544,7 @@
             list.innerHTML = `<div style="text-align:center; padding:30px; color:#00e5ff; animation:blink 1s infinite;">CONNECTING TO SERVER...</div>`;
 
             try {
+                // ★ 여기가 문제였음! API_BASE가 없어서 에러남
                 const res = await fetch(`${API_BASE}/api/ranking/${songFolder}/${diffKey}`);
                 const data = await res.json();
 
@@ -528,7 +561,6 @@
                     else if(rank === 2) rankClass = "top2";
                     else if(rank === 3) rankClass = "top3";
 
-                    // 레벨이 없으면 1로 표시
                     const lv = user.level ? `LV. ${user.level}` : "Unknown";
 
                     html += `
@@ -545,7 +577,9 @@
                 list.innerHTML = html;
 
             } catch (e) {
-                list.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">SERVER ERROR</div>`;
+                // API_BASE 변수가 없으니 여기서 잡혀서 "SERVER ERROR"라고 떴던 것임
+                console.error(e);
+                list.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">SERVER ERROR<br><span style="font-size:12px;color:#666;">(Check Console)</span></div>`;
             }
         }
 
@@ -559,17 +593,5 @@
             if (e.target.id === 'rank-modal') closeRank();
         });
     </script>
-
-    <div id="rank-modal">
-        <div class="rank-box">
-            <div class="rank-header">
-                <span id="rank-title">TOP 50 RANKING</span>
-                <button class="rank-close" onclick="closeRank()">×</button>
-            </div>
-            <div class="rank-list" id="rank-list-container">
-                <div style="text-align:center; padding:20px; color:#666;">LOADING...</div>
-            </div>
-        </div>
-    </div>
 </body>
 </html>
