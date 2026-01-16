@@ -9,6 +9,57 @@
         
         header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
         h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5); }
+        
+        /* 랭킹 팝업 스타일 */
+        #rank-modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.85); z-index: 999;
+            justify-content: center; align-items: center;
+            backdrop-filter: blur(5px);
+        }
+        .rank-box {
+            width: 500px; max-height: 80vh; background: #111; border: 2px solid #00e5ff;
+            border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 229, 255, 0.3); animation: popIn 0.3s;
+        }
+        .rank-header {
+            background: linear-gradient(90deg, #00c6ff, #0072ff); padding: 15px;
+            font-family: 'Orbitron'; font-size: 20px; font-weight: bold; text-align: center;
+            color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative;
+        }
+        .rank-close {
+            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
+            background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;
+        }
+        .rank-list {
+            flex: 1; overflow-y: auto; padding: 10px;
+        }
+        .rank-list::-webkit-scrollbar { width: 8px; }
+        .rank-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .rank-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.05); margin-bottom: 5px; padding: 10px 15px;
+            border-radius: 8px; font-family: 'Roboto'; transition: 0.2s;
+        }
+        .rank-item:hover { background: rgba(0, 229, 255, 0.1); transform: translateX(5px); }
+        .rank-rank { font-weight: bold; width: 40px; font-size: 18px; color: #888; font-family: 'Orbitron'; }
+        .rank-rank.top1 { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-size: 22px; } /* 금 */
+        .rank-rank.top2 { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; font-size: 20px; } /* 은 */
+        .rank-rank.top3 { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; font-size: 20px; } /* 동 */
+
+        .rank-info { flex: 1; display: flex; flex-direction: column; }
+        .rank-name { font-weight: bold; color: #fff; font-size: 15px; }
+        .rank-lv { font-size: 11px; color: #00e5ff; background: rgba(0, 229, 255, 0.1); padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; width: fit-content;}
+        rank-score { font-family: 'Orbitron'; font-size: 18px; color: #fff; font-weight: bold; }
+
+        /* 기존 버튼 옆에 붙일 작은 랭킹 아이콘 */
+        .btn-rank-icon {
+            width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid #444;
+            border-radius: 5px; cursor: pointer; color: #ffd700; display: flex;
+            justify-content: center; align-items: center; margin-left: 10px; transition: 0.2s;
+        }
+        .btn-rank-icon:hover { background: #ffd700; color: #000; box-shadow: 0 0 10px #ffd700; }
+        
         /* 로그인 버튼 스타일 (사이버펑크 스타일) */
         .custom-login-btn {
             margin-top: 15px; /* 레벨바 아래 여백 */
@@ -411,14 +462,20 @@
                         if (badgeType === "TB") badgeHtml = "<span class='badge-icon badge-tb'>👑 TB</span>";
                         else if (badgeType === "FC") badgeHtml = "<span class='badge-icon badge-fc'>★ FC</span>";
 
+                        // (수정: 버튼 옆에 랭킹 버튼 추가)
                         diffButtons += `
-                            <button class="btn-diff ${d.type}" onclick="play('${song.folder}', '${d.fileKey}')">
-                                <div class="left-part">
-                                    <span>${d.type.toUpperCase()}</span>
-                                    ${levelHtml}
-                                </div>
-                                <span class="score-badge">🏆 ${savedScore}${badgeHtml}</span>
-                            </button>`;
+                            <div style="display:flex; align-items:center; width:100%; margin-bottom:10px;">
+                                <button class="btn-diff ${d.type}" style="flex:1;" onclick="play('${song.folder}', '${d.fileKey}')">
+                                    <div class="left-part">
+                                        <span>${d.type.toUpperCase()}</span>
+                                        ${levelHtml}
+                                    </div>
+                                    <span class="score-badge">🏆 ${savedScore}${badgeHtml}</span>
+                                </button>
+                                <button class="btn-rank-icon" onclick="openRanking('${song.folder}', '${d.fileKey}', '${song.title}', '${d.type}')">
+                                    👑
+                                </button>
+                            </div>`;
                     });
 
                     card.innerHTML = `
@@ -443,6 +500,76 @@
             // ★ 게임 플레이어 파일로 이동
             window.location.href = `game.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speed}`;
         }
+
+        // ★ 랭킹 팝업 열기
+        async function openRanking(songFolder, diffKey, title, type) {
+            const modal = document.getElementById('rank-modal');
+            const list = document.getElementById('rank-list-container');
+            const header = document.getElementById('rank-title');
+    
+            modal.style.display = 'flex';
+            header.innerText = `${title} [${type.toUpperCase()}]`;
+            list.innerHTML = `<div style="text-align:center; padding:30px; color:#00e5ff; animation:blink 1s infinite;">CONNECTING TO SERVER...</div>`;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/ranking/${songFolder}/${diffKey}`);
+                const data = await res.json();
+
+                if (data.length === 0) {
+                    list.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">NO RECORDS YET.<br>BE THE FIRST!</div>`;
+                    return;
+                }
+
+                let html = "";
+                data.forEach((user, idx) => {
+                    const rank = idx + 1;
+                    let rankClass = "";
+                    if(rank === 1) rankClass = "top1";
+                    else if(rank === 2) rankClass = "top2";
+                    else if(rank === 3) rankClass = "top3";
+
+                    // 레벨이 없으면 1로 표시
+                    const lv = user.level ? `LV. ${user.level}` : "Unknown";
+
+                    html += `
+                        <div class="rank-item">
+                            <div class="rank-rank ${rankClass}">#${rank}</div>
+                            <div class="rank-info">
+                                <span class="rank-name">${user.userName}</span>
+                                <span class="rank-lv">${lv}</span>
+                            </div>
+                            <div class="rank-score">${user.score.toLocaleString()}</div>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+
+            } catch (e) {
+                list.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">SERVER ERROR</div>`;
+            }
+        }
+
+        // 팝업 닫기
+        function closeRank() {
+            document.getElementById('rank-modal').style.display = 'none';
+        }
+
+        // 배경 누르면 닫기
+        document.getElementById('rank-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'rank-modal') closeRank();
+        });
     </script>
+
+    <div id="rank-modal">
+        <div class="rank-box">
+            <div class="rank-header">
+                <span id="rank-title">TOP 50 RANKING</span>
+                <button class="rank-close" onclick="closeRank()">×</button>
+            </div>
+            <div class="rank-list" id="rank-list-container">
+                <div style="text-align:center; padding:20px; color:#666;">LOADING...</div>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

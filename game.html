@@ -345,7 +345,7 @@
                             n.hit = true; 
                             combo = 0; totalHits++; judgeStats.miss++; 
                             if(n.len > 0) totalHits++; 
-                            updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                            updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
                         }
                     }
                     continue; 
@@ -355,7 +355,7 @@
                     n.hit = true; n.finished = true; 
                     combo = 0; totalHits++; judgeStats.miss++; 
                     if(n.len > 0) totalHits++; 
-                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
                     checkFinish();
                 }
 
@@ -419,7 +419,7 @@
             totalHits++; 
             if (typeof playSfx === 'function') { if (n.len > 0) playSfx('hold_start'); else playSfx('hit'); }
 
-            let judge="MISS", clr="#888", rate=0;
+            let judge="No..", clr="#888", rate=0;
             if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
             else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
             else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
@@ -445,7 +445,7 @@
                 const safeZone = Math.max(300, totalDuration * 0.5); 
                 
                 if (remaining > safeZone) { 
-                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("BREAK", lane, "#555");
+                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No..", lane, "#555");
                 } else {
                     n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; combo++; judgeStats.perfect++; 
                     createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff"); playSfx('hold_end');
@@ -548,12 +548,20 @@
                     // 레벨 전송
                     const updatedLv = parseInt(localStorage.getItem('wb_user_lv') || 1);
                     const updatedXp = parseInt(localStorage.getItem('wb_user_xp') || 0);
-                    fetch(`${SERVER_BASE}/api/user/update`, {
+                    // (수정된 fetch 부분)
+                    fetch(SERVER_URL, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ userId: userProfile.sub, level: updatedLv, xp: updatedXp })
+                        body: JSON.stringify({
+                            userId: userProfile.sub,
+                            userName: userProfile.name,
+                            song: songParam,
+                            diff: diffParam,
+                            score: parseInt(finalScore),
+                            level: parseInt(localStorage.getItem('wb_user_lv') || 1) // ★ 레벨 정보 추가 전송
+                        })
                     });
-                }
+                    }
 
                 // 2. 랭킹 데이터 가져오기
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
@@ -607,7 +615,7 @@
                         <div class="detail-item"><div class="detail-label" style="color:#00ff00">GREAT</div><div class="detail-val">${judgeStats.great}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#ffff00">OKAY</div><div class="detail-val">${judgeStats.okay}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#ff5555">OH...</div><div class="detail-val">${judgeStats.oh}</div></div>
-                        <div class="detail-item"><div class="detail-label" style="color:#888">MISS</div><div class="detail-val">${judgeStats.miss}</div></div>
+                        <div class="detail-item"><div class="detail-label" style="color:#888">No..</div><div class="detail-val">${judgeStats.miss}</div></div>
                     </div>
                     
                     ${rankingHtml}
