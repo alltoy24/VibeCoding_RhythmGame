@@ -304,38 +304,35 @@
             if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
         });
 
+        // checkHit
         function checkHit(lane) {
             let currentTime = 0;
-            if (Date.now() - gameStartTime < START_DELAY) currentTime = Date.now() - gameStartTime;
-            else currentTime = (audio.currentTime * 1000) + START_DELAY;
+            if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
+            else currentTime = (Date.now() - startTimestamp) - START_DELAY;
 
-            const n = activeNotes.find(n => n.lane === lane && !n.hit && !n.finished);
-            if (n) {
-                const diff = currentTime - n.time; 
-                const absDiff = Math.abs(diff);
-                if (absDiff <= 150) {
-                    n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
-                    totalHits++; 
-                    if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
+            const HIT_WINDOW = 250; 
+            const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
+            if (candidates.length === 0) return;
 
-                    let judge="MISS", clr="#888", rate=0;
-                    if(absDiff <= 40) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
-                    else if(absDiff <= 80) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
-                    else if(absDiff <= 120) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
-                    else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
+            const n = candidates.reduce((prev, curr) => Math.abs(currentTime - curr.time) < Math.abs(currentTime - prev.time) ? curr : prev);
+            const absDiff = Math.abs(currentTime - n.time);
 
-                    if(rate > 0) { 
-                        combo++; if(combo > maxCombo) maxCombo = combo; 
-                        score += (rate / 100) * scorePerHit; createParticles(lane); 
-                    } else { combo = 0; }
+            n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
+            totalHits++; 
+            if (typeof playSfx === 'function') { if (n.len > 0) playSfx('hold_start'); else playSfx('hit'); }
+
+            let judge="MISS", clr="#888", rate=0;
+            if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+            else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
+            else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
+
+            if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
+            else { combo = 0; }
             
-                    totalRateSum += rate; 
-                    updateGameHUD(); 
-                    showJudge(judge, lane, clr); 
-                    recentHits.push({ diff: diff, color: clr, life: 600, maxLife: 600 });
-                    if(n.finished) checkFinish();
-                }
-            }
+            totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); 
+            recentHits.push({ diff: currentTime - n.time, color: clr, life: 600, maxLife: 600 });
+            if(n.finished) checkFinish();
         }
 
         function checkRelease(lane) {
