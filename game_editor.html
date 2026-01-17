@@ -676,8 +676,8 @@
             // ★ 오토 플레이 로직 (소리와 화면의 타이밍 분리!)
             if (isAutoMode) {
                 activeNotes.forEach(n => {
-                    // 1. 소리 먼저 재생 (45ms 미리 명령 내려서 딜레이 상쇄)
-                    if (!n.audioPlayed && currentTime >= n.time - 120) {
+                    // 1. 소리 먼저 재생 (미리 명령 내려서 딜레이 상쇄)
+                    if (!n.audioPlayed && currentTime >= n.time - 45) {
                         n.audioPlayed = true; 
                         if(n.len > 0) playSfx('hold_start');
                         else playSfx('hit');
