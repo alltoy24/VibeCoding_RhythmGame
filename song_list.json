@@ -10,5 +10,11 @@
     "title": "세계수의 정원",
     "artist": "Alltoy24",
     "charts": ["normal_1.json", "hard_6.json", "troll_13.json"]
+  },
+  {
+    "folder": "TestStage",
+    "title": "테스트용 곡",
+    "artist": "Alltoy24",
+    "charts": ["normal_1.json"]
   }
 ]
