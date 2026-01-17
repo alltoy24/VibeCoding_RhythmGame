@@ -2,14 +2,28 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Final Fix)</title>
+    <title>WEB BEAT : EDITOR (Scroll & Pure Sync)</title>
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
         
-        #sidebar { width: 320px; background: var(--panel); padding: 15px; border-right: 1px solid #333; display: flex; flex-direction: column; gap: 12px; z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7); }
+        /* ★ [수정] 사이드바에 스크롤 추가 (overflow-y: auto) */
+        #sidebar { 
+            width: 320px; min-width: 320px; /* 너비 고정 */
+            background: var(--panel); 
+            padding: 15px; 
+            border-right: 1px solid #333; 
+            display: flex; flex-direction: column; gap: 12px; 
+            z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7);
+            overflow-y: auto; /* 내용 넘치면 스크롤 생김 */
+        }
+        /* 스크롤바 디자인 */
+        #sidebar::-webkit-scrollbar { width: 8px; }
+        #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
+        #sidebar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
         h2 { margin: 0 0 10px 0; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 5px; font-size: 20px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
-        .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; }
+        .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; /* 찌그러짐 방지 */ }
         .group-title { font-size: 11px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 4px; }
         input, select, button { padding: 6px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 11px; }
         input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--accent); }
@@ -18,8 +32,12 @@
         button:hover { background: #444; filter: brightness(1.2); }
         button.primary { background: var(--accent); color: #000; border: none; box-shadow: 0 0 10px rgba(0, 229, 255, 0.2); }
         button.test-btn { background: #ff0055; color: white; border: none; font-size: 14px; padding: 12px; box-shadow: 0 0 15px rgba(255, 0, 85, 0.3); }
+        
         .row { display: flex; gap: 5px; align-items: center; } .row > * { flex: 1; }
         .val-label { font-size: 12px; color: var(--accent); font-weight: bold; width: 40px; text-align: right; }
+
+        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; background: #222; padding: 8px; border-radius: 4px; }
+        .checkbox-label input { width: auto; margin: 0; cursor: pointer; accent-color: #7b1fa2; }
 
         #editor-view { flex: 1; display: flex; flex-direction: column; position: relative; }
         #editor-container { flex: 1; overflow-y: scroll; background: #0a0a0a; display: flex; justify-content: center; }
@@ -27,8 +45,7 @@
         #play-head { 
             position: absolute; left: 0; width: 100%; height: 2px; 
             background: #ff0055; z-index: 5; display: none; pointer-events: none; 
-            box-shadow: 0 0 10px #ff0055;
-            will-change: transform;
+            box-shadow: 0 0 10px #ff0055; will-change: transform;
         }
         .lane-header { display: flex; width: 400px; margin: 0 auto; background: #222; font-weight: bold; font-size: 12px; text-align: center; border-bottom: 2px solid #444; }
         .lane-header div { flex: 1; padding: 8px 0; border-right: 1px solid #333; color: #888; }
@@ -71,6 +88,8 @@
         input[type="file"] { display: none; }
         .file-label { display: block; padding: 8px; background: #333; text-align: center; border-radius: 4px; cursor: pointer; border: 1px dashed #666; font-size: 12px; }
         .file-label:hover { background: #444; border-color: var(--accent); color: var(--accent); }
+        
+        #auto-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Impact'; font-size: 80px; color: rgba(123, 31, 162, 0.3); pointer-events: none; display: none; z-index: 55; }
     </style>
 </head>
 <body>
@@ -112,9 +131,16 @@
         <div class="control-group">
             <div class="group-title">4. Test Play</div>
             <div class="row"><span>Speed:</span><input type="range" id="test-speed" min="1" max="20" step="0.5" value="5.0"><span id="speed-val" class="val-label">x5.0</span></div>
-            <button id="btn-test" class="test-btn">🎮 GAME START (Enter)</button>
+            
+            <label class="checkbox-label" style="margin-top:5px;">
+                <input type="checkbox" id="chk-auto">
+                <span style="font-size:12px; font-weight:bold; color:#d084ff;">🤖 Enable Auto Play</span>
+            </label>
+
+            <button id="btn-test" class="test-btn" style="margin-top:5px;">🎮 GAME START (Enter)</button>
         </div>
-        <button id="btn-export" style="background:#28a745; color:white; margin-top:auto; padding:12px; border:none;">💾 EXPORT JSON</button>
+        
+        <button id="btn-export" style="background:#28a745; color:white; margin-top:10px; margin-bottom:10px; padding:12px; border:none; flex-shrink: 0;">💾 EXPORT JSON</button>
     </div>
 
     <div id="editor-view">
@@ -136,6 +162,7 @@
                 <div class="hud-item" style="text-align:right"><span class="hud-sub">COMBO</span><br><span id="g-combo" class="hud-text">0</span></div>
             </div>
             <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
+            <div id="auto-indicator">AUTO PLAY</div>
             <div id="result-overlay"></div>
         </div>
         <div id="test-msg">[ESC] Back to Editor</div>
@@ -143,8 +170,15 @@
 
     <script>
         // ==========================================
-        // ★ Web Audio API (Game & Editor Shared)
+        // ★ [1] 설정 및 인증
         // ==========================================
+        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
+        
+        // ★ [중요] 싱크 보정 제거됨 (순수 맵 파일 오프셋 사용)
+        // const SYNC_CORRECTION = 60; // <-- 삭제됨!
+
+        // Web Audio API
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const soundBuffers = {};
 
@@ -208,6 +242,7 @@
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         const resultOverlay = document.getElementById('result-overlay');
+        const autoIndicator = document.getElementById('auto-indicator'); 
         
         gameCanvas.width = 400;
         gameCanvas.height = window.innerHeight;
@@ -216,6 +251,7 @@
         
         // Game State Variables
         let isGameTesting = false, gameFinished = false;
+        let isAutoMode = false; 
         let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
         let activeKeys = [false, false, false, false];
         let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
@@ -233,6 +269,16 @@
         const songParam = urlParams.get('song');
         const diffParam = urlParams.get('diff');
         const speedParam = urlParams.get('speed');
+
+        // 모바일 감지 (게임 실행 시 적용)
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+        // 로그인 정보 가져오기
+        let userProfile = null;
+        try {
+            const stored = localStorage.getItem('wb_auth_profile');
+            if (stored) userProfile = JSON.parse(stored);
+        } catch(e) {}
 
         if (songParam && diffParam) {
             document.getElementById('sidebar').style.display = 'none';
@@ -264,7 +310,10 @@
 
         function parseChartData(data) {
             if(data.bpm) bpm = data.bpm;
-            if(data.offset) offset = data.offset;
+            // 오프셋을 파일에서 가져오되, 값이 없으면 0
+            if(data.offset !== undefined) offset = data.offset; 
+            else offset = 0;
+
             measures = []; 
             if(data.measures) {
                 const maxIdx = data.measures[data.measures.length-1].index;
@@ -283,7 +332,10 @@
             }
         }
 
-        function startAutoPlay() { document.getElementById('loading-screen').style.display = 'none'; startTestMode(); }
+        function startAutoPlay() { 
+            document.getElementById('loading-screen').style.display = 'none'; 
+            startTestMode(false); 
+        }
 
         let dragNote = null;
         let isDragging = false;
@@ -313,6 +365,19 @@
         splitInput.addEventListener('input', drawGrid);
         zoomSlider.addEventListener('input', e => { measureHeight = parseInt(e.target.value); resizeEditor(); drawGrid(); if(!isEditPlaying && audio.currentTime > 0) updatePlayHeadPos(); });
         speedSlider.addEventListener('input', e => { noteSpeed = parseFloat(e.target.value); speedVal.innerText = "x" + noteSpeed.toFixed(1); });
+
+        document.getElementById('btn-export').addEventListener('click', () => { 
+            const data = { 
+                title: "Custom Chart", 
+                bpm, 
+                offset, 
+                measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES })) 
+            }; 
+            const a = document.createElement('a'); 
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); 
+            a.download = 'chart.json'; 
+            a.click(); 
+        });
 
         gridCanvas.addEventListener('mousedown', e => {
             if(e.button !== 0) return;
@@ -465,11 +530,16 @@
         }
 
         // ==========================================
-        //              GAME LOGIC
+        //              GAME LOGIC
         // ==========================================
-        document.getElementById('btn-test').addEventListener('click', startTestMode);
         
-        function startTestMode() {
+        // ★ [수정] 오토 체크박스 확인 후 게임 시작
+        document.getElementById('btn-test').addEventListener('click', () => {
+            const isAuto = document.getElementById('chk-auto').checked;
+            startTestMode(isAuto);
+        });
+        
+        function startTestMode(auto) {
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             if(!songParam) offset = parseInt(offsetInput.value) || 0;
             
@@ -481,6 +551,10 @@
 
             if (speedParam) noteSpeed = parseFloat(speedParam);
             else noteSpeed = parseFloat(speedSlider.value);
+
+            // ★ 오토 모드 설정
+            isAutoMode = auto;
+            if(autoIndicator) autoIndicator.style.display = isAutoMode ? 'block' : 'none';
 
             gameNotes = [];
             totalMaxHits = 0; 
@@ -528,11 +602,9 @@
             gameStartTime = Date.now();
             audio.currentTime = 0;
 
-            // ★ [시한폭탄] 게임 강제 종료 타이머 (마지막 노트 + 4초)
             const absoluteEndTime = 2000 + lastNoteEndTime + 4000;
             if (forceFinishTimer) clearTimeout(forceFinishTimer);
             forceFinishTimer = setTimeout(() => {
-                console.log("Force Finish Timer Triggered");
                 finishGame();
             }, absoluteEndTime);
 
@@ -548,29 +620,30 @@
             else { gameView.style.display = 'none'; document.getElementById('sidebar').style.display = 'flex'; }
         }
 
-        // ★ [안전한 게임 종료]
         function finishGame() {
             if (!isGameTesting || gameFinished) return;
             gameFinished = true;
             if (forceFinishTimer) clearTimeout(forceFinishTimer);
             audio.pause();
-            console.log("Game Finished!");
-            // 안전하게 결과창 호출
             setTimeout(showResult, 500);
         }
 
         const KEY_MAP = ['d', 'f', 'j', 'k'];
         window.addEventListener('keydown', e => {
             if(e.code === 'Space' && !isGameTesting && !songParam) { e.preventDefault(); toggleEditPlay(); }
-            if(e.code === 'Enter' && !isGameTesting && !songParam) startTestMode();
+            if(e.code === 'Enter' && !isGameTesting && !songParam) {
+                const isAuto = document.getElementById('chk-auto').checked;
+                startTestMode(isAuto);
+            }
             if(e.code === 'Escape' && isGameTesting && !songParam) stopTestMode();
-            if(isGameTesting && !gameFinished) {
+            
+            if(isGameTesting && !gameFinished && !isAutoMode) {
                 const lane = KEY_MAP.indexOf(e.key.toLowerCase());
                 if(lane !== -1 && !activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
             }
         });
         window.addEventListener('keyup', e => {
-            if(isGameTesting && !gameFinished) {
+            if(isGameTesting && !gameFinished && !isAutoMode) {
                 const lane = KEY_MAP.indexOf(e.key.toLowerCase());
                 if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
             }
@@ -581,12 +654,11 @@
             gameAnimId = requestAnimationFrame(gameLoop);
             
             const now = Date.now();
-            const rawTime = now - startTimestamp;
             let currentTime = -9999;
 
             if (gameState === 'COUNTDOWN') {
-                currentTime = rawTime - START_DELAY; 
-                if (rawTime >= START_DELAY) {
+                currentTime = (now - startTimestamp) - START_DELAY; 
+                if (now - startTimestamp >= START_DELAY) {
                     gameState = 'WAIT_AUDIO';
                     audio.play().catch(e => console.error("Play Fail", e));
                 }
@@ -594,12 +666,11 @@
                 currentTime = 0;
                 if (audio.currentTime > 0) gameState = 'PLAYING';
             } else if (gameState === 'PLAYING') {
+                // ★ [수정] 강제 보정 삭제! 오디오 시간 그대로 사용
                 currentTime = audio.currentTime * 1000;
             }
 
-            // ★ [빠른 종료] 노트가 다 떨어졌으면 1초 뒤 종료
             if (gameNotes.length === 0 && activeNotes.length === 0) {
-                // 오디오가 끝났거나, 마지막 노트 시간보다 1초 지났으면
                 if (audio.ended || currentTime > lastNoteEndTime + 1000) {
                     finishGame();
                 }
@@ -613,36 +684,64 @@
             const NOTE_SPEED_PX = 100 * noteSpeed; 
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
 
+            // ★ 오토 플레이 로직
+            if (isAutoMode) {
+                activeNotes.forEach(n => {
+                    if (!n.hit && currentTime >= n.time) {
+                        n.hit = true; n.holding = true;
+                        if(n.len === 0) n.finished = true;
+                        
+                        activeKeys[n.lane] = true; 
+                        createParticles(n.lane);
+                        combo++; totalHits++; score += scorePerHit; totalRateSum += 100;
+                        judgeStats.perfect++; 
+                        updateGameHUD(); showJudge("PERFECT", n.lane, "#00e5ff");
+                        
+                        if(n.len > 0) playSfx('hold_start'); else { 
+                            playSfx('hit'); 
+                            setTimeout(() => { if(!n.holding) activeKeys[n.lane] = false; }, 50);
+                        }
+                    }
+                    if (n.hit && n.len > 0 && !n.finished) {
+                        activeKeys[n.lane] = true;
+                        if (currentTime >= n.endTime) {
+                            n.finished = true;
+                            activeKeys[n.lane] = false;
+                            totalHits++; score += scorePerHit; totalRateSum += 100;
+                            combo++; judgeStats.perfect++;
+                            createParticles(n.lane); updateGameHUD(); playSfx('hold_end');
+                        }
+                    }
+                });
+            }
+
             for(let i=0; i<activeNotes.length; i++) {
                 let n = activeNotes[i];
                 const headY = HIT_LINE_Y - ((n.time - currentTime) / 1000 * NOTE_SPEED_PX);
                 let tailY = headY;
                 if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
 
-                // ★ [강제 청소] 화면 밖 노트 삭제 (좀비 방지)
                 if (tailY > gameCanvas.height) {
                     if (!n.finished) {
                         n.finished = true;
                         if (!n.hit) { 
                             n.hit = true; combo = 0; totalHits++; judgeStats.miss++; 
                             if(n.len > 0) totalHits++; 
-                            updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                            updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
                         }
                     }
                     continue;
                 }
 
-                // 일반 Miss
-                if(!n.hit && !n.finished && currentTime > n.time + 250) { 
+                if(!isAutoMode && !n.hit && !n.finished && currentTime > n.time + 250) { 
                     n.hit = true; n.finished = true; combo = 0; totalHits++; 
                     judgeStats.miss++; 
                     if(n.len > 0) totalHits++; 
-                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
+                    updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
                     checkFinish();
                 } 
                 
-                // Hold Hit Logic
-                if (n.hit && n.len > 0 && !n.finished) {
+                if (!isAutoMode && n.hit && n.len > 0 && !n.finished) {
                     if (activeKeys[n.lane]) {
                         if (currentTime >= n.endTime) {
                             n.finished = true; totalHits++; totalRateSum += 100; score += scorePerHit; 
@@ -676,7 +775,6 @@
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
-        // ★ [CheckHit 수정] Earliest First (시간 순서대로 처리)
         function checkHit(lane) {
             let currentTime = 0;
             if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
@@ -686,7 +784,6 @@
             const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
             if (candidates.length === 0) return;
 
-            // ★ [수정] 가장 먼저 오는(시간이 작은) 노트 선택
             const n = candidates.reduce((prev, curr) => prev.time < curr.time ? prev : curr);
             const absDiff = Math.abs(currentTime - n.time);
 
@@ -694,7 +791,7 @@
             totalHits++; 
             if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
 
-            let judge="MISS", clr="#888", rate=0;
+            let judge="No..", clr="#888", rate=0;
             if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
             else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
             else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
@@ -743,16 +840,31 @@
         function showJudge(text, lane, color) { judgments.push({text, x: lane*100+50, y: HIT_LINE_Y-100, life: 40, maxLife: 40, color}); }
         function drawGameFX() { for(let i=judgments.length-1; i>=0; i--) { const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y); gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1); } }
         function drawHitErrorBar() { const cx = 200, cy = HIT_LINE_Y + 50, width = 300; gameCtx.fillStyle = "rgba(50, 50, 50, 0.8)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4); gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 8, 2, 16); for(let i = recentHits.length - 1; i >= 0; i--) { const h = recentHits[i]; const px = (h.diff / 100) * (width / 2); let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px)); gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife; gameCtx.fillRect(drawX - 1, cy - 6, 2, 12); gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1); } }
-        function createParticles(lane) { for(let i=0; i<10; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
+        function createParticles(lane) { for(let i=0; i<4; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
-        function drawJudgmentLine() { gameCtx.shadowBlur = 10; gameCtx.shadowColor = '#00e5ff'; gameCtx.strokeStyle = '#00e5ff'; gameCtx.lineWidth = 3; gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0; gameCtx.strokeStyle = '#333'; gameCtx.lineWidth = 2; for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); } }
-        function drawLaneBeams() { gameCtx.globalCompositeOperation = 'lighter'; for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, 0); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.5; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } } gameCtx.globalCompositeOperation = 'source-over'; }
-
-        function checkFinish() {
-            // 이펙트만 처리
+        
+        function drawJudgmentLine() { 
+            gameCtx.shadowBlur = 0; gameCtx.lineWidth = 2; // 발광 제거
+            gameCtx.strokeStyle = '#00e5ff'; gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke();
+            gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1;
+            for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); } 
+        }
+        
+        function drawLaneBeams() { 
+            gameCtx.globalCompositeOperation = 'source-over'; // 눈부심 제거
+            for(let i=0; i<4; i++) { 
+                if(activeKeys[i]) { 
+                    const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); 
+                    grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); 
+                    gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.2; // 투명도 낮춤
+                    gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); 
+                } 
+            } 
+            gameCtx.globalAlpha = 1.0;
         }
 
-        // ★ [안전장치 추가된 showResult]
+        function checkFinish() { }
+
         function showResult() {
             try {
                 const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
@@ -761,7 +873,7 @@
                 const finalScore = Math.round(score);
                 const finalScoreStr = finalScore.toString().padStart(6, '0');
                 
-                let xpDisplay = ""; // 변수 선언
+                let xpDisplay = ""; 
 
                 if (songParam && diffParam) {
                     const storageKey = `wb_score_${songParam}_${diffParam}`;
@@ -782,7 +894,7 @@
                         <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
                         <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
                         <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
-                        <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">MISS</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
+                        <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">No..</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
                     </div>
                     ${xpDisplay}
                     <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
@@ -795,7 +907,6 @@
         }
 
         function closeResult() { stopTestMode(); if(songParam) window.location.href="index.html"; }
-        document.getElementById('btn-export').addEventListener('click', () => { const data = { title: "Custom Chart", bpm, offset, measures: measures.filter(m=>m.notes.length>0).map(m=>({...m, split:BASE_RES})) }; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); a.download = 'chart.json'; a.click(); });
         const ac = new (window.AudioContext||window.webkitAudioContext)();
         function playTick() { if(ac.state==='suspended') ac.resume(); const o = ac.createOscillator(); const g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 1200; g.gain.value = 0.1; o.start(); o.stop(ac.currentTime+0.05); }
     </script>
