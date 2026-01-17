@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Github Fix)</title>
+    <title>WEB BEAT : EDITOR (Perfect Auto Sync)</title>
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
@@ -172,8 +172,8 @@
         const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
         
-        // ★ 히트사운드 앞부분 0초 자르기 (Pre-fire)
-        const SFX_FIXED_TRIM = 0; 
+        // ★ [고정] 히트사운드 앞부분 0.55초 자르기
+        const SFX_FIXED_TRIM = 0.55; 
 
         // ★ Web Audio API (반응 속도 최적화)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
@@ -208,15 +208,20 @@
         loadSound('fc', 'sfx/full_combo.mp3');
         loadSound('ap', 'sfx/all_perfect.mp3');
 
-        // ★ 소리 재생 함수 (정밀 예약 + 자르기)
+        // ★ [수정] 소리 예약 재생 함수 (time 매개변수 필수!)
         function playSfx(name, time = 0) {
             if (!soundBuffers[name]) return;
+            
             const source = audioCtx.createBufferSource();
             source.buffer = soundBuffers[name];
             const gainNode = audioCtx.createGain();
             gainNode.gain.value = 0.7;
+            
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
+
+            // time이 0보다 크면 그 시간에 예약, 아니면 즉시 재생
+            // ★ SFX_FIXED_TRIM(0.55초) 만큼 앞부분을 자르고 재생
             const playTime = time > 0 ? time : audioCtx.currentTime;
             source.start(playTime, SFX_FIXED_TRIM); 
         }
@@ -291,8 +296,6 @@
             loadGameData(songParam, diffParam);
         }
 
-        // ★ [핵심] 완전 다운로드 (Blob) 로딩 방식
-        // 인터넷 끊김/버퍼링 방지를 위해 파일을 통째로 받아서 메모리에 올림
         async function loadGameData(song, diff) {
             const loadingMsg = document.getElementById('loading-msg');
             const startBtn = document.getElementById('btn-start-auto');
@@ -303,9 +306,7 @@
                 const chartData = await chartRes.json();
                 parseChartData(chartData);
 
-                loadingMsg.innerText = "DOWNLOADING AUDIO (Wait)...";
-                
-                // ★ Fetch로 오디오 통으로 받기 (스트리밍 X)
+                loadingMsg.innerText = "LOADING AUDIO...";
                 const audioRes = await fetch(`Maps/${song}/audio.mp3`);
                 if(!audioRes.ok) throw new Error("Audio fetch failed");
                 const audioBlob = await audioRes.blob();
@@ -314,7 +315,6 @@
                 audio.src = audioUrl;
                 audio.load();
                 
-                // 로딩 완료 체크
                 audio.oncanplaythrough = () => { 
                     loadingMsg.style.display = 'none'; 
                     startBtn.style.display = 'block'; 
@@ -706,13 +706,16 @@
             // ★ 오토 플레이 로직 (소리 예약 + 비주얼 분리)
             if (isAutoMode) {
                 activeNotes.forEach(n => {
-                    // 1. 소리 예약 (0.1초 전)
+                    // ★ 1. 소리 예약 시스템 (Lookahead)
+                    // 노트가 오기 0.1초 전에 미리 소리를 예약함 (브라우저가 준비할 시간을 충분히 줌)
                     if (!n.scheduled && !n.hit && n.time > currentTime && n.time < currentTime + 100) {
-                        const timeUntilHit = (n.time - currentTime) / 1000;
-                        const audioTime = audioCtx.currentTime + timeUntilHit;
+                        const timeUntilHit = (n.time - currentTime) / 1000; // 초 단위 변환
+                        const audioTime = audioCtx.currentTime + timeUntilHit; // 현재 오디오 시간 + 남은 시간
+                        
                         if(n.len > 0) playSfx('hold_start', audioTime);
                         else playSfx('hit', audioTime);
-                        n.scheduled = true; 
+                        
+                        n.scheduled = true; // 예약 완료 (중복 실행 방지)
                     }
 
                     // 2. 비주얼 (정박)
@@ -821,10 +824,9 @@
             if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
 
             let judge="MISS", clr="#888", rate=0;
-            if(absDiff <= 48) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
-            else if(absDiff <= 72) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
-            else if(absDiff <= 108) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
-            else if(absDiff <= 150) { judge="Oh..."; clr="#ffff00"; rate=10; judgeStats.oh++; }
+            if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+            else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
+            else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
             
             if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
             else { combo = 0; }
