@@ -2,28 +2,25 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Scroll & Pure Sync)</title>
+    <title>WEB BEAT : EDITOR (Pre-Fire Sync)</title>
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
         
-        /* ★ [수정] 사이드바에 스크롤 추가 (overflow-y: auto) */
         #sidebar { 
-            width: 320px; min-width: 320px; /* 너비 고정 */
-            background: var(--panel); 
-            padding: 15px; 
+            width: 320px; min-width: 320px; 
+            background: var(--panel); padding: 15px; 
             border-right: 1px solid #333; 
             display: flex; flex-direction: column; gap: 12px; 
             z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7);
-            overflow-y: auto; /* 내용 넘치면 스크롤 생김 */
+            overflow-y: auto; max-height: 100vh;
         }
-        /* 스크롤바 디자인 */
         #sidebar::-webkit-scrollbar { width: 8px; }
         #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
         #sidebar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
         h2 { margin: 0 0 10px 0; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 5px; font-size: 20px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
-        .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; /* 찌그러짐 방지 */ }
+        .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; }
         .group-title { font-size: 11px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 4px; }
         input, select, button { padding: 6px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 11px; }
         input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--accent); }
@@ -175,11 +172,11 @@
         const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
         
-        // ★ [중요] 싱크 보정 제거됨 (순수 맵 파일 오프셋 사용)
-        // const SYNC_CORRECTION = 60; // <-- 삭제됨!
-
         // Web Audio API
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+            latencyHint: 'interactive', 
+            sampleRate: 44100
+        });
         const soundBuffers = {};
 
         async function loadSound(name, url) {
@@ -195,10 +192,9 @@
         loadSound('hold_start', 'sfx/hold_start.mp3');
         loadSound('hold_end', 'sfx/hold_end.mp3');
         loadSound('fc', 'sfx/full_combo.mp3');
-        // [수정] AP 소리를 두 개로 나눠서 로딩합니다
-        loadSound('ap_main', 'sfx/all_perfect.mp3');   // 1. 맑은 소리 (기존)
-        loadSound('ap_layer', 'sfx/glitch.mp3');       // 2. 글리치 소리 (새로 추가)
+        loadSound('ap', 'sfx/all_perfect.mp3');
 
+        // 기본 재생
         function playSfx(name) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             if (!soundBuffers[name]) return;
@@ -208,7 +204,10 @@
             gainNode.gain.value = 0.7;
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            source.start(0);
+            
+            // ★ 오토 플레이 꼼수: 앞부분을 살짝 잘라서(0.04s) 즉각 반응처럼 들리게 함
+            // 만약 소리가 씹히면 이 값을 0으로 바꾸세요.
+            source.start(0, 0.04); 
         }
 
         // ==========================================
@@ -272,15 +271,7 @@
         const diffParam = urlParams.get('diff');
         const speedParam = urlParams.get('speed');
 
-        // 모바일 감지 (게임 실행 시 적용)
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        // 로그인 정보 가져오기
-        let userProfile = null;
-        try {
-            const stored = localStorage.getItem('wb_auth_profile');
-            if (stored) userProfile = JSON.parse(stored);
-        } catch(e) {}
 
         if (songParam && diffParam) {
             document.getElementById('sidebar').style.display = 'none';
@@ -312,10 +303,7 @@
 
         function parseChartData(data) {
             if(data.bpm) bpm = data.bpm;
-            // 오프셋을 파일에서 가져오되, 값이 없으면 0
-            if(data.offset !== undefined) offset = data.offset; 
-            else offset = 0;
-
+            if(data.offset !== undefined) offset = data.offset; else offset = 0;
             measures = []; 
             if(data.measures) {
                 const maxIdx = data.measures[data.measures.length-1].index;
@@ -403,7 +391,7 @@
                 const newNote = { lane, pos: pos192, len: 0 };
                 m.notes.push(newNote);
                 dragNote = newNote; isDragging = true; startY = y;
-                playTick();
+                playSfx('hit'); 
             } else {
                 dragNote = m.notes[existingIdx]; isDragging = true;
                 startY = (measureIdx * measureHeight) + (dragNote.pos / BASE_RES) * measureHeight;
@@ -535,7 +523,6 @@
         //              GAME LOGIC
         // ==========================================
         
-        // ★ [수정] 오토 체크박스 확인 후 게임 시작
         document.getElementById('btn-test').addEventListener('click', () => {
             const isAuto = document.getElementById('chk-auto').checked;
             startTestMode(isAuto);
@@ -545,7 +532,6 @@
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             if(!songParam) offset = parseInt(offsetInput.value) || 0;
             
-            // BPM 안전장치
             if(isNaN(bpm) || bpm <= 0) bpm = 130;
 
             const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
@@ -554,7 +540,6 @@
             if (speedParam) noteSpeed = parseFloat(speedParam);
             else noteSpeed = parseFloat(speedSlider.value);
 
-            // ★ 오토 모드 설정
             isAutoMode = auto;
             if(autoIndicator) autoIndicator.style.display = isAutoMode ? 'block' : 'none';
 
@@ -579,7 +564,8 @@
                         endTime: noteEndTime, 
                         lane: n.lane, 
                         len: n.len, 
-                        hit: false, holding: false, finished: false 
+                        hit: false, holding: false, finished: false,
+                        audioPlayed: false // ★ 소리 재생 체크용 플래그
                     });
                     totalMaxHits++; 
                     if(n.len > 0) totalMaxHits++; 
@@ -651,6 +637,9 @@
             }
         });
 
+        // ==========================================
+        // ★ [핵심] 게임 루프
+        // ==========================================
         function gameLoop() {
             if(!isGameTesting || gameFinished) return;
             gameAnimId = requestAnimationFrame(gameLoop);
@@ -668,7 +657,6 @@
                 currentTime = 0;
                 if (audio.currentTime > 0) gameState = 'PLAYING';
             } else if (gameState === 'PLAYING') {
-                // ★ [수정] 강제 보정 삭제! 오디오 시간 그대로 사용
                 currentTime = audio.currentTime * 1000;
             }
 
@@ -679,16 +667,23 @@
             }
 
             gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 400, gameCanvas.height);
-            
             drawLaneBeams();
             drawJudgmentLine();
 
             const NOTE_SPEED_PX = 100 * noteSpeed; 
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
 
-            // ★ 오토 플레이 로직
+            // ★ 오토 플레이 로직 (소리와 화면의 타이밍 분리!)
             if (isAutoMode) {
                 activeNotes.forEach(n => {
+                    // 1. 소리 먼저 재생 (45ms 미리 명령 내려서 딜레이 상쇄)
+                    if (!n.audioPlayed && currentTime >= n.time - 120) {
+                        n.audioPlayed = true; 
+                        if(n.len > 0) playSfx('hold_start');
+                        else playSfx('hit');
+                    }
+
+                    // 2. 화면은 정박에 터짐 (0ms)
                     if (!n.hit && currentTime >= n.time) {
                         n.hit = true; n.holding = true;
                         if(n.len === 0) n.finished = true;
@@ -699,11 +694,10 @@
                         judgeStats.perfect++; 
                         updateGameHUD(); showJudge("PERFECT", n.lane, "#00e5ff");
                         
-                        if(n.len > 0) playSfx('hold_start'); else { 
-                            playSfx('hit'); 
-                            setTimeout(() => { if(!n.holding) activeKeys[n.lane] = false; }, 50);
-                        }
+                        if(n.len === 0) setTimeout(() => { if(!n.holding) activeKeys[n.lane] = false; }, 50);
                     }
+                    
+                    // 3. 롱노트 종료
                     if (n.hit && n.len > 0 && !n.finished) {
                         activeKeys[n.lane] = true;
                         if (currentTime >= n.endTime) {
@@ -729,7 +723,7 @@
                         if (!n.hit) { 
                             n.hit = true; combo = 0; totalHits++; judgeStats.miss++; 
                             if(n.len > 0) totalHits++; 
-                            updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
+                            updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
                         }
                     }
                     continue;
@@ -739,7 +733,7 @@
                     n.hit = true; n.finished = true; combo = 0; totalHits++; 
                     judgeStats.miss++; 
                     if(n.len > 0) totalHits++; 
-                    updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
+                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
                     checkFinish();
                 } 
                 
@@ -753,7 +747,6 @@
                     }
                 }
 
-                // Draw Note
                 if (!n.finished) {
                     if (n.len > 0) {
                         const drawHeadY = n.hit ? HIT_LINE_Y : headY;
@@ -777,15 +770,14 @@
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
-        // ★ [수정] 폭타 처리 개선 버전
+        function checkFinish() { }
+
         function checkHit(lane) {
             let currentTime = 0;
             if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
             else currentTime = (Date.now() - startTimestamp) - START_DELAY;
 
-            // ★ [중요] 250 -> 150으로 축소! (OKAY 판정까지만 인정, 그 뒤는 쿨하게 버림)
             const HIT_WINDOW = 150; 
-            
             const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
             if (candidates.length === 0) return;
 
@@ -797,13 +789,10 @@
             if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
 
             let judge="MISS", clr="#888", rate=0;
-            // 판정도 조금 더 엄격하고 찰지게 조정 (상위권 리듬게임 기준)
-            if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }     // 45 -> 40
-            else if(absDiff <= 64) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }     // 90 -> 80
-            else if(absDiff <= 80) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
-            else if(absDiff <= 120) { judge="Oh..."; clr="#ff5555"; rate=10; judgeStats.oh++; }       // 150 유지
-            // OH... (150ms 넘어가는 것)은 아예 삭제 -> 미스로 처리됨
-
+            if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+            else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
+            else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            
             if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
             else { combo = 0; }
             
@@ -849,28 +838,8 @@
         function drawHitErrorBar() { const cx = 200, cy = HIT_LINE_Y + 50, width = 300; gameCtx.fillStyle = "rgba(50, 50, 50, 0.8)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4); gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 8, 2, 16); for(let i = recentHits.length - 1; i >= 0; i--) { const h = recentHits[i]; const px = (h.diff / 100) * (width / 2); let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px)); gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife; gameCtx.fillRect(drawX - 1, cy - 6, 2, 12); gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1); } }
         function createParticles(lane) { for(let i=0; i<4; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
         function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
-        
-        function drawJudgmentLine() { 
-            gameCtx.shadowBlur = 0; gameCtx.lineWidth = 2; // 발광 제거
-            gameCtx.strokeStyle = '#00e5ff'; gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke();
-            gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1;
-            for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); } 
-        }
-        
-        function drawLaneBeams() { 
-            gameCtx.globalCompositeOperation = 'source-over'; // 눈부심 제거
-            for(let i=0; i<4; i++) { 
-                if(activeKeys[i]) { 
-                    const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); 
-                    grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); 
-                    gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.2; // 투명도 낮춤
-                    gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); 
-                } 
-            } 
-            gameCtx.globalAlpha = 1.0;
-        }
-
-        function checkFinish() { }
+        function drawJudgmentLine() { gameCtx.shadowBlur = 0; gameCtx.lineWidth = 2; gameCtx.strokeStyle = '#00e5ff'; gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke(); gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1; for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); } }
+        function drawLaneBeams() { gameCtx.globalCompositeOperation = 'source-over'; for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.2; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } } gameCtx.globalCompositeOperation = 'source-over'; gameCtx.globalAlpha=1.0; }
 
         function showResult() {
             try {
@@ -880,8 +849,6 @@
                 const finalScore = Math.round(score);
                 const finalScoreStr = finalScore.toString().padStart(6, '0');
                 
-                let xpDisplay = ""; 
-
                 if (songParam && diffParam) {
                     const storageKey = `wb_score_${songParam}_${diffParam}`;
                     const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
@@ -901,9 +868,8 @@
                         <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
                         <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
                         <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
-                        <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">No..</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
+                        <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">MISS</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
                     </div>
-                    ${xpDisplay}
                     <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
                 `;
                 resultOverlay.style.display = 'flex';
