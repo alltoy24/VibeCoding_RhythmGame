@@ -91,7 +91,8 @@
         // ★ GOOGLE LOGIN SETUP
         // ==========================================
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-        let userProfile = null;
+        // 이 줄이 없으면 "로그인 안 함"으로 쳐서 서버에 저장을 안 합니다.
+        const userProfile = JSON.parse(localStorage.getItem('wb_auth_profile'));
 
         const storedProfile = localStorage.getItem('wb_auth_profile');
         if (storedProfile) {
