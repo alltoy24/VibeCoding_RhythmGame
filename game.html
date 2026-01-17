@@ -243,6 +243,8 @@
 
         async function loadGameData(song, diff) {
             const startBtn = document.getElementById('btn-start-auto');
+            const loadingMsg = document.getElementById('loading-msg');
+            
             try {
                 // 1. 차트 JSON 로드
                 logStatus("LOADING CHART...");
@@ -251,19 +253,26 @@
                 const chartData = await chartRes.json();
                 parseChartData(chartData);
 
-                // 2. 오디오 로드 (순서 수정됨: 이벤트 먼저 걸고 로드)
+                // 2. 오디오 로드 (캐시 문제 해결 버전)
                 logStatus("LOADING AUDIO...");
-                
-                // ★ [수정] 오디오 로딩 안전장치
                 const audioPath = `Maps/${song}/audio.mp3`;
-                
-                // 이벤트를 먼저 정의해야 놓치지 않음
-                audio.oncanplaythrough = () => { 
-                    console.log("Audio Ready!");
-                    logStatus("READY");
-                    document.getElementById('loading-msg').style.display = 'none'; 
-                    startBtn.style.display = 'block'; 
+
+                // ★ [핵심] 오디오 준비 완료 체크 함수
+                const checkAudioReady = () => {
+                    // readyState 4(HAVE_ENOUGH_DATA) 또는 3(HAVE_FUTURE_DATA)이면 준비 된 것임
+                    if (audio.readyState >= 3) {
+                        console.log("Audio Loaded (Cached or Downloaded)");
+                        logStatus("READY");
+                        loadingMsg.style.display = 'none'; 
+                        startBtn.style.display = 'block';
+                        return true;
+                    }
+                    return false;
                 };
+
+                // 이벤트 리스너 등록
+                audio.oncanplaythrough = checkAudioReady;
+                audio.onloadeddata = checkAudioReady; // 혹시 몰라 하나 더 등록
                 
                 audio.onerror = (e) => {
                     logStatus("AUDIO ERROR");
@@ -272,6 +281,15 @@
 
                 audio.src = audioPath;
                 audio.load();
+
+                // ★ [강력한 안전장치] 
+                // 이미 캐시되어서 이벤트가 안 터질 경우를 대비해, 
+                // 0.1초마다 검사해서 준비됐으면 강제로 넘겨버림
+                const forceCheck = setInterval(() => {
+                    if (checkAudioReady()) {
+                        clearInterval(forceCheck); // 준비됐으면 검사 종료
+                    }
+                }, 100);
 
             } catch (err) { 
                 console.error(err);
