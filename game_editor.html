@@ -195,7 +195,9 @@
         loadSound('hold_start', 'sfx/hold_start.mp3');
         loadSound('hold_end', 'sfx/hold_end.mp3');
         loadSound('fc', 'sfx/full_combo.mp3');
-        loadSound('ap', 'sfx/all_perfect.mp3');
+        // [수정] AP 소리를 두 개로 나눠서 로딩합니다
+        loadSound('ap_main', 'sfx/all_perfect.mp3');   // 1. 맑은 소리 (기존)
+        loadSound('ap_layer', 'sfx/glitch.mp3');       // 2. 글리치 소리 (새로 추가)
 
         function playSfx(name) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
