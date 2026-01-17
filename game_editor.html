@@ -172,8 +172,8 @@
         const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
         
-        // ★ 히트사운드 앞부분 0.55초 자르기 (Pre-fire)
-        const SFX_FIXED_TRIM = 0.55; 
+        // ★ 히트사운드 앞부분 0초 자르기 (Pre-fire)
+        const SFX_FIXED_TRIM = 0; 
 
         // ★ Web Audio API (반응 속도 최적화)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
@@ -821,9 +821,10 @@
             if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
 
             let judge="MISS", clr="#888", rate=0;
-            if(absDiff <= 45) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
-            else if(absDiff <= 90) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
-            else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            if(absDiff <= 48) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+            else if(absDiff <= 72) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
+            else if(absDiff <= 108) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            else if(absDiff <= 150) { judge="Oh..."; clr="#ffff00"; rate=10; judgeStats.oh++; }
             
             if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
             else { combo = 0; }
