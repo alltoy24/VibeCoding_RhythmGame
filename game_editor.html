@@ -706,17 +706,13 @@
             // ★ 오토 플레이 로직 (소리 예약 + 비주얼 분리)
             if (isAutoMode) {
                 activeNotes.forEach(n => {
-                    // ★ 1. 소리 예약 시스템 (Lookahead)
-                    // 노트가 오기 0.1초 전에 미리 소리를 예약함 (브라우저가 준비할 시간을 충분히 줌)
-                    if (!n.scheduled && !n.hit && n.time > currentTime && n.time < currentTime + 100) {
-                        const timeUntilHit = (n.time - currentTime) / 1000; // 초 단위 변환
-                        const audioTime = audioCtx.currentTime + timeUntilHit; // 현재 오디오 시간 + 남은 시간
-                        
-                        if(n.len > 0) playSfx('hold_start', audioTime);
-                        else playSfx('hit', audioTime);
-                        
-                        n.scheduled = true; // 예약 완료 (중복 실행 방지)
+                    // 1. 소리 먼저 재생 (45ms 미리 명령 내려서 딜레이 상쇄)
+                    if (!n.audioPlayed && currentTime >= n.time - 120) {
+                        n.audioPlayed = true; 
+                        if(n.len > 0) playSfx('hold_start');
+                        else playSfx('hit');
                     }
+
 
                     // 2. 비주얼 (정박)
                     if (!n.hit && currentTime >= n.time) {
