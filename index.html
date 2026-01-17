@@ -446,7 +446,8 @@
         window.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('song-list');
             try {
-                const response = await fetch('song_list.json');
+                // [수정 후] 뒤에 현재 시간을 붙여서 무조건 새로 받게 함
+                const response = await fetch('song_list.json?t=' + new Date().getTime());
                 if (!response.ok) throw new Error("song_list.json을 찾을 수 없습니다.");
                 const songs = await response.json();
                 list.innerHTML = ""; 
