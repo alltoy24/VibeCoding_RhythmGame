@@ -589,12 +589,13 @@
                 }
                 // ==========================================
                 
-                // 1. 점수 & 레벨 서버 전송
-                if (songParam && diffParam && userProfile) {
-                    const SERVER_BASE = SERVER_URL.replace('/api/score', ''); 
-
-                    // 점수 전송
-                    fetch(SERVER_URL, {
+                // ==========================================
+                // ★ [수정] 서버에 점수 & 경험치/레벨 확정 저장
+                // ==========================================
+                if (songParam && diffParam && userProfile) { // 로그인 한 상태라면
+            
+                    // 1. 랭킹 서버에 점수 보내기 (여기서도 레벨을 최신으로 갱신해줌)
+                    fetch(`${SERVER_BASE}/api/score`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
@@ -602,27 +603,30 @@
                             userName: userProfile.name,
                             song: songParam,
                             diff: diffParam,
-                            score: parseInt(finalScore)
+                            score: Math.round(score),
+                            level: currentLv  // ★ 중요: 방금 오른 레벨을 보냄
                         })
-                    });
+                    })
+                    .then(res => res.json())
+                    .then(data => console.log("랭킹 저장 완료:", data))
+                    .catch(err => console.error("랭킹 오류:", err));
 
-                    // (수정 후) 이렇게 변수로 바로 넣어주세요!
-                    const updatedLv = currentLv; 
-                    const updatedXp = currentXp;
-                    // (수정된 fetch 부분)
-                    fetch(SERVER_URL, {
+
+                    // 2. 유저 정보 서버에 보내기 (XP랑 레벨 저장용)
+                    // ★ 이게 없어서 경험치가 안 올랐던 겁니다!
+                    fetch(`${SERVER_BASE}/api/user/update`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             userId: userProfile.sub,
-                            userName: userProfile.name,
-                            song: songParam,
-                            diff: diffParam,
-                            score: parseInt(finalScore),
-                            level: parseInt(localStorage.getItem('wb_user_lv') || 1) // ★ 레벨 정보 추가 전송
+                            level: currentLv, // ★ 방금 오른 레벨
+                            xp: currentXp     // ★ 방금 얻은 경험치
                         })
-                    });
-                    }
+                    })
+                    .then(res => res.json())
+                    .then(data => console.log("경험치 저장 완료:", data))
+                    .catch(err => console.error("유저 정보 오류:", err));
+                }
 
                 // 2. 랭킹 데이터 가져오기
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
