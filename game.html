@@ -547,9 +547,9 @@
             if (typeof playSfx === 'function') { if (n.len > 0) playSfx('hold_start'); else playSfx('hit'); }
 
             let judge="No..", clr="#888", rate=0;
-            if(absDiff <=40) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
+            if(absDiff <=48) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
             else if(absDiff <= 72) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
-            else if(absDiff <= 100) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            else if(absDiff <= 108) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
             else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
 
             if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
@@ -742,7 +742,7 @@
 
                 let badgeHtml = "";
                 if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) 
-                    badgeHtml = "<div class='res-badge badge-ap'>ALL PERFECT</div>";
+                    badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
                 else if (combo === totalMaxHits && totalMaxHits > 0) 
                     badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
 
