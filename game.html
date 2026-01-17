@@ -94,7 +94,7 @@
 
     <script>
         // ==========================================
-        // ★ 디버깅용 로그 함수 (화면에 상태 표시)
+        // ★ 디버깅용 로그 함수
         // ==========================================
         function logStatus(msg) {
             console.log(msg);
@@ -103,9 +103,12 @@
         }
 
         // ==========================================
-        // ★ [중요] 서버 주소
+        // ★ [중요] 서버 주소 & 모바일 감지 (최상단)
         // ==========================================
         const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+        
+        // ★ [FIX] isMobile을 가장 먼저 정의해야 에러가 안 납니다!
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         // ==========================================
         // ★ GOOGLE LOGIN SETUP
@@ -122,7 +125,6 @@
         } catch(e) { console.error("Login Load Fail", e); }
 
         window.onload = function() {
-            // 구글 라이브러리가 로드되었는지 체크
             if (typeof google !== 'undefined' && google.accounts && !userProfile) {
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CLIENT_ID,
@@ -163,7 +165,6 @@
             } catch (e) { console.warn(`Sound load failed: ${name}`, e); }
         }
 
-        // 효과음 미리 로드 (비동기)
         loadSound('hit', 'sfx/hit.mp3');
         loadSound('hold_start', 'sfx/hold_start.mp3');
         loadSound('hold_end', 'sfx/hold_end.mp3');
@@ -194,19 +195,33 @@
         const finishEffect = document.getElementById('finish-effect');
         const resultOverlay = document.getElementById('result-overlay');
         
-        gameCanvas.width = 450;
-        gameCanvas.height = window.innerHeight;
-        const HIT_LINE_Y = window.innerHeight * 0.85; 
+        // ★ 모바일 대응을 위한 변수 설정 (let 사용)
         let TRACK_X_OFFSET = 25; 
         let LANE_WIDTH = 100;
-        let NOTE_WIDTH = 90;     
-        // ★ 모바일이면 화면 4등분으로 강제 조정
+        let NOTE_WIDTH = 90;    
+        let NOTE_X_PADDING = 5;  
+        const HIT_LINE_Y = window.innerHeight * 0.85; 
+
+        // 캔버스 크기 초기화
         if (isMobile) {
+            console.log("모바일 모드 활성화");
+            document.body.classList.add('mobile-mode');
+            gameCanvas.width = window.innerWidth;
+            
+            // 모바일용 치수 계산
             LANE_WIDTH = window.innerWidth / 4;
-            TRACK_X_OFFSET = 0; // 모바일은 꽉 차게
-            NOTE_WIDTH = LANE_WIDTH * 0.9; // 레인 너비의 90%
+            TRACK_X_OFFSET = 0;
+            NOTE_WIDTH = LANE_WIDTH * 0.9;
+            NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
+
+            // 시작 버튼 텍스트 변경
+            const startBtn = document.getElementById('btn-start-auto');
+            if(startBtn) startBtn.innerText = "TOUCH TO START";
+        } else {
+            gameCanvas.width = 450; // PC는 고정
         }
-        const NOTE_X_PADDING = 5;  
+        gameCanvas.height = window.innerHeight;
+
         const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
         
         let gameFinished = false;
@@ -224,31 +239,32 @@
         let totalMaxHits = 0; 
         let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
 
-        window.addEventListener('resize', () => { gameCanvas.height = window.innerHeight; });
+        // 리사이즈 대응
+        window.addEventListener('resize', () => { 
+            gameCanvas.height = window.innerHeight;
+            if(isMobile) {
+                gameCanvas.width = window.innerWidth;
+                LANE_WIDTH = window.innerWidth / 4;
+                NOTE_WIDTH = LANE_WIDTH * 0.9;
+                NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
+            }
+        });
 
         audio.onended = () => {
             if (!gameFinished) finishGame();
         };
 
-        // ★ [수정] DOMContentLoaded 로직 강화
+        // DOMContentLoaded 로직
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const song = urlParams.get('song');
             const diff = urlParams.get('diff');
             const speed = urlParams.get('speed');
 
-            // 1. URL 파라미터 체크
             if (!song || !diff) {
                 logStatus("ERROR: NO SONG DATA");
                 alert("잘못된 접근입니다. 곡을 선택해주세요.");
-                location.href = "index.html"; // 메인으로 튕겨내기
-                return;
-            }
-
-            // 2. 파일 프로토콜 체크
-            if (window.location.protocol === 'file:') {
-                logStatus("ERROR: FILE PROTOCOL");
-                alert("보안 오류: file:// 에서는 실행할 수 없습니다.\nLive Server를 사용하세요.");
+                location.href = "index.html"; 
                 return;
             }
 
@@ -256,7 +272,6 @@
             const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
             offset += userGlobalOffset;
             
-            // 데이터 로드 시작
             loadGameData(song, diff);
         });
 
@@ -265,20 +280,16 @@
             const loadingMsg = document.getElementById('loading-msg');
             
             try {
-                // 1. 차트 JSON 로드
                 logStatus("LOADING CHART...");
                 const chartRes = await fetch(`Maps/${song}/${diff}.json`);
                 if(!chartRes.ok) throw new Error(`Chart File Not Found: ${song}/${diff}`);
                 const chartData = await chartRes.json();
                 parseChartData(chartData);
 
-                // 2. 오디오 로드 (캐시 문제 해결 버전)
                 logStatus("LOADING AUDIO...");
                 const audioPath = `Maps/${song}/audio.mp3`;
 
-                // ★ [핵심] 오디오 준비 완료 체크 함수
                 const checkAudioReady = () => {
-                    // readyState 4(HAVE_ENOUGH_DATA) 또는 3(HAVE_FUTURE_DATA)이면 준비 된 것임
                     if (audio.readyState >= 3) {
                         console.log("Audio Loaded (Cached or Downloaded)");
                         logStatus("READY");
@@ -289,9 +300,8 @@
                     return false;
                 };
 
-                // 이벤트 리스너 등록
                 audio.oncanplaythrough = checkAudioReady;
-                audio.onloadeddata = checkAudioReady; // 혹시 몰라 하나 더 등록
+                audio.onloadeddata = checkAudioReady; 
                 
                 audio.onerror = (e) => {
                     logStatus("AUDIO ERROR");
@@ -301,12 +311,9 @@
                 audio.src = audioPath;
                 audio.load();
 
-                // ★ [강력한 안전장치] 
-                // 이미 캐시되어서 이벤트가 안 터질 경우를 대비해, 
-                // 0.1초마다 검사해서 준비됐으면 강제로 넘겨버림
                 const forceCheck = setInterval(() => {
                     if (checkAudioReady()) {
-                        clearInterval(forceCheck); // 준비됐으면 검사 종료
+                        clearInterval(forceCheck); 
                     }
                 }, 100);
 
@@ -357,7 +364,7 @@
             updateGameHUD();
             
             gameState = 'COUNTDOWN';
-            startTimestamp = Date.now(); // 게임 시작 기준 시간 초기화
+            startTimestamp = Date.now(); 
             audio.currentTime = 0;
             
             setTimeout(finishGame, (2000 + lastNoteEndTime + 5000));
@@ -385,12 +392,10 @@
                 currentTime = rawTime - START_DELAY;
                 if (rawTime >= START_DELAY) {
                     gameState = 'WAIT_AUDIO';
-                    // 오디오 플레이 시도
                     const playPromise = audio.play();
                     if (playPromise !== undefined) {
                         playPromise.catch(error => {
-                            console.log("Audio Play Failed (Autoplay policy):", error);
-                            // 자동 재생 실패 시 강제로 시간으로 진행
+                            console.log("Audio Play Failed:", error);
                             gameState = 'PLAYING_NO_AUDIO'; 
                         });
                     }
@@ -401,7 +406,6 @@
             } else if (gameState === 'PLAYING') {
                 currentTime = audio.currentTime * 1000;
             } else if (gameState === 'PLAYING_NO_AUDIO') {
-                // 오디오 없이 진행 (백업)
                 currentTime = (Date.now() - startTimestamp) - START_DELAY;
             }
 
@@ -411,7 +415,7 @@
                 }
             }
 
-            gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 450, gameCanvas.height);
+            gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
             drawLaneBeams();
             drawJudgmentLine();
 
@@ -478,7 +482,12 @@
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
+        // ==========================================
+        // ★ 입력 처리 (키보드 + 모바일 터치)
+        // ==========================================
         const KEY_MAP = ['d', 'f', 'j', 'k'];
+        
+        // 키보드
         window.addEventListener('keydown', e => {
             if(gameFinished) return;
             const lane = KEY_MAP.indexOf(e.key.toLowerCase());
@@ -489,6 +498,35 @@
             const lane = KEY_MAP.indexOf(e.key.toLowerCase());
             if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
         });
+
+        // 모바일 터치 (isMobile 변수가 위에서 정의되어 문제 없음)
+        if (isMobile) {
+            gameCanvas.addEventListener('touchstart', handleTouch, {passive: false});
+            gameCanvas.addEventListener('touchend', handleTouch, {passive: false});
+            gameCanvas.addEventListener('touchcancel', handleTouch, {passive: false}); 
+        }
+
+        function handleTouch(e) {
+            if (gameFinished) return;
+            e.preventDefault();
+            const touches = e.changedTouches;
+            for (let i = 0; i < touches.length; i++) {
+                const touch = touches[i];
+                // 화면 4등분 계산
+                const lane = Math.floor(touch.clientX / (window.innerWidth / 4));
+                if (lane >= 0 && lane < 4) {
+                    if (e.type === 'touchstart') {
+                        if (!activeKeys[lane]) {
+                            activeKeys[lane] = true;
+                            checkHit(lane);
+                        }
+                    } else if (e.type === 'touchend' || e.type === 'touchcancel') {
+                        activeKeys[lane] = false;
+                        checkRelease(lane);
+                    }
+                }
+            }
+        }
 
         function checkHit(lane) {
             let currentTime = 0;
@@ -526,7 +564,6 @@
                 let currentTime = 0;
                 if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
                 else currentTime = (Date.now() - startTimestamp) - START_DELAY;
-
                 const remaining = n.endTime - currentTime; 
                 const totalDuration = n.endTime - n.time;
                 const safeZone = Math.max(300, totalDuration * 0.5); 
@@ -553,9 +590,9 @@
 
         function drawJudgmentLine() {
             gameCtx.shadowBlur = 10; gameCtx.shadowColor = '#00e5ff'; gameCtx.strokeStyle = '#00e5ff'; gameCtx.lineWidth = 3;
-            gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(450, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0;
+            gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(gameCanvas.width, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0;
             gameCtx.strokeStyle = '#333'; gameCtx.lineWidth = 2;
-            for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = TRACK_X_OFFSET + i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); }
+            for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = TRACK_X_OFFSET + i*LANE_WIDTH; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); }
         }
 
         function drawLaneBeams() {
@@ -564,14 +601,15 @@
                 if(activeKeys[i]) { 
                     const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); 
                     grd.addColorStop(0, COLORS[i] + '80'); grd.addColorStop(1, "transparent"); 
-                    gameCtx.fillStyle=grd; gameCtx.fillRect(TRACK_X_OFFSET + i*100, 0, 100, HIT_LINE_Y); 
+                    gameCtx.fillStyle=grd; 
+                    gameCtx.fillRect(TRACK_X_OFFSET + i*LANE_WIDTH, 0, LANE_WIDTH, HIT_LINE_Y); 
                 } 
             }
             gameCtx.globalCompositeOperation = 'source-over';
         }
 
-        function showJudge(text, lane, color) { judgments.push({text, x: TRACK_X_OFFSET + lane*100 + 50, y: HIT_LINE_Y - 50, life: 30, maxLife: 30, color}); }
-        function createParticles(lane) { for(let i=0; i<8; i++) particles.push({x:TRACK_X_OFFSET + lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*15, vy:(Math.random()-1)*15, life:1.0, color:COLORS[lane]}); }
+        function showJudge(text, lane, color) { judgments.push({text, x: TRACK_X_OFFSET + lane*LANE_WIDTH + LANE_WIDTH/2, y: HIT_LINE_Y - 50, life: 30, maxLife: 30, color}); }
+        function createParticles(lane) { for(let i=0; i<8; i++) particles.push({x:TRACK_X_OFFSET + lane*LANE_WIDTH + LANE_WIDTH/2, y:HIT_LINE_Y, vx:(Math.random()-0.5)*15, vy:(Math.random()-1)*15, life:1.0, color:COLORS[lane]}); }
         
         function drawGameFX() {
             for(let i=judgments.length-1; i>=0; i--) {
@@ -581,7 +619,7 @@
             }
         }
         function drawHitErrorBar() {
-            const cx = 225, cy = HIT_LINE_Y + 40, width = 300;
+            const cx = gameCanvas.width / 2; const cy = HIT_LINE_Y + 40; const width = 300;
             gameCtx.fillStyle = "rgba(100, 100, 100, 0.5)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4);
             gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 6, 2, 12);
             for(let i = recentHits.length - 1; i >= 0; i--) {
@@ -601,20 +639,13 @@
             }
         }
 
-        // ==========================================
-        // ★ [FIX] 저장 타이밍 문제 해결된 showResult
-        // ==========================================
         async function showResult() {
             try {
-                // 1. 주소 변수 준비
                 const SERVER_BASE = SERVER_URL.replace('/api/score', '');
 
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
-                // ==========================================
-                // ★ 경험치(XP) & 레벨 계산
-                // ==========================================
                 let gainedXp = Math.floor(score / 5000); 
                 if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
 
@@ -629,11 +660,9 @@
                     requiredXp = currentLv * 500; 
                 }
 
-                // 내 컴퓨터에 최신 상태 저장
                 localStorage.setItem('wb_user_lv', currentLv);
                 localStorage.setItem('wb_user_xp', currentXp);
 
-                // 랭크 계산
                 let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
                 const finalScore = Math.round(score).toString().padStart(6, '0');
                 
@@ -641,9 +670,6 @@
                 const songParam = urlParams.get('song');
                 const diffParam = urlParams.get('diff');
 
-                // ==========================================
-                // ★ 내 컴퓨터에 뱃지 & 최고점수 저장
-                // ==========================================
                 if (songParam && diffParam) {
                     const scoreKey = `wb_score_${songParam}_${diffParam}`;
                     const badgeKey = `wb_badge_${songParam}_${diffParam}`;
@@ -658,12 +684,8 @@
                     }
                 }
                 
-                // ==========================================
-                // ★ [서버 전송] await를 써서 "저장 완료"를 기다림
-                // ==========================================
                 if (songParam && diffParam && userProfile) { 
                     try {
-                        // 1. 점수 저장 기다리기 (await)
                         await fetch(`${SERVER_BASE}/api/score`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -676,9 +698,7 @@
                                 level: currentLv
                             })
                         });
-                        console.log("서버 저장 완료!");
 
-                        // 2. XP 저장 기다리기 (await)
                         await fetch(`${SERVER_BASE}/api/user/update`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
@@ -691,13 +711,8 @@
                     } catch (err) {
                         console.error("서버 전송 중 에러:", err);
                     }
-                } else {
-                    console.log("게스트 모드: 서버 저장 건너뜀");
                 }
 
-                // ==========================================
-                // ★ 랭킹 가져오기 (저장이 끝난 뒤에 실행됨!)
-                // ==========================================
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
                 try {
                     const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
@@ -723,7 +738,6 @@
                 } catch(e) { console.warn("Ranking Load Fail", e); }
 
 
-                // 3. 결과창 HTML 조립
                 let badgeHtml = "";
                 if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) 
                     badgeHtml = "<div class='res-badge badge-ap'>ALL PERFECT</div>";
@@ -769,70 +783,6 @@
             } catch(e) {
                 alert("Result Error: " + e.message);
                 location.href='index.html';
-            }
-        }
-        // ==========================================
-        // ★ [추가] 모바일 터치 & 반응형 UI 시스템
-        // ==========================================
-        
-        // 1. 모바일인지 PC인지 검사
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        if (isMobile) {
-            console.log("모바일 환경 감지됨: 터치 모드 활성화");
-            
-            // (1) 바디에 클래스 추가 (CSS가 이걸 보고 화면 꽉 차게 늘림)
-            document.body.classList.add('mobile-mode');
-
-            // (2) 캔버스 크기 재조정 (모바일은 전체화면이 국룰)
-            gameCanvas.width = window.innerWidth;
-            const resizeMobile = () => {
-                gameCanvas.width = window.innerWidth;
-                gameCanvas.height = window.innerHeight;
-                // 레인 너비도 화면 등분으로 변경
-                // LANE_WIDTH 변수를 let으로 선언했는지 확인 필요 (const면 에러남 -> 아래 참고)
-            };
-            window.addEventListener('resize', resizeMobile);
-            resizeMobile();
-
-            // (3) 시작 버튼 텍스트 변경
-            const startBtn = document.getElementById('btn-start-auto');
-            if(startBtn) startBtn.innerText = "TOUCH TO START";
-        }
-
-        // 2. 터치 입력 처리 (멀티터치 지원)
-        gameCanvas.addEventListener('touchstart', handleTouch, {passive: false});
-        gameCanvas.addEventListener('touchend', handleTouch, {passive: false});
-        // 터치하다가 손가락 캔버스 밖으로 나갔을 때도 뗐다고 처리
-        gameCanvas.addEventListener('touchcancel', handleTouch, {passive: false}); 
-
-        // 터치 이벤트 핸들러
-        function handleTouch(e) {
-            if (gameFinished) return;
-            e.preventDefault(); // 스크롤/확대 방지 (필수!)
-
-            // 현재 화면에 닿아있는 모든 손가락 정보를 가져옴
-            const touches = e.changedTouches;
-
-            for (let i = 0; i < touches.length; i++) {
-                const touch = touches[i];
-                
-                // 화면 가로를 4등분해서 어느 레인인지 계산
-                // 예: 화면 폭 400px일 때, X좌표 50이면 0번 레인
-                const laneWidth = window.innerWidth / 4; 
-                const lane = Math.floor(touch.clientX / laneWidth);
-
-                if (lane >= 0 && lane < 4) {
-                    if (e.type === 'touchstart') {
-                        if (!activeKeys[lane]) {
-                            activeKeys[lane] = true;
-                            checkHit(lane); // 판정 실행
-                        }
-                    } else if (e.type === 'touchend' || e.type === 'touchcancel') {
-                        activeKeys[lane] = false;
-                        checkRelease(lane); // 롱노트 떼기 판정
-                    }
-                }
             }
         }
     </script>
