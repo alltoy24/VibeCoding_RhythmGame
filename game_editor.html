@@ -796,9 +796,10 @@
 
             let judge="MISS", clr="#888", rate=0;
             // 판정도 조금 더 엄격하고 찰지게 조정 (상위권 리듬게임 기준)
-            if(absDiff <= 40) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }     // 45 -> 40
-            else if(absDiff <= 80) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }     // 90 -> 80
-            else if(absDiff <= 150) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }      // 150 유지
+            if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }     // 45 -> 40
+            else if(absDiff <= 64) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }     // 90 -> 80
+            else if(absDiff <= 80) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
+            else if(absDiff <= 120) { judge="Oh..."; clr="#ff5555"; rate=10; judgeStats.oh++; }       // 150 유지
             // OH... (150ms 넘어가는 것)은 아예 삭제 -> 미스로 처리됨
 
             if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
