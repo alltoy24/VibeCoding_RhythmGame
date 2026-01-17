@@ -2,71 +2,191 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : AUTH</title>
+    <title>WEB BEAT : ACCESS</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Roboto:wght@400;700&display=swap');
+        
         body {
-            background-color: #050505;
-            color: #00e5ff;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            font-family: 'Orbitron', sans-serif;
+            margin: 0; height: 100vh;
+            background: #050505; color: #fff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            font-family: 'Roboto', sans-serif;
             overflow: hidden;
         }
-        .loading-text {
-            font-size: 24px;
-            margin-bottom: 40px;
-            animation: blink 1s infinite;
-            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
-            letter-spacing: 3px;
+
+        /* 배경 효과 */
+        .bg-grid {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+            background-size: 50px 50px; z-index: -1;
+            animation: moveGrid 20s linear infinite;
         }
-        @keyframes blink { 50% { opacity: 0.3; } }
-        
-        /* 구글 버튼 커스텀 (다크모드 강제) */
-        .g_id_signin { margin-top: 20px; }
+        @keyframes moveGrid { from { transform: translateY(0); } to { transform: translateY(50px); } }
+
+        .login-box {
+            background: rgba(17, 17, 17, 0.9);
+            border: 2px solid #00e5ff;
+            border-radius: 15px;
+            padding: 40px;
+            width: 320px;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(0, 229, 255, 0.2);
+            backdrop-filter: blur(10px);
+        }
+
+        h1 {
+            font-family: 'Orbitron'; font-size: 32px; color: #00e5ff;
+            margin: 0 0 10px 0; text-shadow: 0 0 10px rgba(0,229,255,0.8);
+        }
+        p { color: #888; font-size: 12px; margin-bottom: 30px; letter-spacing: 2px; }
+
+        /* 버튼 컨테이너 */
+        .btn-container { display: flex; flex-direction: column; gap: 15px; align-items: center; }
+
+        /* 카카오 버튼 커스텀 */
+        #kakao-custom-btn {
+            width: 100%; height: 44px;
+            background-color: #FEE500; color: #000;
+            border: none; border-radius: 4px;
+            font-weight: bold; font-size: 14px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+            transition: transform 0.2s;
+        }
+        #kakao-custom-btn:hover { transform: scale(1.02); filter: brightness(0.95); }
+
+        .btn-back {
+            margin-top: 30px; background: none; border: 1px solid #333;
+            color: #666; padding: 10px 20px; border-radius: 20px;
+            cursor: pointer; font-family: 'Orbitron'; transition: 0.3s;
+        }
+        .btn-back:hover { color: #fff; border-color: #fff; }
+
+        /* 로딩 오버레이 */
+        #loading-overlay {
+            position: absolute; top:0; left:0; width:100%; height:100%;
+            background: rgba(0,0,0,0.8); display: none;
+            flex-direction: column; align-items: center; justify-content: center; z-index: 10;
+        }
+        .loader {
+            border: 4px solid #333; border-top: 4px solid #00e5ff; border-radius: 50%;
+            width: 40px; height: 40px; animation: spin 1s linear infinite;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
     </style>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://t1.kakaocdn.net/kakao_js_sdk/2.4.0/kakao.min.js" integrity="sha384-mXVrIX2T/Kszp6Z0aEWaQA0VgZVqcvufk5GtTNzszApQgOSoBmZwKlK4tvfJ9Vp3" crossorigin="anonymous"></script>
 </head>
 <body>
-    <div class="loading-text">ACCESSING NEURAL NETWORK...</div>
-    
-    <div id="google-login-container"></div>
-    <div style="color:#444; margin-top:20px; font-size:12px; font-family:sans-serif;">SECURE CONNECTION REQUIRED</div>
+
+    <div class="bg-grid"></div>
+
+    <div class="login-box">
+        <h1>ACCESS</h1>
+        <p>IDENTIFY YOURSELF</p>
+
+        <div class="btn-container">
+            <div id="google-login-btn"></div>
+
+            <button id="kakao-custom-btn" onclick="loginWithKakao()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" d="M12 3C5.373 3 0 6.645 0 11.143C0 13.974 1.776 16.476 4.496 17.896C4.242 18.775 3.195 21.644 3.097 21.905C2.936 22.339 3.393 22.548 3.733 22.302C3.905 22.179 8.358 19.016 9.602 18.156L9.664 18.151C10.42 18.256 11.201 18.312 12 18.312C18.627 18.312 24 14.667 24 10.17C24 5.672 18.627 3 12 3Z" fill="black"/>
+                </svg>
+                카카오 로그인
+            </button>
+        </div>
+
+        <button class="btn-back" onclick="location.href='index.html'">BACK TO MENU</button>
+    </div>
+
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <div style="margin-top:15px; font-family:'Orbitron'; color:#00e5ff;">CONNECTING...</div>
+    </div>
 
     <script>
-        // ★ 님의 클라이언트 ID를 여기에 꼭 넣으세요!
-        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com";
+        // ==========================================
+        // ★ [설정] 아래 3가지를 꼭 채워주세요! ★
+        // ==========================================
+        const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app"; // 님의 진짜 서버 주소
+        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
+        const KAKAO_JS_KEY = "57aace86fddf8b4338c5967ae0762a42"; 
+        // ==========================================
 
+        // 초기화
         window.onload = function() {
+            // 구글 초기화
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
-                callback: handleCredentialResponse
+                callback: handleGoogleResponse
             });
-            
-            // 버튼 렌더링 (검은색 테마로 크게)
             google.accounts.id.renderButton(
-                document.getElementById("google-login-container"),
-                { theme: "filled_black", size: "large", shape: "pill", width: 280, text: "continue_with" }
+                document.getElementById("google-login-btn"),
+                { theme: "outline", size: "large", width: 320, shape: "rectangular" }
             );
+
+            // 카카오 초기화
+            try { Kakao.init(KAKAO_JS_KEY); } catch(e) {}
         };
 
-        function handleCredentialResponse(response) {
-            // 1. 토큰 해독
-            const responsePayload = parseJwt(response.credential);
-            
-            // 2. 브라우저 저장소(localStorage)에 유저 정보 저장
-            // ★ 이게 핵심입니다! 여기서 저장해야 index.html이 알아봅니다.
-            localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
-            
-            // 3. 메인 화면(index.html)으로 복귀
-            window.location.href = 'index.html'; 
+        // 1. 구글 로그인 처리
+        function handleGoogleResponse(response) {
+            showLoading();
+            const profile = parseJwt(response.credential);
+            completeLogin(profile);
         }
 
-        // JWT 디코딩 함수
+        // 2. 카카오 로그인 처리
+        function loginWithKakao() {
+            Kakao.Auth.login({
+                success: function(authObj) {
+                    showLoading();
+                    Kakao.API.request({
+                        url: '/v2/user/me',
+                        success: function(res) {
+                            const profile = {
+                                name: res.kakao_account.profile.nickname,
+                                sub: "kakao_" + res.id,
+                                platform: "kakao"
+                            };
+                            completeLogin(profile);
+                        },
+                        fail: function(error) { hideLoading(); alert('정보 로드 실패'); }
+                    });
+                },
+                fail: function(err) { alert('카카오 로그인 창이 닫혔거나 실패했습니다.'); },
+            });
+        }
+
+        // ★ [공통] 로그인 성공 후 처리
+        // 여기서 서버에 "나 왔어!" 하고 레벨 정보를 받아옵니다.
+        function completeLogin(profile) {
+            console.log("LOGIN SUCCESS:", profile.name);
+            localStorage.setItem('wb_auth_profile', JSON.stringify(profile));
+
+            // 서버에 유저 정보 동기화 (없으면 생성, 있으면 레벨 가져오기)
+            fetch(`${API_BASE}/api/user/${profile.sub}`)
+                .then(res => res.json())
+                .then(data => {
+                    // 서버에서 받은 레벨/XP 저장
+                    localStorage.setItem('wb_user_lv', data.level);
+                    localStorage.setItem('wb_user_xp', data.xp);
+                    
+                    // index.html로 귀환!
+                    location.href = 'index.html';
+                })
+                .catch(err => {
+                    console.error("서버 연결 실패:", err);
+                    // 서버 에러나도 일단 로그인은 시켜줌 (오프라인 모드 느낌)
+                    localStorage.setItem('wb_user_lv', 1);
+                    location.href = 'index.html';
+                });
+        }
+
+        // JWT 디코딩 (구글용)
         function parseJwt (token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
@@ -75,6 +195,10 @@
             }).join(''));
             return JSON.parse(jsonPayload);
         }
+
+        function showLoading() { document.getElementById('loading-overlay').style.display = 'flex'; }
+        function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
     </script>
 </body>
 </html>
