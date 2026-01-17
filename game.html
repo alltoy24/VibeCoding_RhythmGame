@@ -521,12 +521,73 @@
             try {
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
+
+                // ==========================================
+                // ★ [추가] 경험치(XP) 정산 시스템
+                // ==========================================
+                // 공식: 점수 5000점당 1 XP (100만점 기준 약 200 XP) + 풀콤보 보너스 50 XP
+                let gainedXp = Math.floor(score / 5000); 
+                if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
+
+                // 현재 내 레벨/경험치 불러오기
+                let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
+                let currentXp = parseInt(localStorage.getItem('wb_user_xp') || "0");
+
+                // 경험치 합산
+                currentXp += gainedXp;
+
+                // 레벨업 로직 (필요 경험치: 레벨 * 500)
+                // 예: 1렙→500, 2렙→1000 ...
+                let requiredXp = currentLv * 500; 
+
+                while (currentXp >= requiredXp) {
+                    currentXp -= requiredXp; // 경험치 소모
+                    currentLv++;             // 레벨 업!
+                    requiredXp = currentLv * 500; // 다음 필요 경험치 갱신
+                    // (선택) 레벨업 효과음이나 알림을 띄워도 됨
+                }
+
+                // 결과 저장 (내 컴퓨터)
+                localStorage.setItem('wb_user_lv', currentLv);
+                localStorage.setItem('wb_user_xp', currentXp);
+                // ==========================================
+
                 let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
                 const finalScore = Math.round(score).toString().padStart(6, '0');
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 const songParam = urlParams.get('song');
                 const diffParam = urlParams.get('diff');
+
+                // ==========================================
+                // ★ [추가] 내 컴퓨터에 기록 저장 (index.html 표시용)
+                // ==========================================
+                if (songParam && diffParam) {
+                    const scoreKey = `wb_score_${songParam}_${diffParam}`;
+                    const badgeKey = `wb_badge_${songParam}_${diffParam}`;
+            
+                    // 1. 점수 저장 (신기록일 때만)
+                    const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
+                    const currentScore = Math.round(score);
+            
+                    if (currentScore > savedScore) {
+                        localStorage.setItem(scoreKey, currentScore.toString().padStart(6, '0'));
+                    }
+
+                    // 2. 뱃지 저장 (TB > FC 순서 지키기)
+                    // Troll Beat 달성 시 무조건 저장
+                    if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) {
+                        localStorage.setItem(badgeKey, "TB");
+                    } 
+                    // Full Combo 달성 시 (기존에 TB가 없을 때만 저장)
+                    else if (combo === totalMaxHits && totalMaxHits > 0) {
+                        const currentBadge = localStorage.getItem(badgeKey);
+                        if (currentBadge !== "TB") {
+                            localStorage.setItem(badgeKey, "FC");
+                        }
+                    }
+                }
+                // ==========================================
                 
                 // 1. 점수 & 레벨 서버 전송
                 if (songParam && diffParam && userProfile) {
@@ -545,9 +606,9 @@
                         })
                     });
 
-                    // 레벨 전송
-                    const updatedLv = parseInt(localStorage.getItem('wb_user_lv') || 1);
-                    const updatedXp = parseInt(localStorage.getItem('wb_user_xp') || 0);
+                    // (수정 후) 이렇게 변수로 바로 넣어주세요!
+                    const updatedLv = currentLv; 
+                    const updatedXp = currentXp;
                     // (수정된 fetch 부분)
                     fetch(SERVER_URL, {
                         method: "POST",
