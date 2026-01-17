@@ -583,42 +583,38 @@
         }
 
         // ==========================================
-        // ★ [FIX] 순서 수정된 showResult 함수
+        // ★ [FIX] 저장 타이밍 문제 해결된 showResult
         // ==========================================
         async function showResult() {
             try {
-                // ★ 1. 주소 변수부터 가장 먼저 만들기! (이게 밑에 있어서 에러났던 것)
+                // 1. 주소 변수 준비
                 const SERVER_BASE = SERVER_URL.replace('/api/score', '');
 
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
                 // ==========================================
-                // ★ 경험치(XP) 정산 시스템
+                // ★ 경험치(XP) & 레벨 계산
                 // ==========================================
                 let gainedXp = Math.floor(score / 5000); 
                 if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
 
-                // 현재 내 레벨/경험치 불러오기
                 let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
                 let currentXp = parseInt(localStorage.getItem('wb_user_xp') || "0");
 
-                // 경험치 합산
                 currentXp += gainedXp;
-
-                // 레벨업 로직
                 let requiredXp = currentLv * 500; 
                 while (currentXp >= requiredXp) {
-                    currentXp -= requiredXp; // 경험치 소모
-                    currentLv++;             // 레벨 업!
+                    currentXp -= requiredXp; 
+                    currentLv++;            
                     requiredXp = currentLv * 500; 
                 }
 
-                // 결과 저장 (내 컴퓨터)
+                // 내 컴퓨터에 최신 상태 저장
                 localStorage.setItem('wb_user_lv', currentLv);
                 localStorage.setItem('wb_user_xp', currentXp);
-                // ==========================================
 
+                // 랭크 계산
                 let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
                 const finalScore = Math.round(score).toString().padStart(6, '0');
                 
@@ -627,75 +623,64 @@
                 const diffParam = urlParams.get('diff');
 
                 // ==========================================
-                // ★ 내 컴퓨터에 기록 저장 (뱃지/최고점수)
+                // ★ 내 컴퓨터에 뱃지 & 최고점수 저장
                 // ==========================================
                 if (songParam && diffParam) {
                     const scoreKey = `wb_score_${songParam}_${diffParam}`;
                     const badgeKey = `wb_badge_${songParam}_${diffParam}`;
-            
-                    // 1. 점수 저장 (신기록일 때만)
+                    
                     const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
                     const currentScore = Math.round(score);
-            
-                    if (currentScore > savedScore) {
-                        localStorage.setItem(scoreKey, currentScore.toString().padStart(6, '0'));
-                    }
+                    if (currentScore > savedScore) localStorage.setItem(scoreKey, currentScore.toString().padStart(6, '0'));
 
-                    // 2. 뱃지 저장
-                    if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) {
-                        localStorage.setItem(badgeKey, "TB");
-                    } 
+                    if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
                     else if (combo === totalMaxHits && totalMaxHits > 0) {
-                        const currentBadge = localStorage.getItem(badgeKey);
-                        if (currentBadge !== "TB") {
-                            localStorage.setItem(badgeKey, "FC");
-                        }
+                        if (localStorage.getItem(badgeKey) !== "TB") localStorage.setItem(badgeKey, "FC");
                     }
                 }
                 
                 // ==========================================
-                // ★ [서버 전송] 이제 주소 변수가 있어서 잘 될 겁니다!
+                // ★ [서버 전송] await를 써서 "저장 완료"를 기다림
                 // ==========================================
                 if (songParam && diffParam && userProfile) { 
-            
-                    // 1. 랭킹 서버에 점수 보내기
-                    fetch(`${SERVER_BASE}/api/score`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            userId: userProfile.sub,
-                            userName: userProfile.name,
-                            song: songParam,
-                            diff: diffParam,
-                            score: Math.round(score),
-                            level: currentLv
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => console.log("랭킹 저장 완료:", data))
-                    .catch(err => console.error("랭킹 오류:", err));
+                    try {
+                        // 1. 점수 저장 기다리기 (await)
+                        await fetch(`${SERVER_BASE}/api/score`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                userId: userProfile.sub,
+                                userName: userProfile.name,
+                                song: songParam,
+                                diff: diffParam,
+                                score: Math.round(score),
+                                level: currentLv
+                            })
+                        });
+                        console.log("서버 저장 완료!");
 
-                    // 2. 유저 정보(XP) 서버에 보내기
-                    fetch(`${SERVER_BASE}/api/user/update`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            userId: userProfile.sub,
-                            level: currentLv,
-                            xp: currentXp
-                        })
-                    })
-                    .then(res => res.json())
-                    .then(data => console.log("경험치 저장 완료:", data))
-                    .catch(err => console.error("유저 정보 오류:", err));
+                        // 2. XP 저장 기다리기 (await)
+                        await fetch(`${SERVER_BASE}/api/user/update`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                                userId: userProfile.sub,
+                                level: currentLv,
+                                xp: currentXp
+                            })
+                        });
+                    } catch (err) {
+                        console.error("서버 전송 중 에러:", err);
+                    }
+                } else {
+                    console.log("게스트 모드: 서버 저장 건너뜀");
                 }
 
                 // ==========================================
-                // ★ 랭킹 데이터 가져오기 (표시용)
+                // ★ 랭킹 가져오기 (저장이 끝난 뒤에 실행됨!)
                 // ==========================================
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
                 try {
-                    // SERVER_BASE는 맨 위에서 만들었으니 여기서 또 만들 필요 없음
                     const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
                     const rankData = await res.json();
                     
