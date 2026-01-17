@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Pre-Fire Sync)</title>
+    <title>WEB BEAT : EDITOR (Github Fix)</title>
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
@@ -172,12 +172,26 @@
         const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
         
-        // Web Audio API
+        // ★ 히트사운드 앞부분 0.55초 자르기 (Pre-fire)
+        const SFX_FIXED_TRIM = 0.55; 
+
+        // ★ Web Audio API (반응 속도 최적화)
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
             latencyHint: 'interactive', 
             sampleRate: 44100
         });
         const soundBuffers = {};
+
+        // ★ 엔진 예열
+        function warmUpAudio() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const oscillator = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            gain.gain.value = 0.001; 
+            oscillator.connect(gain);
+            gain.connect(audioCtx.destination);
+            oscillator.start();
+        }
 
         async function loadSound(name, url) {
             try {
@@ -194,9 +208,8 @@
         loadSound('fc', 'sfx/full_combo.mp3');
         loadSound('ap', 'sfx/all_perfect.mp3');
 
-        // 기본 재생
-        function playSfx(name) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+        // ★ 소리 재생 함수 (정밀 예약 + 자르기)
+        function playSfx(name, time = 0) {
             if (!soundBuffers[name]) return;
             const source = audioCtx.createBufferSource();
             source.buffer = soundBuffers[name];
@@ -204,10 +217,8 @@
             gainNode.gain.value = 0.7;
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            
-            // ★ 오토 플레이 꼼수: 앞부분을 살짝 잘라서(0.04s) 즉각 반응처럼 들리게 함
-            // 만약 소리가 씹히면 이 값을 0으로 바꾸세요.
-            source.start(0, 0.04); 
+            const playTime = time > 0 ? time : audioCtx.currentTime;
+            source.start(playTime, SFX_FIXED_TRIM); 
         }
 
         // ==========================================
@@ -280,6 +291,8 @@
             loadGameData(songParam, diffParam);
         }
 
+        // ★ [핵심] 완전 다운로드 (Blob) 로딩 방식
+        // 인터넷 끊김/버퍼링 방지를 위해 파일을 통째로 받아서 메모리에 올림
         async function loadGameData(song, diff) {
             const loadingMsg = document.getElementById('loading-msg');
             const startBtn = document.getElementById('btn-start-auto');
@@ -290,11 +303,24 @@
                 const chartData = await chartRes.json();
                 parseChartData(chartData);
 
-                loadingMsg.innerText = "LOADING AUDIO...";
-                audio.src = `Maps/${song}/audio.mp3`;
+                loadingMsg.innerText = "DOWNLOADING AUDIO (Wait)...";
+                
+                // ★ Fetch로 오디오 통으로 받기 (스트리밍 X)
+                const audioRes = await fetch(`Maps/${song}/audio.mp3`);
+                if(!audioRes.ok) throw new Error("Audio fetch failed");
+                const audioBlob = await audioRes.blob();
+                const audioUrl = URL.createObjectURL(audioBlob);
+                
+                audio.src = audioUrl;
                 audio.load();
-                audio.oncanplaythrough = () => { loadingMsg.style.display = 'none'; startBtn.style.display = 'block'; };
-                audio.onerror = () => { throw new Error("Audio not found"); };
+                
+                // 로딩 완료 체크
+                audio.oncanplaythrough = () => { 
+                    loadingMsg.style.display = 'none'; 
+                    startBtn.style.display = 'block'; 
+                };
+                audio.onerror = () => { throw new Error("Audio decode error"); };
+
             } catch (err) {
                 alert(`Error: ${err.message}\nPlease run with Live Server!`);
                 window.location.href = "index.html"; 
@@ -323,6 +349,7 @@
         }
 
         function startAutoPlay() { 
+            warmUpAudio(); 
             document.getElementById('loading-screen').style.display = 'none'; 
             startTestMode(false); 
         }
@@ -445,6 +472,7 @@
             if (!audio.src && !songParam) return alert("먼저 MP3 파일을 불러와주세요.");
             if (isEditPlaying) { stopEditPlay(); } 
             else {
+                warmUpAudio(); 
                 offset = parseInt(offsetInput.value) || 0;
                 audio.play().then(() => {
                     isEditPlaying = true;
@@ -532,6 +560,8 @@
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             if(!songParam) offset = parseInt(offsetInput.value) || 0;
             
+            warmUpAudio(); 
+
             if(isNaN(bpm) || bpm <= 0) bpm = 130;
 
             const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
@@ -565,7 +595,7 @@
                         lane: n.lane, 
                         len: n.len, 
                         hit: false, holding: false, finished: false,
-                        audioPlayed: false // ★ 소리 재생 체크용 플래그
+                        scheduled: false 
                     });
                     totalMaxHits++; 
                     if(n.len > 0) totalMaxHits++; 
@@ -673,17 +703,19 @@
             const NOTE_SPEED_PX = 100 * noteSpeed; 
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
 
-            // ★ 오토 플레이 로직 (소리와 화면의 타이밍 분리!)
+            // ★ 오토 플레이 로직 (소리 예약 + 비주얼 분리)
             if (isAutoMode) {
                 activeNotes.forEach(n => {
-                    // 1. 소리 먼저 재생 (미리 명령 내려서 딜레이 상쇄)
-                    if (!n.audioPlayed && currentTime >= n.time - 45) {
-                        n.audioPlayed = true; 
-                        if(n.len > 0) playSfx('hold_start');
-                        else playSfx('hit');
+                    // 1. 소리 예약 (0.1초 전)
+                    if (!n.scheduled && !n.hit && n.time > currentTime && n.time < currentTime + 100) {
+                        const timeUntilHit = (n.time - currentTime) / 1000;
+                        const audioTime = audioCtx.currentTime + timeUntilHit;
+                        if(n.len > 0) playSfx('hold_start', audioTime);
+                        else playSfx('hit', audioTime);
+                        n.scheduled = true; 
                     }
 
-                    // 2. 화면은 정박에 터짐 (0ms)
+                    // 2. 비주얼 (정박)
                     if (!n.hit && currentTime >= n.time) {
                         n.hit = true; n.holding = true;
                         if(n.len === 0) n.finished = true;
