@@ -516,17 +516,19 @@
         }
 
         // ==========================================
-        // ★ [FIX] 랭킹 기능 통합 및 중복 제거 완료
+        // ★ [FIX] 순서 수정된 showResult 함수
         // ==========================================
         async function showResult() {
             try {
+                // ★ 1. 주소 변수부터 가장 먼저 만들기! (이게 밑에 있어서 에러났던 것)
+                const SERVER_BASE = SERVER_URL.replace('/api/score', '');
+
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
                 // ==========================================
-                // ★ [추가] 경험치(XP) 정산 시스템
+                // ★ 경험치(XP) 정산 시스템
                 // ==========================================
-                // 공식: 점수 5000점당 1 XP (100만점 기준 약 200 XP) + 풀콤보 보너스 50 XP
                 let gainedXp = Math.floor(score / 5000); 
                 if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
 
@@ -537,15 +539,12 @@
                 // 경험치 합산
                 currentXp += gainedXp;
 
-                // 레벨업 로직 (필요 경험치: 레벨 * 500)
-                // 예: 1렙→500, 2렙→1000 ...
+                // 레벨업 로직
                 let requiredXp = currentLv * 500; 
-
                 while (currentXp >= requiredXp) {
                     currentXp -= requiredXp; // 경험치 소모
                     currentLv++;             // 레벨 업!
-                    requiredXp = currentLv * 500; // 다음 필요 경험치 갱신
-                    // (선택) 레벨업 효과음이나 알림을 띄워도 됨
+                    requiredXp = currentLv * 500; 
                 }
 
                 // 결과 저장 (내 컴퓨터)
@@ -561,7 +560,7 @@
                 const diffParam = urlParams.get('diff');
 
                 // ==========================================
-                // ★ [추가] 내 컴퓨터에 기록 저장 (index.html 표시용)
+                // ★ 내 컴퓨터에 기록 저장 (뱃지/최고점수)
                 // ==========================================
                 if (songParam && diffParam) {
                     const scoreKey = `wb_score_${songParam}_${diffParam}`;
@@ -575,12 +574,10 @@
                         localStorage.setItem(scoreKey, currentScore.toString().padStart(6, '0'));
                     }
 
-                    // 2. 뱃지 저장 (TB > FC 순서 지키기)
-                    // Troll Beat 달성 시 무조건 저장
+                    // 2. 뱃지 저장
                     if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) {
                         localStorage.setItem(badgeKey, "TB");
                     } 
-                    // Full Combo 달성 시 (기존에 TB가 없을 때만 저장)
                     else if (combo === totalMaxHits && totalMaxHits > 0) {
                         const currentBadge = localStorage.getItem(badgeKey);
                         if (currentBadge !== "TB") {
@@ -588,14 +585,13 @@
                         }
                     }
                 }
-                // ==========================================
                 
                 // ==========================================
-                // ★ [수정] 서버에 점수 & 경험치/레벨 확정 저장
+                // ★ [서버 전송] 이제 주소 변수가 있어서 잘 될 겁니다!
                 // ==========================================
-                if (songParam && diffParam && userProfile) { // 로그인 한 상태라면
+                if (songParam && diffParam && userProfile) { 
             
-                    // 1. 랭킹 서버에 점수 보내기 (여기서도 레벨을 최신으로 갱신해줌)
+                    // 1. 랭킹 서버에 점수 보내기
                     fetch(`${SERVER_BASE}/api/score`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
@@ -605,23 +601,21 @@
                             song: songParam,
                             diff: diffParam,
                             score: Math.round(score),
-                            level: currentLv  // ★ 중요: 방금 오른 레벨을 보냄
+                            level: currentLv
                         })
                     })
                     .then(res => res.json())
                     .then(data => console.log("랭킹 저장 완료:", data))
                     .catch(err => console.error("랭킹 오류:", err));
 
-
-                    // 2. 유저 정보 서버에 보내기 (XP랑 레벨 저장용)
-                    // ★ 이게 없어서 경험치가 안 올랐던 겁니다!
+                    // 2. 유저 정보(XP) 서버에 보내기
                     fetch(`${SERVER_BASE}/api/user/update`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
                             userId: userProfile.sub,
-                            level: currentLv, // ★ 방금 오른 레벨
-                            xp: currentXp     // ★ 방금 얻은 경험치
+                            level: currentLv,
+                            xp: currentXp
                         })
                     })
                     .then(res => res.json())
@@ -629,10 +623,12 @@
                     .catch(err => console.error("유저 정보 오류:", err));
                 }
 
-                // 2. 랭킹 데이터 가져오기
+                // ==========================================
+                // ★ 랭킹 데이터 가져오기 (표시용)
+                // ==========================================
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
                 try {
-                    const SERVER_BASE = SERVER_URL.replace('/api/score', '');
+                    // SERVER_BASE는 맨 위에서 만들었으니 여기서 또 만들 필요 없음
                     const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
                     const rankData = await res.json();
                     
@@ -656,8 +652,7 @@
                 } catch(e) { console.warn("Ranking Load Fail", e); }
 
 
-                // 3. 결과창 그리기 (뱃지, 상세판정 포함)
-                // 뱃지 HTML 생성
+                // 3. 결과창 HTML 조립
                 let badgeHtml = "";
                 if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) 
                     badgeHtml = "<div class='res-badge badge-ap'>ALL PERFECT</div>";
@@ -693,7 +688,6 @@
                 
                 resultOverlay.style.display = 'flex';
 
-                // 로그인 안 했으면 결과창에도 버튼 띄우기
                 if (!userProfile) {
                     google.accounts.id.renderButton(
                         document.getElementById("google-login-btn-result"),
