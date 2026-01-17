@@ -81,27 +81,36 @@
 
     <script>
         // ==========================================
-        // ★ [중요] 서버 주소 설정 (여기를 꼭 수정하세요!)
+        // ★ 디버깅용 로그 함수 (화면에 상태 표시)
         // ==========================================
-        // 예시: "https://port-0-vibecoding-server-xxxx.cloudtype.app/api/score"
-        // (맨 뒤에 /api/score 를 꼭 붙여주세요!)
+        function logStatus(msg) {
+            console.log(msg);
+            const el = document.getElementById('loading-msg');
+            if(el) el.innerText = msg;
+        }
+
+        // ==========================================
+        // ★ [중요] 서버 주소
+        // ==========================================
         const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
 
         // ==========================================
         // ★ GOOGLE LOGIN SETUP
         // ==========================================
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-        // 이 줄이 없으면 "로그인 안 함"으로 쳐서 서버에 저장을 안 합니다.
-        const userProfile = JSON.parse(localStorage.getItem('wb_auth_profile'));
-
-        const storedProfile = localStorage.getItem('wb_auth_profile');
-        if (storedProfile) {
-            userProfile = JSON.parse(storedProfile);
-            console.log("자동 로그인 성공:", userProfile.name);
-        }
+        let userProfile = null;
+        
+        try {
+            const stored = localStorage.getItem('wb_auth_profile');
+            if (stored) {
+                userProfile = JSON.parse(stored);
+                console.log("자동 로그인 성공:", userProfile.name);
+            }
+        } catch(e) { console.error("Login Load Fail", e); }
 
         window.onload = function() {
-            if (!userProfile) {
+            // 구글 라이브러리가 로드되었는지 체크
+            if (typeof google !== 'undefined' && google.accounts && !userProfile) {
                 google.accounts.id.initialize({
                     client_id: GOOGLE_CLIENT_ID,
                     callback: handleCredentialResponse
@@ -113,10 +122,6 @@
             const responsePayload = parseJwt(response.credential);
             userProfile = responsePayload;
             localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
-            
-            const btn = document.getElementById("google-login-btn");
-            if(btn) btn.style.display = 'none';
-            
             if(gameFinished) showResult();
         }
     
@@ -130,7 +135,7 @@
         }
 
         // ==========================================
-        // ★ Web Audio API
+        // ★ Web Audio API & Sound Load
         // ==========================================
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const soundBuffers = {};
@@ -138,12 +143,14 @@
         async function loadSound(name, url) {
             try {
                 const response = await fetch(url);
+                if(!response.ok) throw new Error(`SFX 404: ${url}`);
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 soundBuffers[name] = audioBuffer;
-            } catch (e) { console.warn(`Sound load failed: ${url}`); }
+            } catch (e) { console.warn(`Sound load failed: ${name}`, e); }
         }
 
+        // 효과음 미리 로드 (비동기)
         loadSound('hit', 'sfx/hit.mp3');
         loadSound('hold_start', 'sfx/hold_start.mp3');
         loadSound('hold_end', 'sfx/hold_end.mp3');
@@ -204,42 +211,74 @@
             if (!gameFinished) finishGame();
         };
 
+        // ★ [수정] DOMContentLoaded 로직 강화
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const song = urlParams.get('song');
             const diff = urlParams.get('diff');
             const speed = urlParams.get('speed');
 
-            if (song && diff) {
-                if(speed) noteSpeed = parseFloat(speed);
-                const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
-                offset += userGlobalOffset;
-                loadGameData(song, diff);
-            } else {
-                alert("잘못된 접근입니다.");
-                window.location.href = "index.html";
+            // 1. URL 파라미터 체크
+            if (!song || !diff) {
+                logStatus("ERROR: NO SONG DATA");
+                alert("잘못된 접근입니다. 곡을 선택해주세요.");
+                location.href = "index.html"; // 메인으로 튕겨내기
+                return;
             }
+
+            // 2. 파일 프로토콜 체크
+            if (window.location.protocol === 'file:') {
+                logStatus("ERROR: FILE PROTOCOL");
+                alert("보안 오류: file:// 에서는 실행할 수 없습니다.\nLive Server를 사용하세요.");
+                return;
+            }
+
+            if(speed) noteSpeed = parseFloat(speed);
+            const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
+            offset += userGlobalOffset;
+            
+            // 데이터 로드 시작
+            loadGameData(song, diff);
         });
 
         async function loadGameData(song, diff) {
-            const loadingMsg = document.getElementById('loading-msg');
             const startBtn = document.getElementById('btn-start-auto');
             try {
-                loadingMsg.innerText = "LOADING CHART...";
+                // 1. 차트 JSON 로드
+                logStatus("LOADING CHART...");
                 const chartRes = await fetch(`Maps/${song}/${diff}.json`);
-                if(!chartRes.ok) throw new Error("Chart not found");
+                if(!chartRes.ok) throw new Error(`Chart File Not Found: ${song}/${diff}`);
                 const chartData = await chartRes.json();
                 parseChartData(chartData);
 
-                loadingMsg.innerText = "LOADING AUDIO...";
-                audio.src = `Maps/${song}/audio.mp3`;
-                audio.load();
+                // 2. 오디오 로드 (순서 수정됨: 이벤트 먼저 걸고 로드)
+                logStatus("LOADING AUDIO...");
+                
+                // ★ [수정] 오디오 로딩 안전장치
+                const audioPath = `Maps/${song}/audio.mp3`;
+                
+                // 이벤트를 먼저 정의해야 놓치지 않음
                 audio.oncanplaythrough = () => { 
-                    loadingMsg.style.display = 'none'; 
+                    console.log("Audio Ready!");
+                    logStatus("READY");
+                    document.getElementById('loading-msg').style.display = 'none'; 
                     startBtn.style.display = 'block'; 
                 };
-                audio.onerror = () => { throw new Error("Audio not found"); };
-            } catch (err) { alert(`Error: ${err.message}`); window.location.href = "index.html"; }
+                
+                audio.onerror = (e) => {
+                    logStatus("AUDIO ERROR");
+                    alert("오디오 파일을 찾을 수 없습니다: " + audioPath);
+                };
+
+                audio.src = audioPath;
+                audio.load();
+
+            } catch (err) { 
+                console.error(err);
+                logStatus("ERROR: " + err.message);
+                alert(`오류 발생: ${err.message}`); 
+                window.location.href = "index.html"; 
+            }
         }
 
         function parseChartData(data) {
@@ -281,8 +320,7 @@
             updateGameHUD();
             
             gameState = 'COUNTDOWN';
-            gameStartTime = Date.now();
-            startTimestamp = Date.now();
+            startTimestamp = Date.now(); // 게임 시작 기준 시간 초기화
             audio.currentTime = 0;
             
             setTimeout(finishGame, (2000 + lastNoteEndTime + 5000));
@@ -310,13 +348,24 @@
                 currentTime = rawTime - START_DELAY;
                 if (rawTime >= START_DELAY) {
                     gameState = 'WAIT_AUDIO';
-                    audio.play().catch(e => console.error("Play Fail", e));
+                    // 오디오 플레이 시도
+                    const playPromise = audio.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log("Audio Play Failed (Autoplay policy):", error);
+                            // 자동 재생 실패 시 강제로 시간으로 진행
+                            gameState = 'PLAYING_NO_AUDIO'; 
+                        });
+                    }
                 }
             } else if (gameState === 'WAIT_AUDIO') {
                 currentTime = 0;
-                if (audio.currentTime > 0) gameState = 'PLAYING';
+                if (audio.currentTime > 0 && !audio.paused) gameState = 'PLAYING';
             } else if (gameState === 'PLAYING') {
                 currentTime = audio.currentTime * 1000;
+            } else if (gameState === 'PLAYING_NO_AUDIO') {
+                // 오디오 없이 진행 (백업)
+                currentTime = (Date.now() - startTimestamp) - START_DELAY;
             }
 
             if (!gameFinished && totalHits >= totalMaxHits) {
