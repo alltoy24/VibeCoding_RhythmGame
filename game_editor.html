@@ -664,61 +664,72 @@
             editAnimId = requestAnimationFrame(editLoop);
         }
 
-        // [수정] 그리드 그리기 함수 (가상 렌더링 적용)
+        // [수정됨] 그리드 & 노트 그리기 함수 (롱노트 잘림 방지 적용)
         function drawGrid() {
-            // 캔버스 초기화
+            // 1. 캔버스 초기화
             gridCtx.fillStyle = "#000"; 
             gridCtx.fillRect(0, 0, gridCanvas.width, gridCanvas.height);
 
             const split = parseInt(splitInput.value) || 16;
             const cellH = measureHeight / split;
-            const scrollY = editorContainer.scrollTop; // 현재 스크롤 위치
-    
-            // ★ [핵심] 현재 화면에 보이는 마디만 계산 (최적화)
-            // 캔버스 좌표계 보정을 위해 scrollY를 뺌
+            const scrollY = editorContainer.scrollTop;
+            
+            // 현재 화면에 보이는 마디 범위 계산
             const startMeasureIdx = Math.max(0, Math.floor(scrollY / measureHeight));
             const endMeasureIdx = Math.min(measures.length - 1, Math.ceil((scrollY + gridCanvas.height) / measureHeight));
 
+            // 2. 그리드 선 그리기 (최적화를 위해 화면에 보이는 것만 그림)
             for (let i = startMeasureIdx; i <= endMeasureIdx; i++) {
-                const m = measures[i];
-        
-                // ★ 마디의 실제 Y 위치에서 스크롤만큼 뺀 위치에 그림 (Relative Drawing)
                 const drawY = (i * measureHeight) - scrollY; 
-
-                // 1. 그리드 선 그리기
+                
+                // 가로선
                 gridCtx.lineWidth = 1;
                 for(let j=0; j<split; j++) {
                     const ly = drawY + j*cellH;
                     gridCtx.strokeStyle = (j===0) ? "#888" : (j%(split/4)===0 ? "#555" : "#222");
                     gridCtx.beginPath(); gridCtx.moveTo(0, ly); gridCtx.lineTo(400, ly); gridCtx.stroke();
                 }
-        
-                // 2. 마디 번호
+                
+                // 마디 번호
                 gridCtx.fillStyle="#fff"; gridCtx.font="12px Arial"; 
                 gridCtx.fillText(i+1, 5, drawY+15);
 
-                // 3. 세로선
+                // 세로선
                 gridCtx.strokeStyle="#444"; gridCtx.lineWidth=1;
                 for(let k=1; k<4; k++) { 
                     gridCtx.beginPath(); gridCtx.moveTo(k*100, drawY); 
                     gridCtx.lineTo(k*100, drawY + measureHeight); gridCtx.stroke(); 
                 }
+            }
 
-                // 4. 노트 그리기
+            // 3. 노트 그리기 (★ 중요: 롱노트 때문에 더 이전 마디부터 검사함)
+            // 화면보다 20마디 전부터 검사해서, 꼬리가 화면에 걸치는 롱노트를 찾아냄
+            const noteStartIdx = Math.max(0, startMeasureIdx - 20); 
+
+            for (let i = noteStartIdx; i <= endMeasureIdx; i++) {
+                const m = measures[i];
+                const drawY = (i * measureHeight) - scrollY; 
+
                 m.notes.forEach(n => {
-                    // 노트의 화면상 Y 좌표
                     const ny = drawY + (n.pos / BASE_RES) * measureHeight;
-                    const visualH = 10; 
-            
-                    // 롱노트
+                    let tailY = ny;
+                    const visualH = 10;
+                    
+                    if(n.len > 0) tailY = ny + (n.len / BASE_RES) * measureHeight;
+                    else tailY = ny + visualH;
+
+                    // ★ [화면 밖 노트 생략] 최적화 (Culling)
+                    // 꼬리가 화면 위로 넘어갔거나(tailY < 0), 머리가 화면 아래에 있거나(ny > height)
+                    if (tailY < 0 || ny > gridCanvas.height) return;
+
+                    // 롱노트 그리기
                     if(n.len > 0) {
-                        const tailY = ny + (n.len / BASE_RES) * measureHeight;
                         gridCtx.fillStyle = COLORS[n.lane];
                         gridCtx.globalAlpha = 0.5;
                         gridCtx.fillRect(n.lane*100+10, ny + visualH/2, 80, tailY - ny);
                         gridCtx.globalAlpha = 1.0;
                     }
-                    // 일반 노트
+                    // 노트 머리 그리기
                     gridCtx.fillStyle = COLORS[n.lane]; 
                     gridCtx.fillRect(n.lane*100+1, ny, 98, visualH);
                 });
