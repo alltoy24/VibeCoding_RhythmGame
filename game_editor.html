@@ -111,7 +111,18 @@
             <div class="group-title">2. Map Settings</div>
             <div class="row">
                 <input type="number" id="bpm" value="130" placeholder="BPM">
-                <input type="number" id="beat-count" value="4" min="1" max="16" placeholder="Beat/Bar">
+                <div style="display:flex; align-items:center; gap:2px; flex:1;">
+                    <input type="number" id="beat-num" value="4" min="1" max="32" style="text-align:center;">
+                    <span style="color:#888;">/</span>
+                    <select id="beat-denom" style="text-align:center;">
+                        <option value="4">4</option>
+                        <option value="8">8</option>
+                        <option value="2">2</option>
+                        <option value="16">16</option>
+                    </select>
+                </div>
+                </div>
+            <div class="row" style="margin-top:5px;">
                 <input type="number" id="offset" value="0" placeholder="Offset (ms)">
             </div>
         </div>
@@ -140,7 +151,6 @@
         
         <button id="btn-export" style="background:#28a745; color:white; margin-top:10px; margin-bottom:10px; padding:12px; border:none; flex-shrink: 0;">💾 EXPORT JSON</button>
     </div>
-
     <div id="editor-view">
         <div class="lane-header"><div>D</div><div>F</div><div>J</div><div>K</div></div>
         <div id="editor-container">
@@ -150,7 +160,6 @@
             </div>
         </div>
     </div>
-
     <div id="game-view">
         <div id="game-canvas-container">
             <canvas id="gameCanvas" class="game"></canvas>
@@ -165,7 +174,6 @@
         </div>
         <div id="test-msg">[ESC] Back to Editor</div>
     </div>
-
     <script>
         // ==========================================
         // ★ [1] 설정 및 인증
@@ -232,7 +240,9 @@
         // ==========================================
         let audio = new Audio();
         let bpm = 130, offset = 0;
-        let beatsPerBar = 4; // ★ [추가] 기본값 4박자
+        // ★ [수정] 분자(Num), 분모(Denom) 변수 분리
+        let beatNum = 4;   
+        let beatDenom = 4;
         let measures = []; 
         let measureHeight = 400; 
         
@@ -256,9 +266,12 @@
 
         editorContainer.addEventListener('scroll', () => { requestAnimationFrame(drawGrid); });
 
-        document.getElementById('beat-count').addEventListener('change', e => {
-            beatsPerBar = parseInt(e.target.value) || 4;
-            drawGrid(); // (선택사항: 박자 변경 시 그리드 갱신이 필요하다면)
+        // [이벤트 리스너 부분에 추가]
+        document.getElementById('beat-num').addEventListener('change', e => {
+            beatNum = parseInt(e.target.value) || 4;
+        });
+        document.getElementById('beat-denom').addEventListener('change', e => {
+            beatDenom = parseInt(e.target.value) || 4;
         });
 
         // Game View Elements
@@ -338,13 +351,17 @@
             if(data.bpm) bpm = data.bpm;
             if(data.offset !== undefined) offset = data.offset; else offset = 0;
 
-            // ★ [추가] 저장된 박자 정보가 있으면 불러오고, 없으면 4로 설정
+            // ★ [수정] 저장된 박자 정보 불러오기
             if(data.beat) {
-                beatsPerBar = data.beat;
-                document.getElementById('beat-count').value = beatsPerBar;
+                beatNum = data.beat;
+                document.getElementById('beat-num').value = beatNum;
+            }
+            if(data.beatDenom) { // 분모가 있으면 불러오고 없으면 4
+                beatDenom = data.beatDenom;
+                document.getElementById('beat-denom').value = beatDenom;
             } else {
-                beatsPerBar = 4;
-                document.getElementById('beat-count').value = 4;
+                beatDenom = 4;
+                document.getElementById('beat-denom').value = 4;
             }
 
             measures = []; 
@@ -405,7 +422,8 @@
                 title: "Custom Chart", 
                 bpm, 
                 offset,
-                beat: beatsPerBar, // ★ [추가] 박자 정보 저장 
+                beat: beatNum,      // 분자 (예: 6)
+                beatDenom: beatDenom, // ★ [추가] 분모 (예: 8)
                 measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES }))
             }; 
             const a = document.createElement('a'); 
@@ -513,8 +531,10 @@
         function updatePlayHeadPos() {
             const currentMs = audio.currentTime * 1000;
             const chartMs = currentMs - offset;
-            // ★ [수정] 숫자 4를 beatsPerBar 변수로 변경
-            const msPerMeasure = (60 / bpm) * beatsPerBar * 1000;
+            // ★ [핵심 수정] 분모(beatDenom)까지 고려한 한 마디 시간 계산
+            // 4/4박자 -> (4/4)*4 = 4박
+            // 6/8박자 -> (4/8)*6 = 3박 (시간상)
+            const msPerMeasure = (60 / bpm) * (4 / beatDenom) * beatNum * 1000;
             const y = Math.max(0, (chartMs / msPerMeasure) * measureHeight);
             playHead.style.transform = `translateY(${y}px)`;
             return y;
@@ -597,8 +617,8 @@
             lastNoteEndTime = 0;
             judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; 
 
-            // ★ [수정] 숫자 4를 beatsPerBar 변수로 변경
-            const msPerMeasure = (60000 / bpm) * beatsPerBar;
+            // ★ [핵심 수정] 여기도 똑같은 공식 적용
+            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
             measures.forEach(m => {
                 m.notes.forEach(n => {
                     const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
