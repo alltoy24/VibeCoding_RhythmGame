@@ -4,296 +4,480 @@
     <meta charset="UTF-8">
     <title>WEB BEAT : SELECT</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Roboto:wght@400;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Exo+2:wght@300;600&display=swap');
         
         :root {
-            --bg: #0a0a0c;
-            --panel: #16161e;
-            --accent: #00e5ff;
-            --accent-glow: rgba(0, 229, 255, 0.4);
+            --bg-dark: #050505;
+            --panel-glass: rgba(22, 22, 30, 0.8);
+            --accent: #00f2ff;
+            --accent-glow: rgba(0, 242, 255, 0.6);
+            --secondary: #7000ff;
+            --text-main: #ffffff;
+            --text-dim: #888888;
             --gold: #ffd700;
         }
 
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
+        * { box-sizing: border-box; }
+
+        body { 
+            margin: 0; 
+            background: radial-gradient(circle at center, #1a1a24 0%, #000000 100%);
+            color: var(--text-main); 
+            font-family: 'Exo 2', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100vh; 
+            overflow: hidden; 
+            user-select: none; 
+        }
+
+        /* --- 배경 장식 (그리드 효과) --- */
+        body::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(0, 242, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 242, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: -1;
+        }
         
-        /* 헤더 스타일 */
-        header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
-        h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); }
+        /* --- 헤더 --- */
+        header { 
+            margin-top: 40px; 
+            margin-bottom: 20px;
+            text-align: center; 
+            z-index: 10;
+        }
+        h1 { 
+            font-family: 'Orbitron'; 
+            font-size: 50px; 
+            font-weight: 900;
+            margin: 0; 
+            color: #fff;
+            text-shadow: 0 0 10px var(--accent), 0 0 30px var(--accent);
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            font-family: 'Orbitron';
+            color: var(--accent);
+            letter-spacing: 8px;
+            font-size: 14px;
+            margin-top: 5px;
+            opacity: 0.8;
+        }
         
-        /* --- [1] 우측 상단 버튼 그룹 (설정 + 에디터) --- */
+        /* --- 우측 상단 버튼 그룹 --- */
         .top-right-group {
-            position: absolute; top: 20px; right: 30px;
-            display: flex; gap: 10px; align-items: center; z-index: 100;
+            position: absolute; top: 30px; right: 40px;
+            display: flex; gap: 15px; align-items: center; z-index: 100;
         }
-        .btn-setting {
-            width: 40px; height: 40px; border-radius: 50%;
-            background: rgba(0,0,0,0.5); border: 2px solid #666;
-            color: #ccc; font-size: 20px; cursor: pointer;
+        .btn-icon {
+            width: 45px; height: 45px; border-radius: 50%;
+            background: rgba(255,255,255,0.05); 
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff; font-size: 20px; cursor: pointer;
             display: flex; justify-content: center; align-items: center;
-            transition: 0.3s;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
         }
-        .btn-setting:hover { border-color: var(--accent); color: var(--accent); transform: rotate(90deg); }
+        .btn-icon:hover { 
+            border-color: var(--accent); 
+            color: var(--accent); 
+            box-shadow: 0 0 15px var(--accent-glow);
+            transform: rotate(90deg); 
+        }
 
         .btn-create { 
-            text-decoration: none; color: #666; font-family: 'Orbitron'; font-size: 12px; font-weight: bold;
-            border: 1px solid #333; padding: 10px 20px; border-radius: 20px; transition: 0.3s;
-            display: flex; align-items: center; background: rgba(0,0,0,0.5);
+            text-decoration: none; color: #fff; 
+            font-family: 'Orbitron'; font-size: 13px; font-weight: bold;
+            border: 1px solid var(--accent); 
+            padding: 10px 24px; border-radius: 30px; 
+            transition: 0.3s;
+            background: rgba(0, 242, 255, 0.1);
+            backdrop-filter: blur(5px);
+            display: flex; align-items: center; gap: 8px;
         }
-        .btn-create:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+        .btn-create:hover { 
+            background: var(--accent); 
+            color: #000; 
+            box-shadow: 0 0 20px var(--accent-glow); 
+        }
 
-        /* --- [2] 통합 설정 모달 --- */
-        #settings-modal {
-            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 2000;
-            justify-content: center; align-items: center; backdrop-filter: blur(8px);
-        }
-        .settings-box {
-            width: 400px; background: #111; border: 2px solid #666;
-            border-radius: 15px; padding: 30px;
-            box-shadow: 0 0 50px rgba(0,0,0,0.8); text-align: center;
-        }
-        .settings-title {
-            font-family: 'Orbitron'; font-size: 24px; color: #fff; margin-bottom: 30px;
-            border-bottom: 2px solid #333; padding-bottom: 10px;
-        }
-        .setting-row {
-            display: flex; align-items: center; justify-content: space-between;
-            margin-bottom: 20px; font-family: 'Orbitron'; color: #aaa;
-        }
-        .setting-label { font-size: 14px; }
-        .setting-val { color: var(--accent); font-weight: bold; width: 50px; text-align: right; }
-        
-        input[type="range"] { accent-color: var(--accent); width: 150px; cursor: pointer; }
-
-        .btn-sync {
-            width: 100%; padding: 12px; margin-top: 10px;
-            background: #222; border: 1px solid #444; color: var(--accent);
-            font-family: 'Orbitron'; cursor: pointer; border-radius: 8px; transition: 0.2s;
-        }
-        .btn-sync:hover { background: #333; border-color: var(--accent); }
-
-        .btn-close-settings {
-            margin-top: 20px; padding: 10px 30px;
-            background: #fff; color: #000; border: none; border-radius: 20px;
-            font-weight: bold; cursor: pointer; font-family: 'Orbitron';
-        }
-        .btn-close-settings:hover { background: #ccc; }
-
-        /* --- [3] 닉네임 설정 모달 --- */
-        #name-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 3000;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-            backdrop-filter: blur(15px);
-        }
-        .modal-content { background: var(--panel); padding: 40px; border-radius: 20px; border: 1px solid #333; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,1); }
-        .modal-input { 
-            background: transparent; border: none; border-bottom: 2px solid var(--accent); 
-            color: #fff; font-size: 28px; font-family: 'Orbitron'; text-align: center; width: 350px; outline: none; margin: 20px 0; 
-        }
-        .modal-btn { background: var(--accent); color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; padding: 15px 40px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.2s; }
-        .modal-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--accent); }
-
-        /* 프로필 카드 */
+        /* --- 프로필 카드 (좌측 상단) --- */
         .profile-card {
-            position: absolute; top: 10px; left: 30px;
-            display: flex; flex-direction: column; gap: 5px;
+            position: absolute; top: 30px; left: 40px;
+            display: flex; flex-direction: column; gap: 6px;
             font-family: 'Orbitron'; z-index: 100;
+            background: rgba(0,0,0,0.6);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
         }
-        .lv-label { font-size: 30px; color: var(--gold); font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
-        .xp-bar-bg { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
-        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #00ffaa); width: 0%; transition: width 1s ease-out; }
-        .xp-text { font-size: 12px; color: #aaa; margin-top: 2px; }
+        .lv-label { font-size: 24px; color: var(--gold); font-weight: 900; text-shadow: 0 0 10px rgba(255, 215, 0, 0.3); }
+        .xp-bar-bg { width: 180px; height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #fff); width: 0%; transition: width 1s ease-out; }
+        .xp-text { font-size: 11px; color: #aaa; margin-top: 2px; text-align: right; }
         
-        #user-name-display { font-size: 12px; color: #888; font-weight: bold; margin-bottom: 5px; }
+        .nickname-container { display: flex; align-items: center; gap: 10px; }
+        #user-name-display { font-size: 14px; color: #fff; font-weight: bold; }
+        .btn-edit-nick { background: none; border: none; cursor: pointer; color: #666; font-size: 14px; transition: 0.2s; padding: 0; }
+        .btn-edit-nick:hover { color: var(--accent); }
 
         .custom-login-btn {
-            margin-top: 15px; padding: 10px 30px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid var(--accent);
-            color: #fff; font-family: 'Segoe UI', sans-serif;
-            font-size: 16px; font-weight: bold; text-transform: uppercase;
-            cursor: pointer; border-radius: 5px;
-            box-shadow: 0 0 10px var(--accent-glow);
-            transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;
+            margin-top: 10px; padding: 8px 0; width: 100%;
+            background: var(--accent); border: none;
+            color: #000; font-family: 'Orbitron'; font-weight: bold;
+            font-size: 12px; cursor: pointer; border-radius: 4px;
+            transition: 0.2s;
         }
-        .custom-login-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); transform: scale(1.05); }
-        .btn-logout { border-color: #ff0055; box-shadow: 0 0 10px rgba(255, 0, 85, 0.3); }
-        .btn-logout:hover { background: #ff0055; box-shadow: 0 0 20px #ff0055; }
+        .custom-login-btn:hover { box-shadow: 0 0 15px var(--accent-glow); filter: brightness(1.1); }
+        .btn-logout { background: #ff0055; color: #fff; }
+        .btn-logout:hover { box-shadow: 0 0 15px rgba(255, 0, 85, 0.6); }
 
-        /* 곡 리스트 & 랭킹 스타일 (기존 유지) */
-        .song-container { display: flex; gap: 30px; padding: 20px 50px; overflow-x: auto; width: 90%; height: 550px; align-items: center; scroll-behavior: smooth; margin-top: 10px; }
-        .song-container::-webkit-scrollbar { height: 10px; }
-        .song-container::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
-        .song-card { min-width: 340px; height: 460px; background: var(--panel); border: 2px solid #333; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
-        .song-card:hover { transform: translateY(-10px); border-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
-        .card-cover { width: 100%; height: 160px; background: #000; display: flex; align-items: center; justify-content: center; font-size: 60px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #444; color: #333; }
-        .card-title { font-family: 'Orbitron'; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; color: #fff; }
-        .card-artist { color: #888; font-size: 14px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .diff-box { margin-top: auto; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 180px; padding-right: 5px; }
-        .diff-box::-webkit-scrollbar { width: 5px; }
-        .diff-box::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-        .btn-diff { width: 100%; padding: 12px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron', sans-serif; box-sizing: border-box; }
-        .btn-diff:hover { transform: scale(1.02); filter: brightness(1.2); }
-        .btn-diff.normal { background: linear-gradient(90deg, #00c6ff, #0072ff); color: #fff; }
-        .btn-diff.hard { background: linear-gradient(90deg, #ff00cc, #333399); color: #fff; }
-        .btn-diff.troll { background: linear-gradient(90deg, #8E2DE2, #4A00E0); color: #fff; }
-        .left-part { display: flex; align-items: center; gap: 8px; }
-        .lv-badge { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.8em; color: #ffd700; }
-        .score-badge { font-family: 'Roboto', sans-serif; font-size: 14px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 6px; }
-        .badge-icon { font-size: 14px; font-weight: bold; text-shadow: 0 0 5px currentColor; }
-        .badge-fc { color: #00e5ff; } 
-        .badge-tb { color: #d500f9; }
-        .btn-rank-icon { width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 5px; cursor: pointer; color: #ffd700; display: flex; justify-content: center; align-items: center; margin-left: 10px; transition: 0.2s; }
-        .btn-rank-icon:hover { background: #ffd700; color: #000; box-shadow: 0 0 10px #ffd700; }
-
-        /* 랭킹 팝업 */
-        #rank-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .rank-box { width: 500px; max-height: 80vh; background: #111; border: 2px solid var(--accent); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px var(--accent-glow); animation: popIn 0.3s; }
-        .rank-header { background: linear-gradient(90deg, #00c6ff, #0072ff); padding: 15px; font-family: 'Orbitron'; font-size: 20px; font-weight: bold; text-align: center; color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative; }
-        .rank-close { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
-        .rank-list { flex: 1; overflow-y: auto; padding: 10px; }
-        .rank-list::-webkit-scrollbar { width: 8px; }
-        .rank-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .rank-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); margin-bottom: 5px; padding: 10px 15px; border-radius: 8px; font-family: 'Roboto'; transition: 0.2s; }
-        .rank-item:hover { background: rgba(0, 229, 255, 0.1); transform: translateX(5px); }
-        .rank-rank { font-weight: bold; width: 40px; font-size: 18px; color: #888; font-family: 'Orbitron'; }
-        .rank-rank.top1 { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-size: 22px; } 
-        .rank-rank.top2 { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; font-size: 20px; } 
-        .rank-rank.top3 { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; font-size: 20px; } 
-        .rank-info { flex: 1; display: flex; flex-direction: column; }
-        .rank-name { font-weight: bold; color: #fff; font-size: 15px; }
-        .rank-lv { font-size: 11px; color: var(--accent); background: rgba(0, 229, 255, 0.1); padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; width: fit-content;}
-        .rank-score { font-family: 'Orbitron'; font-size: 18px; color: #fff; font-weight: bold; }
-
-        /* 싱크 오버레이 */
-        #calib-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .calib-circle { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #444; margin-bottom: 20px; transition: 0.1s; display: flex; align-items: center; justify-content: center; font-size: 30px; font-family: 'Orbitron'; color: #444; cursor: pointer; }
-        .calib-circle:hover { border-color: #666; color: #666; }
-        .calib-circle.flash { background: #fff; border-color: #fff; box-shadow: 0 0 50px #fff; }
-        .calib-circle.active { border-color: var(--accent); color: var(--accent); transform: scale(0.95); }
-        .manual-calib { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
-        .btn-adj { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #333; background: transparent; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-adj:hover { border-color: var(--accent); color: var(--accent); }
-        #offset-input { background: transparent; border: none; border-bottom: 2px solid var(--accent); color: #fff; font-size: 30px; font-family: 'Orbitron'; text-align: center; width: 120px; outline: none; }
-        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        /* --- [핵심] 곡 리스트 그리드 레이아웃 --- */
+        .song-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3열 그리드 */
+            gap: 25px; /* 간격 */
+            width: 85%;
+            max-width: 1200px;
+            height: calc(100vh - 180px); /* 헤더 제외 높이 */
+            padding: 20px 20px 50px 20px;
+            overflow-y: auto; /* 세로 스크롤 */
+            overflow-x: hidden;
+            margin-top: 10px;
+        }
         
-        /* 닉네임 + 수정 버튼 컨테이너 */
-        .nickname-container {
-            display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+        /* 스크롤바 커스텀 */
+        .song-container::-webkit-scrollbar { width: 6px; }
+        .song-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
+        .song-container::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+        .song-container::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+        /* --- 노래 카드 스타일 --- */
+        .song-card {
+            background: rgba(20, 20, 25, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            position: relative;
+            backdrop-filter: blur(10px);
+            overflow: hidden;
+            height: 480px; /* 높이 고정 */
+        }
+        .song-card:hover {
+            transform: translateY(-5px) scale(1.02);
+            border-color: var(--accent);
+            box-shadow: 0 10px 30px -10px var(--accent-glow);
+            z-index: 5;
+            background: rgba(20, 20, 25, 0.9);
         }
 
-        /* 연필 아이콘 버튼 */
-        .btn-edit-nick {
-            background: none; border: none; cursor: pointer;
-            color: #666; font-size: 14px; transition: 0.2s;
-            padding: 0; display: flex; align-items: center;
+        .card-cover {
+            width: 100%;
+            height: 180px;
+            background: #0a0a0c;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 60px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: #333;
+            border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
         }
-        .btn-edit-nick:hover {
-            color: #00e5ff; transform: scale(1.1) rotate(15deg);
+        /* 커버에 은은한 그라데이션 */
+        .card-cover::after {
+            content: ""; position: absolute; top:0; left:0; width:100%; height:100%;
+            background: linear-gradient(to bottom, transparent, rgba(0,0,0,0.5));
         }
 
-        .status-msg { margin-top: 50px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
-        @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        .card-info { flex: 1; display: flex; flex-direction: column; width: 100%; }
+        
+        .card-title {
+            font-family: 'Exo 2', sans-serif;
+            font-size: 20px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 5px;
+            /* 2줄 말줄임 처리 */
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            height: 50px; /* 2줄 높이 확보 */
+            line-height: 1.25;
+        }
+
+        .card-artist {
+            color: var(--text-dim);
+            font-size: 13px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        .diff-box {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            overflow-y: auto;
+            flex: 1; /* 남은 공간 차지 */
+            padding-right: 5px;
+        }
+        .diff-box::-webkit-scrollbar { width: 4px; }
+        .diff-box::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        .btn-diff {
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            font-family: 'Orbitron';
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-diff::before {
+            content: ""; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+            transform: skewX(-20deg) translateX(-150%);
+            transition: 0.5s;
+        }
+        .btn-diff:hover::before { transform: skewX(-20deg) translateX(150%); }
+        .btn-diff:hover { transform: translateX(5px); filter: brightness(1.2); }
+
+        /* 난이도별 색상 (세련되게 변경) */
+        .btn-diff.normal { background: linear-gradient(135deg, #00b4db 0%, #0083b0 100%); color: white; }
+        .btn-diff.hard { background: linear-gradient(135deg, #bc4e9c 0%, #f80759 100%); color: white; }
+        .btn-diff.troll { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color: white; } /* Troll은 녹색 계열로 변경해봄 */
+        
+        /* Troll을 보라색 유지 원하면 아래꺼 사용 */
+        /* .btn-diff.troll { background: linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%); color: white; } */
+
+        .score-badge {
+            background: rgba(0,0,0,0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            display: flex; align-items: center; gap: 4px;
+        }
+
+        .btn-rank-icon {
+            width: 36px; height: 36px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 6px;
+            color: var(--gold);
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: 0.2s;
+            margin-left: 8px;
+        }
+        .btn-rank-icon:hover { background: var(--gold); color: #000; border-color: var(--gold); }
+
+        /* --- 로딩 메시지 --- */
+        .status-msg {
+            grid-column: 1 / -1; /* 전체 너비 사용 */
+            text-align: center;
+            margin-top: 100px;
+            font-size: 24px;
+            color: var(--accent);
+            font-family: 'Orbitron';
+            animation: pulse 1.5s infinite;
+        }
+
+        /* --- 공통 모달 스타일 --- */
+        .modal-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8); z-index: 2000;
+            justify-content: center; align-items: center; backdrop-filter: blur(8px);
+            animation: fadeIn 0.3s;
+        }
+        .modal-box {
+            background: #121216; border: 1px solid #333;
+            border-radius: 16px; padding: 40px;
+            box-shadow: 0 0 60px rgba(0,0,0,0.8);
+            text-align: center; min-width: 400px;
+            position: relative;
+        }
+        .modal-title {
+            font-family: 'Orbitron'; font-size: 24px; color: var(--accent);
+            margin-bottom: 30px; letter-spacing: 2px;
+            border-bottom: 1px solid #333; padding-bottom: 15px;
+        }
+        .modal-close {
+            position: absolute; top: 20px; right: 20px;
+            background: none; border: none; color: #666; font-size: 24px; cursor: pointer;
+        }
+        .modal-close:hover { color: #fff; }
+
+        /* 설정창 내부 */
+        .setting-row {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 25px; font-family: 'Orbitron'; color: #ccc; font-size: 14px;
+        }
+        .setting-val { color: var(--accent); font-weight: bold; width: 60px; text-align: right; }
+        input[type="range"] { accent-color: var(--accent); cursor: pointer; width: 180px; }
+
+        .btn-full {
+            width: 100%; padding: 14px; margin-top: 15px;
+            background: #222; border: 1px solid #444; color: var(--accent);
+            font-family: 'Orbitron'; font-weight: bold; cursor: pointer;
+            border-radius: 8px; transition: 0.2s;
+        }
+        .btn-full:hover { background: #333; border-color: var(--accent); }
+
+        /* 랭킹 리스트 */
+        .rank-list { max-height: 400px; overflow-y: auto; text-align: left; padding: 0 10px; }
+        .rank-item {
+            display: flex; align-items: center; justify-content: space-between;
+            background: rgba(255,255,255,0.03); margin-bottom: 8px;
+            padding: 12px 15px; border-radius: 8px; font-family: 'Exo 2';
+            border: 1px solid transparent;
+        }
+        .rank-item:hover { border-color: var(--accent); background: rgba(0, 242, 255, 0.05); }
+        .rank-rank { width: 40px; font-family: 'Orbitron'; font-weight: bold; color: #666; font-size: 18px; }
+        .rank-rank.top1 { color: #ffd700; font-size: 22px; text-shadow: 0 0 10px rgba(255,215,0,0.5); }
+        .rank-rank.top2 { color: #c0c0c0; }
+        .rank-rank.top3 { color: #cd7f32; }
+        .rank-name { font-weight: 600; color: #eee; flex:1; }
+        .rank-score { font-family: 'Orbitron'; font-weight: bold; color: #fff; letter-spacing: 1px; }
+
+        /* 애니메이션 */
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
         @keyframes blink { 50% { opacity: 0.5; } }
+
+        /* 싱크 조절 오버레이 */
+        .calib-circle {
+            width: 150px; height: 150px; border-radius: 50%;
+            border: 2px solid var(--accent);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: var(--accent); font-family: 'Orbitron';
+            cursor: pointer; transition: 0.1s;
+            box-shadow: 0 0 20px var(--accent-glow);
+            margin: 0 auto 30px;
+        }
+        .calib-circle:active { transform: scale(0.9); background: var(--accent); color: #000; }
+        .calib-circle.flash { background: #fff; box-shadow: 0 0 50px #fff; }
+
+        /* 닉네임 입력 */
+        .modal-input {
+            background: transparent; border: none; border-bottom: 2px solid var(--accent);
+            color: #fff; font-size: 24px; font-family: 'Orbitron'; text-align: center;
+            width: 100%; outline: none; padding: 10px; margin: 20px 0;
+        }
+
     </style>
 </head>
 <body>
-
-    <div class="top-right-group">
-        <button class="btn-setting" onclick="openSettings()">⚙️</button>
-        <a href="game_editor.html" class="btn-create">🛠 CREATE CHART</a>
-    </div>
-
-    <div id="settings-modal" onclick="closeSettings(event)">
-        <div class="settings-box" onclick="event.stopPropagation()">
-            <div class="settings-title">SYSTEM SETTINGS</div>
-            
-            <div class="setting-row">
-                <span class="setting-label">NOTE SPEED</span>
-                <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0">
-                <span class="setting-val" id="speed-display">5.0</span>
-            </div>
-
-            <div class="setting-row">
-                <span class="setting-label">SFX VOLUME</span>
-                <input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7">
-                <span class="setting-val" id="sfx-val">70%</span>
-            </div>
-
-            <div class="setting-row">
-                <span class="setting-label">AUDIO OFFSET</span>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <span class="setting-val" id="offset-display">0</span> ms
-                </div>
-            </div>
-
-            <button class="btn-sync" onclick="openCalib()">🔊 SYNC WIZARD</button>
-            <button class="btn-close-settings" onclick="closeSettings()">CLOSE</button>
-        </div>
-    </div>
-
-    <div id="name-modal">
-        <div class="modal-content">
-            <h2 style="font-family:'Orbitron'; color:#00e5ff; margin:0;">IDENTITY SETUP</h2>
-            <p style="color:#888; margin-top:10px;">Please register your nickname.</p>
-            <input type="text" id="nickname-input" class="modal-input" placeholder="NICKNAME" maxlength="32">
-            <p style="color:#555; font-size:11px; margin-bottom:20px;">MIN 2 / MAX 32 CHARACTERS</p>
-            <button class="modal-btn" onclick="saveNicknameToServer()">CONFIRM</button>
-        </div>
-    </div>
 
     <div class="profile-card" id="profile-container" style="display:none;">
         <div class="lv-label" id="user-lv">LV. 1</div>
         <div class="xp-bar-bg"><div class="xp-bar-fill" id="user-xp-fill"></div></div>
         <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
-    
-        <div class="nickname-container">
+        
+        <div class="nickname-container" style="margin-top:8px;">
             <div id="user-name-display">GUEST MODE</div>
-            <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)" style="display:none;">
-                ✏️
-            </button>
+            <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)" style="display:none;">✏️</button>
         </div>
+        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuth()">LOGIN</button>
+    </div>
 
-        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuthClick()">LOGIN</button>
+    <div class="top-right-group">
+        <button class="btn-icon" onclick="openSettings()" title="Settings">⚙️</button>
+        <a href="game_editor.html" class="btn-create" title="Create Chart">
+            <span>🛠</span> CREATE
+        </a>
     </div>
 
     <header>
         <h1>ARCADE SELECT</h1>
-        <div style="color:#666; letter-spacing:5px; font-size:14px; margin-bottom: 5px;">CHOOSE YOUR STAGE</div>
+        <div class="subtitle">CHOOSE YOUR STAGE</div>
     </header>
 
-    <pre>
-
-
-    </pre>
-
     <div class="song-container" id="song-list">
-        <div class="status-msg">LOADING SONGS...</div>
+        <div class="status-msg">LOADING SYSTEM...</div>
     </div>
 
-    <div id="rank-modal">
-        <div class="rank-box">
-            <div class="rank-header">
-                <span id="rank-title">TOP 50 RANKING</span>
-                <button class="rank-close" onclick="closeRank()">×</button>
+    <div id="settings-modal" class="modal-overlay" onclick="closeSettings(event)">
+        <div class="modal-box" onclick="event.stopPropagation()">
+            <div class="modal-title">SYSTEM SETTINGS</div>
+            
+            <div class="setting-row">
+                <span>NOTE SPEED</span>
+                <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0">
+                <span class="setting-val" id="speed-display">5.0</span>
             </div>
+
+            <div class="setting-row">
+                <span>SFX VOLUME</span>
+                <input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7">
+                <span class="setting-val" id="sfx-val">70%</span>
+            </div>
+
+            <div class="setting-row">
+                <span>AUDIO OFFSET</span>
+                <div style="display:flex; align-items:center; gap:10px;">
+                    <span class="setting-val" id="offset-display" style="width:auto;">0</span> ms
+                </div>
+            </div>
+
+            <button class="btn-full" onclick="openCalib()">🔊 SYNC WIZARD</button>
+            <button class="btn-full" onclick="closeSettings()" style="background:#444; color:#fff; margin-top:10px;">CLOSE</button>
+        </div>
+    </div>
+
+    <div id="name-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-title">IDENTITY SETUP</div>
+            <p style="color:#888;">Please register your nickname.</p>
+            <input type="text" id="nickname-input" class="modal-input" placeholder="ENTER NAME" maxlength="12">
+            <button class="btn-full" onclick="saveNicknameToServer()">CONFIRM</button>
+        </div>
+    </div>
+
+    <div id="rank-modal" class="modal-overlay" onclick="closeRank(event)">
+        <div class="modal-box" style="width: 500px;" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeRank()">×</button>
+            <div class="modal-title" id="rank-title">RANKING</div>
             <div class="rank-list" id="rank-list-container">
-                <div style="text-align:center; padding:20px; color:#666;">LOADING...</div>
+                <div style="text-align:center; padding:30px; color:#666;">LOADING DATA...</div>
             </div>
         </div>
     </div>
 
-    <div id="calib-overlay" onclick="handleTap(event)">
-        <h2 style="font-family:'Orbitron'; color:#00e5ff; margin:0;">AUDIO SYNC</h2>
-        <div id="calib-circle" class="calib-circle">●</div>
-        <div id="calib-msg" style="color:#aaa; font-size:14px; text-align:center;">Click circle to start test</div>
-        <div class="manual-calib" onclick="event.stopPropagation()">
-            <button class="btn-adj" onclick="adjustOffset(-1)">-</button>
-            <input type="number" id="offset-input" value="0" onchange="manualInput()">
-            <button class="btn-adj" onclick="adjustOffset(1)">+</button>
+    <div id="calib-overlay" class="modal-overlay" style="z-index:3000;">
+        <div class="modal-box" style="background:rgba(0,0,0,0.95); width:500px;">
+            <h2 style="font-family:'Orbitron'; color:var(--accent); margin-bottom:40px;">AUDIO SYNC</h2>
+            <div id="calib-circle" class="calib-circle" onclick="handleTap(event)">TAP</div>
+            <div id="calib-msg" style="color:#aaa; margin-bottom:20px;">Listen to the beat and tap!</div>
+            
+            <div style="display:flex; justify-content:center; gap:15px; margin-bottom:20px;">
+                <button class="btn-icon" onclick="adjustOffset(-1)">-</button>
+                <input type="number" id="offset-input" value="0" onchange="manualInput()" style="background:transparent; border:none; color:#fff; font-size:24px; width:80px; text-align:center; font-family:'Orbitron';">
+                <button class="btn-icon" onclick="adjustOffset(1)">+</button>
+            </div>
+            <button class="btn-full" onclick="closeCalib()">SAVE & EXIT</button>
         </div>
-        <button class="btn-util" onclick="closeCalib(event)" style="margin-top:30px;">SAVE & CLOSE</button>
     </div>
 
     <script>
@@ -303,31 +487,26 @@
             initSettings();
             checkLoginStatus(); 
             
-            // 로그인 직후라면 강제로 창 띄우기
+            // 로그인 직후 닉네임 설정창 강제 팝업
             const justLoggedIn = localStorage.getItem('wb_just_logged_in');
             if (justLoggedIn === 'true') {
-                openNicknameModal(true); // ★ 여기도 true 전달
+                openNicknameModal(true);
                 localStorage.removeItem('wb_just_logged_in'); 
             }
         };
 
-        // --- [수정됨] 닉네임 설정 로직 ---
-        // ★ forceOpen 파라미터 추가! (이게 없어서 안 떴던 겁니다)
+        // --- 닉네임 로직 ---
         function openNicknameModal(forceOpen) {
-            // 강제 오픈 모드(연필 버튼, 로그인 직후)가 아니고, 이미 닉네임이 있으면 무시
             if (!forceOpen && localStorage.getItem('wb_nickname')) {
                 checkLoginStatus();
                 return;
             }
-
             const modal = document.getElementById('name-modal');
             const input = document.getElementById('nickname-input');
             const googleProfile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}');
-            
-            // 기존 닉네임이 있으면 그걸 보여주고, 없으면 구글 이름
             const currentNick = localStorage.getItem('wb_nickname');
-            input.value = currentNick || googleProfile.name || "";
             
+            input.value = currentNick || googleProfile.name || "";
             modal.style.display = 'flex';
         }
 
@@ -335,15 +514,13 @@
             const input = document.getElementById('nickname-input');
             const newNickname = input.value.trim();
             
-            if (newNickname.length < 2 || newNickname.length > 32) {
-                alert("닉네임은 2자 이상 32자 이하로 설정해주세요.");
+            if (newNickname.length < 2 || newNickname.length > 12) {
+                alert("2~12글자 사이로 입력해주세요.");
                 return;
             }
 
-            // 1. 로컬 저장
             localStorage.setItem('wb_nickname', newNickname);
             
-            // 2. 서버 전송
             const profile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}');
             if (profile.sub) {
                 try {
@@ -352,19 +529,15 @@
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ userId: profile.sub, nickname: newNickname })
                     });
-                } catch (e) { 
-                    console.error("서버 저장 실패:", e); 
-                }
+                } catch (e) { console.error(e); }
             }
 
-            // 3. UI 갱신 및 닫기
             document.getElementById('name-modal').style.display = 'none';
             checkLoginStatus(); 
-            
-            alert(`닉네임이 [${newNickname}]님으로 변경되었습니다!`);
+            alert(`환영합니다, [${newNickname}]님!`);
         }
 
-        // --- 로그인 상태 관리 ---
+        // --- 로그인 상태 ---
         function checkLoginStatus() {
             const btn = document.getElementById('main-login-btn');
             const profileContainer = document.getElementById('profile-container');
@@ -379,16 +552,14 @@
                     btn.classList.add('btn-logout');
                     btn.onclick = handleAuth;
                 }
-                if(profileContainer) profileContainer.style.display = "flex";
+                profileContainer.style.display = "flex";
                 
                 const nick = localStorage.getItem('wb_nickname');
                 if(nameDisplay) {
                     nameDisplay.innerText = nick ? nick : "PLAYER";
                     nameDisplay.style.color = "#00e5ff"; 
                 }
-                // 연필 버튼 보이기
                 if(editBtn) editBtn.style.display = "block";
-
                 updateProfile(); 
             } else {
                 if(btn) {
@@ -396,12 +567,11 @@
                     btn.classList.remove('btn-logout');
                     btn.onclick = handleAuth;
                 }
-                if(profileContainer) profileContainer.style.display = "flex"; 
+                profileContainer.style.display = "flex";
                 if(nameDisplay) {
                     nameDisplay.innerText = "GUEST MODE";
                     nameDisplay.style.color = "#888";
                 }
-                // 연필 버튼 숨기기
                 if(editBtn) editBtn.style.display = "none";
             }
         }
@@ -427,7 +597,7 @@
             document.getElementById('user-xp-text').innerText = `${xp} / ${nextXp} XP`;
         }
 
-        // --- 통합 설정창 로직 ---
+        // --- 설정창 ---
         const settingsModal = document.getElementById('settings-modal');
         const speedSlider = document.getElementById('speed-slider');
         const speedDisplay = document.getElementById('speed-display');
@@ -440,7 +610,7 @@
             offsetDisplay.innerText = localStorage.getItem('wb_global_offset') || 0;
         }
         function closeSettings(e) {
-            if (e && e.target !== settingsModal && e.target.className !== 'btn-close-settings') return;
+            if (e && e.target !== settingsModal && !e.target.classList.contains('btn-full')) return;
             settingsModal.style.display = 'none';
         }
         function initSettings() {
@@ -455,18 +625,18 @@
                 sfxVal.innerText = Math.round(savedVol * 100) + "%";
             }
         }
-        if(speedSlider) speedSlider.addEventListener('input', (e) => {
+        speedSlider.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value).toFixed(1);
             speedDisplay.innerText = val;
             localStorage.setItem('wb_user_speed', val);
         });
-        if(sfxSlider) sfxSlider.addEventListener('input', (e) => {
+        sfxSlider.addEventListener('input', (e) => {
             const vol = e.target.value;
             sfxVal.innerText = Math.round(vol * 100) + "%";
             localStorage.setItem('wb_sfx_volume', vol);
         });
 
-        // --- 곡 목록 로딩 ---
+        // --- 곡 목록 로딩 (그리드 적용됨) ---
         window.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('song-list');
             if(!list) return;
@@ -491,67 +661,162 @@
 
                     const card = document.createElement('div');
                     card.className = 'song-card';
+                    
                     let diffButtons = '';
                     diffs.forEach(d => {
                         const score = localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`) || '000000';
                         const badge = localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`);
-                        let badgeHtml = badge === "TB" ? "<span class='badge-icon' style='color:#d500f9'>👑</span>" : (badge === "FC" ? "<span class='badge-icon' style='color:#00e5ff'>★</span>" : "");
+                        let badgeHtml = badge === "TB" ? "<span style='color:#d500f9'>👑</span>" : (badge === "FC" ? "<span style='color:#00e5ff'>★</span>" : "");
 
                         diffButtons += `
-                            <div style="display:flex; align-items:center; width:100%; margin-bottom:10px;">
+                            <div style="display:flex; align-items:center; width:100%;">
                                 <button class="btn-diff ${d.type}" style="flex:1;" onclick="play('${song.folder}', '${d.fileKey}')">
-                                    <div class="left-part"><span>${d.type.toUpperCase()}</span> ${d.levelRaw ? `<span class="lv-badge">Lv.${d.levelRaw}</span>` : ''}</div>
-                                    <span class="score-badge">🏆 ${score}${badgeHtml}</span>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span>${d.type.toUpperCase()}</span> 
+                                        ${d.levelRaw ? `<span style="background:rgba(0,0,0,0.3); padding:2px 5px; border-radius:4px; font-size:10px;">Lv.${d.levelRaw}</span>` : ''}
+                                    </div>
+                                    <div class="score-badge">🏆 ${score} ${badgeHtml}</div>
                                 </button>
                                 <button class="btn-rank-icon" onclick="openRanking('${song.folder}', '${d.fileKey}', '${song.title}', '${d.type}')">👑</button>
                             </div>`;
                     });
-                    card.innerHTML = `<div class="card-cover">🎵</div><div class="card-info"><div class="card-title">${song.title}</div><div class="card-artist">${song.artist}</div><div class="diff-box">${diffButtons}</div></div>`;
+
+                    card.innerHTML = `
+                        <div class="card-cover">🎵</div>
+                        <div class="card-info">
+                            <div class="card-title">${song.title}</div>
+                            <div class="card-artist">${song.artist}</div>
+                            <div class="diff-box">${diffButtons}</div>
+                        </div>
+                    `;
                     list.appendChild(card);
                 });
-            } catch (e) { list.innerHTML = `<div class="status-msg" style="color:#ff5555">SONG LIST ERROR</div>`; }
+            } catch (e) { 
+                list.innerHTML = `<div class="status-msg" style="color:#ff5555; grid-column:1/-1;">SERVER CONNECTION FAILED</div>`; 
+            }
         });
 
         function play(folder, fileKey) {
             window.location.href = `game.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speedSlider.value}`;
         }
 
+        // --- 랭킹 ---
+        const rankModal = document.getElementById('rank-modal');
+        const rankList = document.getElementById('rank-list-container');
+        const rankHeader = document.getElementById('rank-title');
+
         async function openRanking(songFolder, diffKey, title, type) {
-            const modal = document.getElementById('rank-modal');
-            const list = document.getElementById('rank-list-container');
-            const header = document.getElementById('rank-title');
-            modal.style.display = 'flex';
-            header.innerText = `${title} [${type.toUpperCase()}]`;
-            list.innerHTML = `<div style="text-align:center; padding:30px; color:#00e5ff; animation:blink 1s infinite;">CONNECTING...</div>`;
+            rankModal.style.display = 'flex';
+            rankHeader.innerText = `${title} [${type.toUpperCase()}]`;
+            rankList.innerHTML = `<div style="text-align:center; padding:30px; color:#00e5ff; animation:pulse 1s infinite;">FETCHING DATA...</div>`;
 
             try {
                 const res = await fetch(`${API_BASE}/api/ranking/${songFolder}/${diffKey}`);
                 const data = await res.json();
-                if (data.length === 0) { list.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">NO RECORDS YET</div>`; return; }
+                if (data.length === 0) { rankList.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">NO RECORDS FOUND</div>`; return; }
+                
                 let html = "";
                 data.forEach((user, idx) => {
                     const rank = idx + 1;
                     let rankClass = rank === 1 ? "top1" : (rank === 2 ? "top2" : (rank === 3 ? "top3" : ""));
-                    const lv = user.level ? `LV. ${user.level}` : "Unknown";
-                    html += `<div class="rank-item"><div class="rank-rank ${rankClass}">#${rank}</div><div class="rank-info"><span class="rank-name">${user.userName}</span><span class="rank-lv">${lv}</span></div><div class="rank-score">${user.score.toLocaleString()}</div></div>`;
+                    const lv = user.level ? `LV. ${user.level}` : "";
+                    html += `
+                        <div class="rank-item">
+                            <div class="rank-rank ${rankClass}">#${rank}</div>
+                            <div class="rank-name">${user.userName} <span style="font-size:10px; color:#00e5ff; margin-left:5px;">${lv}</span></div>
+                            <div class="rank-score">${user.score.toLocaleString()}</div>
+                        </div>`;
                 });
-                list.innerHTML = html;
-            } catch (e) { list.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">SERVER ERROR</div>`; }
+                rankList.innerHTML = html;
+            } catch (e) { rankList.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">NETWORK ERROR</div>`; }
         }
-        function closeRank() { document.getElementById('rank-modal').style.display = 'none'; }
-        document.getElementById('rank-modal').addEventListener('click', (e) => { if (e.target.id === 'rank-modal') closeRank(); });
+        function closeRank(e) { 
+            if (e && e.target !== rankModal && e.target.className !== 'modal-close') return;
+            rankModal.style.display = 'none'; 
+        }
 
-        // --- 싱크 위법 로직 ---
+        // --- 싱크 조절 (Audio Calibration) ---
         let audioCtx; let calibInterval; let nextBeatTime = 0; const BPM = 120; const INTERVAL_SEC = 60 / BPM; let tapDiffs = []; let isCalibrating = false;
-        function manualInput() { const val = document.getElementById('offset-input').value; localStorage.setItem('wb_global_offset', val); offsetDisplay.innerText = val; }
-        function openCalib() { settingsModal.style.display = 'none'; document.getElementById('calib-overlay').style.display = 'flex'; document.getElementById('offset-input').value = localStorage.getItem('wb_global_offset') || 0; document.getElementById('calib-msg').innerText = "Click circle to start test"; tapDiffs = []; isCalibrating = false; }
-        function closeCalib(e) { if(e) e.stopPropagation(); document.getElementById('calib-overlay').style.display = 'none'; stopCalib(); openSettings(); }
-        function adjustOffset(amount) { const input = document.getElementById('offset-input'); input.value = parseInt(input.value) + amount; manualInput(); }
-        function startCalib() { if(isCalibrating) return; isCalibrating = true; tapDiffs = []; document.getElementById('calib-msg').innerText = "Listen & Tap!"; if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); nextBeatTime = audioCtx.currentTime + 0.5; scheduleBeep(); }
+        
+        function openCalib() { 
+            settingsModal.style.display = 'none'; 
+            document.getElementById('calib-overlay').style.display = 'flex'; 
+            document.getElementById('offset-input').value = localStorage.getItem('wb_global_offset') || 0; 
+            document.getElementById('calib-msg').innerText = "Click circle to start test"; 
+            tapDiffs = []; isCalibrating = false; 
+        }
+        function closeCalib() { 
+            document.getElementById('calib-overlay').style.display = 'none'; 
+            stopCalib(); 
+            openSettings(); 
+        }
+        function manualInput() { 
+            const val = document.getElementById('offset-input').value; 
+            localStorage.setItem('wb_global_offset', val); 
+            offsetDisplay.innerText = val; 
+        }
+        function adjustOffset(amount) { 
+            const input = document.getElementById('offset-input'); 
+            input.value = parseInt(input.value) + amount; 
+            manualInput(); 
+        }
+        function startCalib() { 
+            if(isCalibrating) return; 
+            isCalibrating = true; tapDiffs = []; 
+            document.getElementById('calib-msg').innerText = "Listen & Tap to the beat!"; 
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
+            if (audioCtx.state === 'suspended') audioCtx.resume(); 
+            nextBeatTime = audioCtx.currentTime + 0.5; 
+            scheduleBeep(); 
+        }
         function stopCalib() { clearTimeout(calibInterval); isCalibrating = false; }
-        function scheduleBeep() { if(!isCalibrating) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 1000; gain.gain.value = 0.1; osc.start(nextBeatTime); osc.stop(nextBeatTime + 0.05); const delay = (nextBeatTime - audioCtx.currentTime) * 1000; setTimeout(() => { const circle = document.getElementById('calib-circle'); circle.classList.add('flash'); setTimeout(() => circle.classList.remove('flash'), 50); }, delay); nextBeatTime += INTERVAL_SEC; calibInterval = setTimeout(scheduleBeep, delay + 200); }
-        function handleTap(e) { if(e && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return; if (!isCalibrating) { startCalib(); return; } const tapTime = audioCtx.currentTime; const timeFromPrev = (tapTime - (nextBeatTime - INTERVAL_SEC)); const timeToNext = (nextBeatTime - tapTime); let diff = (Math.abs(timeFromPrev) < Math.abs(timeToNext)) ? timeFromPrev : -timeToNext; if(Math.abs(diff) < 0.2) { tapDiffs.push(diff * 1000); const circle = document.getElementById('calib-circle'); circle.classList.add('active'); setTimeout(() => circle.classList.remove('active'), 100); const currentAvg = Math.round(tapDiffs.reduce((a,b)=>a+b, 0) / tapDiffs.length); document.getElementById('offset-input').value = currentAvg; manualInput(); if(tapDiffs.length >= 8) { stopCalib(); document.getElementById('calib-msg').innerHTML = "<span style='color:#00e5ff'>AUTO SYNC COMPLETE!</span>"; } } }
-        window.addEventListener('keydown', (e) => { if(e.code === 'Space' && document.getElementById('calib-overlay').style.display === 'flex') handleTap(); });
+        function scheduleBeep() { 
+            if(!isCalibrating) return; 
+            const osc = audioCtx.createOscillator(); 
+            const gain = audioCtx.createGain(); 
+            osc.connect(gain); gain.connect(audioCtx.destination); 
+            osc.frequency.value = 1000; gain.gain.value = 0.1; 
+            osc.start(nextBeatTime); osc.stop(nextBeatTime + 0.05); 
+            
+            const delay = (nextBeatTime - audioCtx.currentTime) * 1000; 
+            setTimeout(() => { 
+                const circle = document.getElementById('calib-circle'); 
+                circle.classList.add('flash'); 
+                setTimeout(() => circle.classList.remove('flash'), 50); 
+            }, delay); 
+            
+            nextBeatTime += INTERVAL_SEC; 
+            calibInterval = setTimeout(scheduleBeep, delay + 200); 
+        }
+        function handleTap(e) { 
+            if(e && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return; 
+            if (!isCalibrating) { startCalib(); return; } 
+            
+            const tapTime = audioCtx.currentTime; 
+            const timeFromPrev = (tapTime - (nextBeatTime - INTERVAL_SEC)); 
+            const timeToNext = (nextBeatTime - tapTime); 
+            let diff = (Math.abs(timeFromPrev) < Math.abs(timeToNext)) ? timeFromPrev : -timeToNext; 
+            
+            if(Math.abs(diff) < 0.2) { 
+                tapDiffs.push(diff * 1000); 
+                const circle = document.getElementById('calib-circle'); 
+                circle.style.transform = "scale(0.9)";
+                setTimeout(() => circle.style.transform = "scale(1)", 100); 
+                
+                const currentAvg = Math.round(tapDiffs.reduce((a,b)=>a+b, 0) / tapDiffs.length); 
+                document.getElementById('offset-input').value = currentAvg; 
+                manualInput(); 
+                
+                if(tapDiffs.length >= 8) { 
+                    stopCalib(); 
+                    document.getElementById('calib-msg').innerHTML = "<span style='color:#00e5ff; font-weight:bold;'>SYNC COMPLETE!</span>"; 
+                } 
+            } 
+        }
+        window.addEventListener('keydown', (e) => { 
+            if(e.code === 'Space' && document.getElementById('calib-overlay').style.display === 'flex') handleTap(); 
+        });
+
     </script>
 </body>
 </html>
