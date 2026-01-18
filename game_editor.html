@@ -111,6 +111,7 @@
             <div class="group-title">2. Map Settings</div>
             <div class="row">
                 <input type="number" id="bpm" value="130" placeholder="BPM">
+                <input type="number" id="beat-count" value="4" min="1" max="16" placeholder="Beat/Bar">
                 <input type="number" id="offset" value="0" placeholder="Offset (ms)">
             </div>
         </div>
@@ -231,6 +232,7 @@
         // ==========================================
         let audio = new Audio();
         let bpm = 130, offset = 0;
+        let beatsPerBar = 4; // ★ [추가] 기본값 4박자
         let measures = []; 
         let measureHeight = 400; 
         
@@ -253,6 +255,11 @@
         resizeEditor(); drawGrid();
 
         editorContainer.addEventListener('scroll', () => { requestAnimationFrame(drawGrid); });
+
+        document.getElementById('beat-count').addEventListener('change', e => {
+            beatsPerBar = parseInt(e.target.value) || 4;
+            drawGrid(); // (선택사항: 박자 변경 시 그리드 갱신이 필요하다면)
+        });
 
         // Game View Elements
         const gameView = document.getElementById('game-view');
@@ -330,6 +337,16 @@
         function parseChartData(data) {
             if(data.bpm) bpm = data.bpm;
             if(data.offset !== undefined) offset = data.offset; else offset = 0;
+
+            // ★ [추가] 저장된 박자 정보가 있으면 불러오고, 없으면 4로 설정
+            if(data.beat) {
+                beatsPerBar = data.beat;
+                document.getElementById('beat-count').value = beatsPerBar;
+            } else {
+                beatsPerBar = 4;
+                document.getElementById('beat-count').value = 4;
+            }
+
             measures = []; 
             if(data.measures) {
                 const maxIdx = data.measures[data.measures.length-1].index;
@@ -387,8 +404,9 @@
             const data = { 
                 title: "Custom Chart", 
                 bpm, 
-                offset, 
-                measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES })) 
+                offset,
+                beat: beatsPerBar, // ★ [추가] 박자 정보 저장 
+                measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES }))
             }; 
             const a = document.createElement('a'); 
             a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); 
@@ -495,7 +513,8 @@
         function updatePlayHeadPos() {
             const currentMs = audio.currentTime * 1000;
             const chartMs = currentMs - offset;
-            const msPerMeasure = (60/bpm)*4*1000;
+            // ★ [수정] 숫자 4를 beatsPerBar 변수로 변경
+            const msPerMeasure = (60 / bpm) * beatsPerBar * 1000;
             const y = Math.max(0, (chartMs / msPerMeasure) * measureHeight);
             playHead.style.transform = `translateY(${y}px)`;
             return y;
@@ -578,7 +597,8 @@
             lastNoteEndTime = 0;
             judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; 
 
-            const msPerMeasure = (60000 / bpm) * 4;
+            // ★ [수정] 숫자 4를 beatsPerBar 변수로 변경
+            const msPerMeasure = (60000 / bpm) * beatsPerBar;
             measures.forEach(m => {
                 m.notes.forEach(n => {
                     const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
