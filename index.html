@@ -265,7 +265,7 @@
 
     <pre>
 
-        
+
     </pre>
 
     <div class="song-container" id="song-list">
@@ -301,21 +301,22 @@
 
         window.onload = function() {
             initSettings();
-            checkLoginStatus(); // 로그인 상태 확인
+            checkLoginStatus(); 
             
-            // ★ 로그인 후 돌아왔는지 체크 (login.html에서 보낸 신호)
+            // 로그인 직후라면 강제로 창 띄우기
             const justLoggedIn = localStorage.getItem('wb_just_logged_in');
             if (justLoggedIn === 'true') {
-                openNicknameModal(); // 닉네임 설정창 강제 호출
+                openNicknameModal(true); // ★ 여기도 true 전달
                 localStorage.removeItem('wb_just_logged_in'); 
             }
         };
 
-        // --- 닉네임 설정 로직 ---
-        function openNicknameModal() {
-            // 이미 닉네임이 로컬에 있으면(서버에서 가져왔으면) 안 띄움
-            if(localStorage.getItem('wb_nickname')) {
-                checkLoginStatus(); // UI 갱신만 하고 종료
+        // --- [수정됨] 닉네임 설정 로직 ---
+        // ★ forceOpen 파라미터 추가! (이게 없어서 안 떴던 겁니다)
+        function openNicknameModal(forceOpen) {
+            // 강제 오픈 모드(연필 버튼, 로그인 직후)가 아니고, 이미 닉네임이 있으면 무시
+            if (!forceOpen && localStorage.getItem('wb_nickname')) {
+                checkLoginStatus();
                 return;
             }
 
@@ -323,8 +324,10 @@
             const input = document.getElementById('nickname-input');
             const googleProfile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}');
             
-            // 구글 이름으로 미리 채워두기
-            input.value = googleProfile.name || "";
+            // 기존 닉네임이 있으면 그걸 보여주고, 없으면 구글 이름
+            const currentNick = localStorage.getItem('wb_nickname');
+            input.value = currentNick || googleProfile.name || "";
+            
             modal.style.display = 'flex';
         }
 
@@ -337,7 +340,7 @@
                 return;
             }
 
-            // 1. 로컬 저장 (가장 중요)
+            // 1. 로컬 저장
             localStorage.setItem('wb_nickname', newNickname);
             
             // 2. 서버 전송
@@ -354,11 +357,11 @@
                 }
             }
 
-            // 3. UI 갱신
+            // 3. UI 갱신 및 닫기
             document.getElementById('name-modal').style.display = 'none';
-            checkLoginStatus(); // 즉시 UI 업데이트
+            checkLoginStatus(); 
             
-            alert(`환영합니다, ${newNickname}님!`);
+            alert(`닉네임이 [${newNickname}]님으로 변경되었습니다!`);
         }
 
         // --- 로그인 상태 관리 ---
@@ -366,34 +369,28 @@
             const btn = document.getElementById('main-login-btn');
             const profileContainer = document.getElementById('profile-container');
             const nameDisplay = document.getElementById('user-name-display');
-    
-            // ★ 연필 버튼 요소 가져오기
             const editBtn = document.getElementById('btn-edit-nick');
 
             const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true';
 
             if (isLoggedIn) {
-                // [로그인 상태]
                 if(btn) {
                     btn.innerText = "LOGOUT";
                     btn.classList.add('btn-logout');
                     btn.onclick = handleAuth;
                 }
-        
                 if(profileContainer) profileContainer.style.display = "flex";
-        
+                
                 const nick = localStorage.getItem('wb_nickname');
                 if(nameDisplay) {
                     nameDisplay.innerText = nick ? nick : "PLAYER";
                     nameDisplay.style.color = "#00e5ff"; 
                 }
-
-                // ★ [추가] 로그인 상태면 연필 버튼 보이기
+                // 연필 버튼 보이기
                 if(editBtn) editBtn.style.display = "block";
 
                 updateProfile(); 
             } else {
-                // [비로그인 상태]
                 if(btn) {
                     btn.innerText = "LOGIN";
                     btn.classList.remove('btn-logout');
@@ -404,8 +401,7 @@
                     nameDisplay.innerText = "GUEST MODE";
                     nameDisplay.style.color = "#888";
                 }
-
-                // ★ [추가] 비로그인 상태면 연필 버튼 숨기기
+                // 연필 버튼 숨기기
                 if(editBtn) editBtn.style.display = "none";
             }
         }
@@ -414,7 +410,7 @@
             const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true';
             if (isLoggedIn) {
                 if(confirm("로그아웃 하시겠습니까?")) {
-                    localStorage.clear(); // 모든 정보 삭제
+                    localStorage.clear();
                     location.reload();
                 }
             } else {
@@ -431,7 +427,7 @@
             document.getElementById('user-xp-text').innerText = `${xp} / ${nextXp} XP`;
         }
 
-        // --- 통합 설정창 로직 (기존 유지) ---
+        // --- 통합 설정창 로직 ---
         const settingsModal = document.getElementById('settings-modal');
         const speedSlider = document.getElementById('speed-slider');
         const speedDisplay = document.getElementById('speed-display');
@@ -470,7 +466,7 @@
             localStorage.setItem('wb_sfx_volume', vol);
         });
 
-        // --- 곡 목록 로딩 (기존 유지) ---
+        // --- 곡 목록 로딩 ---
         window.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('song-list');
             if(!list) return;
@@ -545,7 +541,7 @@
         function closeRank() { document.getElementById('rank-modal').style.display = 'none'; }
         document.getElementById('rank-modal').addEventListener('click', (e) => { if (e.target.id === 'rank-modal') closeRank(); });
 
-        // --- 싱크 위법 로직 (기존 유지) ---
+        // --- 싱크 위법 로직 ---
         let audioCtx; let calibInterval; let nextBeatTime = 0; const BPM = 120; const INTERVAL_SEC = 60 / BPM; let tapDiffs = []; let isCalibrating = false;
         function manualInput() { const val = document.getElementById('offset-input').value; localStorage.setItem('wb_global_offset', val); offsetDisplay.innerText = val; }
         function openCalib() { settingsModal.style.display = 'none'; document.getElementById('calib-overlay').style.display = 'flex'; document.getElementById('offset-input').value = localStorage.getItem('wb_global_offset') || 0; document.getElementById('calib-msg').innerText = "Click circle to start test"; tapDiffs = []; isCalibrating = false; }
