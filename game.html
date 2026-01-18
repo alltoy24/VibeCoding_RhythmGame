@@ -179,7 +179,9 @@
             const source = audioCtx.createBufferSource();
             source.buffer = soundBuffers[name];
             const gainNode = audioCtx.createGain();
-            gainNode.gain.value = 0.7; 
+            // ★ [수정] localStorage에서 볼륨값 읽어오기 (기본값 0.7)
+            const savedVol = parseFloat(localStorage.getItem('wb_sfx_volume') || "0.7");
+            gainNode.gain.value = savedVol; 
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
             source.start(0);
@@ -271,8 +273,8 @@
             }
 
             if(speed) noteSpeed = parseFloat(speed);
-            //const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
-            //offset += userGlobalOffset;
+            const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
+            offset += userGlobalOffset;
             
             loadGameData(song, diff);
         });

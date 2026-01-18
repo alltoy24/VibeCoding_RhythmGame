@@ -5,258 +5,241 @@
     <title>WEB BEAT : SELECT</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@900&family=Roboto:wght@400;700&display=swap');
-        body { margin: 0; background: #050505; color: #fff; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
         
+        :root {
+            --bg: #0a0a0c;
+            --panel: #16161e;
+            --accent: #00e5ff;
+            --accent-glow: rgba(0, 229, 255, 0.4);
+            --gold: #ffd700;
+        }
+
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Roboto', sans-serif; display: flex; flex-direction: column; align-items: center; height: 100vh; overflow: hidden; user-select: none; }
+        
+        /* 헤더 스타일 */
         header { text-align: center; margin-top: 30px; animation: float 3s infinite ease-in-out; width: 100%; display: flex; flex-direction: column; align-items: center; position: relative; }
-        h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: #00e5ff; text-shadow: 0 0 20px rgba(0,229,255,0.5); }
+        h1 { font-family: 'Orbitron'; font-size: 60px; margin: 0; color: var(--accent); text-shadow: 0 0 20px var(--accent-glow); }
         
-        /* 랭킹 팝업 스타일 */
-        #rank-modal {
+        /* --- [1] 우측 상단 버튼 그룹 (설정 + 에디터) --- */
+        .top-right-group {
+            position: absolute; top: 20px; right: 30px;
+            display: flex; gap: 10px; align-items: center; z-index: 100;
+        }
+        .btn-setting {
+            width: 40px; height: 40px; border-radius: 50%;
+            background: rgba(0,0,0,0.5); border: 2px solid #666;
+            color: #ccc; font-size: 20px; cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            transition: 0.3s;
+        }
+        .btn-setting:hover { border-color: var(--accent); color: var(--accent); transform: rotate(90deg); }
+
+        .btn-create { 
+            text-decoration: none; color: #666; font-family: 'Orbitron'; font-size: 12px; font-weight: bold;
+            border: 1px solid #333; padding: 10px 20px; border-radius: 20px; transition: 0.3s;
+            display: flex; align-items: center; background: rgba(0,0,0,0.5);
+        }
+        .btn-create:hover { color: var(--accent); border-color: var(--accent); box-shadow: 0 0 15px var(--accent-glow); }
+
+        /* --- [2] 통합 설정 모달 --- */
+        #settings-modal {
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0, 0, 0, 0.85); z-index: 999;
-            justify-content: center; align-items: center;
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.85); z-index: 2000;
+            justify-content: center; align-items: center; backdrop-filter: blur(8px);
         }
-        .rank-box {
-            width: 500px; max-height: 80vh; background: #111; border: 2px solid #00e5ff;
-            border-radius: 15px; display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 0 30px rgba(0, 229, 255, 0.3); animation: popIn 0.3s;
+        .settings-box {
+            width: 400px; background: #111; border: 2px solid #666;
+            border-radius: 15px; padding: 30px;
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); text-align: center;
         }
-        .rank-header {
-            background: linear-gradient(90deg, #00c6ff, #0072ff); padding: 15px;
-            font-family: 'Orbitron'; font-size: 20px; font-weight: bold; text-align: center;
-            color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative;
+        .settings-title {
+            font-family: 'Orbitron'; font-size: 24px; color: #fff; margin-bottom: 30px;
+            border-bottom: 2px solid #333; padding-bottom: 10px;
         }
-        .rank-close {
-            position: absolute; right: 15px; top: 50%; transform: translateY(-50%);
-            background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;
-        }
-        .rank-list {
-            flex: 1; overflow-y: auto; padding: 10px;
-        }
-        .rank-list::-webkit-scrollbar { width: 8px; }
-        .rank-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
-        .rank-item {
+        .setting-row {
             display: flex; align-items: center; justify-content: space-between;
-            background: rgba(255,255,255,0.05); margin-bottom: 5px; padding: 10px 15px;
-            border-radius: 8px; font-family: 'Roboto'; transition: 0.2s;
+            margin-bottom: 20px; font-family: 'Orbitron'; color: #aaa;
         }
-        .rank-item:hover { background: rgba(0, 229, 255, 0.1); transform: translateX(5px); }
-        .rank-rank { font-weight: bold; width: 40px; font-size: 18px; color: #888; font-family: 'Orbitron'; }
-        .rank-rank.top1 { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-size: 22px; } /* 금 */
-        .rank-rank.top2 { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; font-size: 20px; } /* 은 */
-        .rank-rank.top3 { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; font-size: 20px; } /* 동 */
-
-        .rank-info { flex: 1; display: flex; flex-direction: column; }
-        .rank-name { font-weight: bold; color: #fff; font-size: 15px; }
-        .rank-lv { font-size: 11px; color: #00e5ff; background: rgba(0, 229, 255, 0.1); padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; width: fit-content;}
+        .setting-label { font-size: 14px; }
+        .setting-val { color: var(--accent); font-weight: bold; width: 50px; text-align: right; }
         
-        /* [오타 수정] 점 앞에 .이 빠져있어서 추가했습니다 */
-        .rank-score { font-family: 'Orbitron'; font-size: 18px; color: #fff; font-weight: bold; }
+        input[type="range"] { accent-color: var(--accent); width: 150px; cursor: pointer; }
 
-        /* 기존 버튼 옆에 붙일 작은 랭킹 아이콘 */
-        .btn-rank-icon {
-            width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid #444;
-            border-radius: 5px; cursor: pointer; color: #ffd700; display: flex;
-            justify-content: center; align-items: center; margin-left: 10px; transition: 0.2s;
+        .btn-sync {
+            width: 100%; padding: 12px; margin-top: 10px;
+            background: #222; border: 1px solid #444; color: var(--accent);
+            font-family: 'Orbitron'; cursor: pointer; border-radius: 8px; transition: 0.2s;
         }
-        .btn-rank-icon:hover { background: #ffd700; color: #000; box-shadow: 0 0 10px #ffd700; }
-        
-        /* 로그인 버튼 스타일 (사이버펑크 스타일) */
-        .custom-login-btn {
-            margin-top: 15px; /* 레벨바 아래 여백 */
-            padding: 10px 30px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 2px solid #00e5ff; /* 님 게임의 포인트 컬러 (형광 하늘색) */
-            color: #fff;
-            font-family: 'Segoe UI', sans-serif; /* 게임 폰트에 맞게 수정 가능 */
-            font-size: 16px;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            cursor: pointer;
-            border-radius: 5px; /* 살짝 둥글게 */
-            box-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .btn-sync:hover { background: #333; border-color: var(--accent); }
 
-        .custom-login-btn:hover {
-            background: #00e5ff;
-            color: #000;
-            box-shadow: 0 0 20px #00e5ff;
-            transform: scale(1.05);
+        .btn-close-settings {
+            margin-top: 20px; padding: 10px 30px;
+            background: #fff; color: #000; border: none; border-radius: 20px;
+            font-weight: bold; cursor: pointer; font-family: 'Orbitron';
         }
+        .btn-close-settings:hover { background: #ccc; }
 
-        /* 로그아웃 상태일 때 (빨간색 등) 다르게 하고 싶으면 추가 */
-        .btn-logout {
-            border-color: #ff0055;
-            box-shadow: 0 0 10px rgba(255, 0, 85, 0.3);
+        /* --- [3] 닉네임 설정 모달 --- */
+        #name-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 3000;
+            display: none; flex-direction: column; align-items: center; justify-content: center;
+            backdrop-filter: blur(15px);
         }
-        .btn-logout:hover {
-            background: #ff0055;
-            box-shadow: 0 0 20px #ff0055;
+        .modal-content { background: var(--panel); padding: 40px; border-radius: 20px; border: 1px solid #333; text-align: center; box-shadow: 0 0 50px rgba(0,0,0,1); }
+        .modal-input { 
+            background: transparent; border: none; border-bottom: 2px solid var(--accent); 
+            color: #fff; font-size: 28px; font-family: 'Orbitron'; text-align: center; width: 350px; outline: none; margin: 20px 0; 
         }
+        .modal-btn { background: var(--accent); color: #000; font-family: 'Orbitron'; font-weight: bold; border: none; padding: 15px 40px; border-radius: 5px; cursor: pointer; font-size: 16px; transition: 0.2s; }
+        .modal-btn:hover { transform: scale(1.05); box-shadow: 0 0 20px var(--accent); }
 
-        /* ★ [추가됨] 플레이어 레벨 프로필 */
+        /* 프로필 카드 */
         .profile-card {
             position: absolute; top: 10px; left: 30px;
             display: flex; flex-direction: column; gap: 5px;
-            font-family: 'Orbitron';
-
-            /* ★★★ 이 한 줄을 추가하세요! (화면 제일 앞으로 가져오기) ★★★ */
-            z-index: 100;
+            font-family: 'Orbitron'; z-index: 100;
         }
-        .lv-label { font-size: 30px; color: #ffd700; font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+        .lv-label { font-size: 30px; color: var(--gold); font-weight: bold; text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
         .xp-bar-bg { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; border: 1px solid #555; }
-        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, #00e5ff, #00ffaa); width: 0%; transition: width 1s ease-out; }
+        .xp-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #00ffaa); width: 0%; transition: width 1s ease-out; }
         .xp-text { font-size: 12px; color: #aaa; margin-top: 2px; }
         
-        /* 이름 표시용 태그 추가 */
         #user-name-display { font-size: 12px; color: #888; font-weight: bold; margin-bottom: 5px; }
 
-        /* UI 컨트롤 박스 */
-        .control-bar { display: flex; gap: 15px; margin-top: 15px; }
-        .ui-box { 
-            background: rgba(255, 255, 255, 0.1); 
-            padding: 8px 20px; 
-            border-radius: 30px; 
-            border: 1px solid #333; 
-            display: flex; align-items: center; gap: 10px; 
-            backdrop-filter: blur(5px);
-            font-family: 'Orbitron';
+        .custom-login-btn {
+            margin-top: 15px; padding: 10px 30px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid var(--accent);
+            color: #fff; font-family: 'Segoe UI', sans-serif;
+            font-size: 16px; font-weight: bold; text-transform: uppercase;
+            cursor: pointer; border-radius: 5px;
+            box-shadow: 0 0 10px var(--accent-glow);
+            transition: all 0.2s ease; display: flex; align-items: center; gap: 10px;
         }
-        .speed-label { color: #00e5ff; font-size: 14px; font-weight: bold; }
-        .speed-val { color: #fff; font-size: 18px; min-width: 40px; text-align: right; }
-        input[type="range"] { accent-color: #00e5ff; cursor: pointer; width: 120px; }
+        .custom-login-btn:hover { background: var(--accent); color: #000; box-shadow: 0 0 20px var(--accent); transform: scale(1.05); }
+        .btn-logout { border-color: #ff0055; box-shadow: 0 0 10px rgba(255, 0, 85, 0.3); }
+        .btn-logout:hover { background: #ff0055; box-shadow: 0 0 20px #ff0055; }
 
-        .btn-util {
-            background: rgba(255, 255, 255, 0.1); border: 1px solid #333; color: #aaa;
-            padding: 8px 20px; border-radius: 30px; cursor: pointer; font-family: 'Orbitron'; font-size: 14px;
-            transition: 0.3s; text-decoration: none; display: flex; align-items: center;
-        }
-        .btn-util:hover { color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
-
-        .btn-create { 
-            position: absolute; top: 20px; right: 30px; 
-            text-decoration: none; color: #666; font-family: 'Orbitron'; font-size: 12px; font-weight: bold;
-            border: 1px solid #333; padding: 10px 20px; border-radius: 20px; transition: 0.3s;
-            display: flex; align-items: center; gap: 5px;
-
-            z-index: 100; /* ★ 얘도 추가 */
-        }
-        .btn-create:hover { color: #00e5ff; border-color: #00e5ff; box-shadow: 0 0 15px rgba(0,229,255,0.2); }
-
-        /* 보정 오버레이 */
-        #calib-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 100;
-            display: none; flex-direction: column; align-items: center; justify-content: center;
-        }
-        .calib-circle {
-            width: 120px; height: 120px; border-radius: 50%;
-            border: 4px solid #444; margin-bottom: 20px;
-            transition: 0.1s; display: flex; align-items: center; justify-content: center;
-            font-size: 30px; font-family: 'Orbitron'; color: #444; cursor: pointer;
-        }
-        .calib-circle:hover { border-color: #666; color: #666; }
-        .calib-circle.flash { background: #fff; border-color: #fff; box-shadow: 0 0 50px #fff; }
-        .calib-circle.active { border-color: #00e5ff; color: #00e5ff; transform: scale(0.95); }
-
-        .manual-calib { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
-        .btn-adj { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #333; background: transparent; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
-        .btn-adj:hover { border-color: #00e5ff; color: #00e5ff; }
-        #offset-input { background: transparent; border: none; border-bottom: 2px solid #00e5ff; color: #fff; font-size: 30px; font-family: 'Orbitron'; text-align: center; width: 120px; outline: none; }
-        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-
-        .status-msg { margin-top: 50px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
-        @keyframes blink { 50% { opacity: 0.5; } }
-
+        /* 곡 리스트 & 랭킹 스타일 (기존 유지) */
         .song-container { display: flex; gap: 30px; padding: 20px 50px; overflow-x: auto; width: 90%; height: 550px; align-items: center; scroll-behavior: smooth; margin-top: 10px; }
         .song-container::-webkit-scrollbar { height: 10px; }
         .song-container::-webkit-scrollbar-thumb { background: #333; border-radius: 5px; }
-        
-        .song-card { min-width: 340px; height: 460px; background: #1a1a1a; border: 2px solid #333; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
-        .song-card:hover { transform: translateY(-10px); border-color: #00e5ff; box-shadow: 0 0 30px rgba(0,229,255,0.2); }
-        
+        .song-card { min-width: 340px; height: 460px; background: var(--panel); border: 2px solid #333; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; transition: 0.3s; position: relative; }
+        .song-card:hover { transform: translateY(-10px); border-color: var(--accent); box-shadow: 0 0 30px var(--accent-glow); }
         .card-cover { width: 100%; height: 160px; background: #000; display: flex; align-items: center; justify-content: center; font-size: 60px; border-radius: 10px; margin-bottom: 15px; border: 1px solid #444; color: #333; }
         .card-title { font-family: 'Orbitron'; font-size: 24px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 5px; color: #fff; }
         .card-artist { color: #888; font-size: 14px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 15px; }
-        
         .diff-box { margin-top: auto; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 180px; padding-right: 5px; }
         .diff-box::-webkit-scrollbar { width: 5px; }
         .diff-box::-webkit-scrollbar-thumb { background: #555; border-radius: 3px; }
-
         .btn-diff { width: 100%; padding: 12px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; text-transform: uppercase; transition: 0.2s; display: flex; justify-content: space-between; align-items: center; font-family: 'Orbitron', sans-serif; box-sizing: border-box; }
         .btn-diff:hover { transform: scale(1.02); filter: brightness(1.2); }
         .btn-diff.normal { background: linear-gradient(90deg, #00c6ff, #0072ff); color: #fff; }
         .btn-diff.hard { background: linear-gradient(90deg, #ff00cc, #333399); color: #fff; }
         .btn-diff.troll { background: linear-gradient(90deg, #8E2DE2, #4A00E0); color: #fff; }
-
         .left-part { display: flex; align-items: center; gap: 8px; }
         .lv-badge { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; font-size: 0.8em; color: #ffd700; }
-        
-        /* ★ [추가] 뱃지 아이콘 스타일 */
         .score-badge { font-family: 'Roboto', sans-serif; font-size: 14px; background: rgba(0,0,0,0.5); padding: 4px 10px; border-radius: 6px; color: #fff; font-weight: bold; border: 1px solid rgba(255,255,255,0.2); display: flex; align-items: center; gap: 6px; }
         .badge-icon { font-size: 14px; font-weight: bold; text-shadow: 0 0 5px currentColor; }
-        .badge-fc { color: #00e5ff; } /* Full Combo */
-        .badge-tb { color: #d500f9; } /* Troll Beat */
+        .badge-fc { color: #00e5ff; } 
+        .badge-tb { color: #d500f9; }
+        .btn-rank-icon { width: 30px; height: 30px; background: rgba(0,0,0,0.5); border: 1px solid #444; border-radius: 5px; cursor: pointer; color: #ffd700; display: flex; justify-content: center; align-items: center; margin-left: 10px; transition: 0.2s; }
+        .btn-rank-icon:hover { background: #ffd700; color: #000; box-shadow: 0 0 10px #ffd700; }
 
+        /* 랭킹 팝업 */
+        #rank-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.85); z-index: 3000; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+        .rank-box { width: 500px; max-height: 80vh; background: #111; border: 2px solid var(--accent); border-radius: 15px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 0 30px var(--accent-glow); animation: popIn 0.3s; }
+        .rank-header { background: linear-gradient(90deg, #00c6ff, #0072ff); padding: 15px; font-family: 'Orbitron'; font-size: 20px; font-weight: bold; text-align: center; color: #fff; text-shadow: 0 0 10px rgba(0,0,0,0.5); position: relative; }
+        .rank-close { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
+        .rank-list { flex: 1; overflow-y: auto; padding: 10px; }
+        .rank-list::-webkit-scrollbar { width: 8px; }
+        .rank-list::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .rank-item { display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.05); margin-bottom: 5px; padding: 10px 15px; border-radius: 8px; font-family: 'Roboto'; transition: 0.2s; }
+        .rank-item:hover { background: rgba(0, 229, 255, 0.1); transform: translateX(5px); }
+        .rank-rank { font-weight: bold; width: 40px; font-size: 18px; color: #888; font-family: 'Orbitron'; }
+        .rank-rank.top1 { color: #ffd700; text-shadow: 0 0 10px #ffd700; font-size: 22px; } 
+        .rank-rank.top2 { color: #c0c0c0; text-shadow: 0 0 10px #c0c0c0; font-size: 20px; } 
+        .rank-rank.top3 { color: #cd7f32; text-shadow: 0 0 10px #cd7f32; font-size: 20px; } 
+        .rank-info { flex: 1; display: flex; flex-direction: column; }
+        .rank-name { font-weight: bold; color: #fff; font-size: 15px; }
+        .rank-lv { font-size: 11px; color: var(--accent); background: rgba(0, 229, 255, 0.1); padding: 1px 6px; border-radius: 4px; display: inline-block; margin-top: 3px; width: fit-content;}
+        .rank-score { font-family: 'Orbitron'; font-size: 18px; color: #fff; font-weight: bold; }
+
+        /* 싱크 오버레이 */
+        #calib-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 4000; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .calib-circle { width: 120px; height: 120px; border-radius: 50%; border: 4px solid #444; margin-bottom: 20px; transition: 0.1s; display: flex; align-items: center; justify-content: center; font-size: 30px; font-family: 'Orbitron'; color: #444; cursor: pointer; }
+        .calib-circle:hover { border-color: #666; color: #666; }
+        .calib-circle.flash { background: #fff; border-color: #fff; box-shadow: 0 0 50px #fff; }
+        .calib-circle.active { border-color: var(--accent); color: var(--accent); transform: scale(0.95); }
+        .manual-calib { display: flex; align-items: center; gap: 10px; margin-top: 20px; }
+        .btn-adj { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #333; background: transparent; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+        .btn-adj:hover { border-color: var(--accent); color: var(--accent); }
+        #offset-input { background: transparent; border: none; border-bottom: 2px solid var(--accent); color: #fff; font-size: 30px; font-family: 'Orbitron'; text-align: center; width: 120px; outline: none; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .status-msg { margin-top: 50px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
-    <a href="game_editor.html" class="btn-create">🛠 CREATE CHART</a>
-
-    <div class="profile-card">
-        <div class="lv-label" id="user-lv">LV. 1</div>
-        <div class="xp-bar-bg">
-            <div class="xp-bar-fill" id="user-xp-fill"></div>
-        </div>
-        <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
-        
-        <div id="user-name-display">GUEST MODE</div>
-
-        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuthClick()">
-            LOGIN
-        </button>
+    <div class="top-right-group">
+        <button class="btn-setting" onclick="openSettings()">⚙️</button>
+        <a href="game_editor.html" class="btn-create">🛠 CREATE CHART</a>
     </div>
 
-    <div id="calib-overlay" onclick="handleTap(event)">
-        <h2 style="font-family:'Orbitron'; color:#00e5ff; margin:0;">AUDIO SYNC</h2>
-        <div style="color:#666; font-size:12px; margin-bottom:20px;">TAP TO BEAT or ADJUST MANUALLY</div>
-        <div id="calib-circle" class="calib-circle">●</div>
-        <div id="calib-msg" style="color:#aaa; font-size:14px; text-align:center; height:20px;">Click circle to start test</div>
-        <div class="manual-calib" onclick="event.stopPropagation()">
-            <button class="btn-adj" onclick="adjustOffset(-1)">-</button>
-            <input type="number" id="offset-input" value="0" onchange="manualInput()">
-            <button class="btn-adj" onclick="adjustOffset(1)">+</button>
+    <div id="settings-modal" onclick="closeSettings(event)">
+        <div class="settings-box" onclick="event.stopPropagation()">
+            <div class="settings-title">SYSTEM SETTINGS</div>
+            
+            <div class="setting-row">
+                <span class="setting-label">NOTE SPEED</span>
+                <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0">
+                <span class="setting-val" id="speed-display">5.0</span>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">SFX VOLUME</span>
+                <input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7">
+                <span class="setting-val" id="sfx-val">70%</span>
+            </div>
+
+            <div class="setting-row">
+                <span class="setting-label">AUDIO OFFSET</span>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <span class="setting-val" id="offset-display">0</span> ms
+                </div>
+            </div>
+
+            <button class="btn-sync" onclick="openCalib()">🔊 SYNC WIZARD</button>
+            <button class="btn-close-settings" onclick="closeSettings()">CLOSE</button>
         </div>
-        <div style="color:#444; font-size:12px; margin-top:5px;">MILLISECONDS (ms)</div>
-        <button class="btn-util" onclick="closeCalib(event)" style="margin-top:30px;">SAVE & CLOSE</button>
+    </div>
+
+    <div id="name-modal">
+        <div class="modal-content">
+            <h2 style="font-family:'Orbitron'; color:#00e5ff; margin:0;">IDENTITY SETUP</h2>
+            <p style="color:#888; margin-top:10px;">Please register your nickname.</p>
+            <input type="text" id="nickname-input" class="modal-input" placeholder="NICKNAME" maxlength="32">
+            <p style="color:#555; font-size:11px; margin-bottom:20px;">MIN 2 / MAX 32 CHARACTERS</p>
+            <button class="modal-btn" onclick="saveNicknameToServer()">CONFIRM</button>
+        </div>
+    </div>
+
+    <div class="profile-card" id="profile-container">
+        <div class="lv-label" id="user-lv">LV. 1</div>
+        <div class="xp-bar-bg"><div class="xp-bar-fill" id="user-xp-fill"></div></div>
+        <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
+        <div id="user-name-display">GUEST MODE</div>
+        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuth()">LOGIN</button>
     </div>
 
     <header>
         <h1>ARCADE SELECT</h1>
         <div style="color:#666; letter-spacing:5px; font-size:14px; margin-bottom: 5px;">CHOOSE YOUR STAGE</div>
-        <div class="control-bar">
-            <div class="ui-box">
-                <span class="speed-label">SPEED</span>
-                <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0">
-                <span class="speed-val" id="speed-display">5.0</span>
-            </div>
-            <button class="btn-util" onclick="openCalib()">🔧 OFFSET</button>
-        </div>
     </header>
-
-    <div id="user-info" style="text-align:center; margin-bottom: 20px; color: #fff;">
-        <div id="google-login-btn"></div>
-        <div id="welcome-msg" style="display:none; font-size: 18px;"></div>
-    </div>
 
     <div class="song-container" id="song-list">
         <div class="status-msg">LOADING SONGS...</div>
@@ -274,325 +257,267 @@
         </div>
     </div>
 
+    <div id="calib-overlay" onclick="handleTap(event)">
+        <h2 style="font-family:'Orbitron'; color:#00e5ff; margin:0;">AUDIO SYNC</h2>
+        <div id="calib-circle" class="calib-circle">●</div>
+        <div id="calib-msg" style="color:#aaa; font-size:14px; text-align:center;">Click circle to start test</div>
+        <div class="manual-calib" onclick="event.stopPropagation()">
+            <button class="btn-adj" onclick="adjustOffset(-1)">-</button>
+            <input type="number" id="offset-input" value="0" onchange="manualInput()">
+            <button class="btn-adj" onclick="adjustOffset(1)">+</button>
+        </div>
+        <button class="btn-util" onclick="closeCalib(event)" style="margin-top:30px;">SAVE & CLOSE</button>
+    </div>
+
     <script>
-        // ==========================================
-        // ★ [가장 중요] 여기에 님의 클라우드타입 주소를 꼭 넣으세요!
-        // ==========================================
         const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app"; 
 
-        // 페이지 로드 시 로그인 상태 체크
         window.onload = function() {
-            checkLoginStatus();
-            // (기존의 게임 로딩 함수들이 있다면 여기에...)
+            initSettings();
+            checkLoginStatus(); // 로그인 상태 확인
+            
+            // ★ 로그인 후 돌아왔는지 체크 (login.html에서 보낸 신호)
+            const justLoggedIn = localStorage.getItem('wb_just_logged_in');
+            if (justLoggedIn === 'true') {
+                openNicknameModal(); // 닉네임 설정창 강제 호출
+                localStorage.removeItem('wb_just_logged_in'); 
+            }
         };
 
+        // --- 닉네임 설정 로직 ---
+        function openNicknameModal() {
+            // 이미 닉네임이 로컬에 있으면(서버에서 가져왔으면) 안 띄움
+            if(localStorage.getItem('wb_nickname')) {
+                checkLoginStatus(); // UI 갱신만 하고 종료
+                return;
+            }
+
+            const modal = document.getElementById('name-modal');
+            const input = document.getElementById('nickname-input');
+            const googleProfile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}');
+            
+            // 구글 이름으로 미리 채워두기
+            input.value = googleProfile.name || "";
+            modal.style.display = 'flex';
+        }
+
+        async function saveNicknameToServer() {
+            const input = document.getElementById('nickname-input');
+            const newNickname = input.value.trim();
+            
+            if (newNickname.length < 2 || newNickname.length > 32) {
+                alert("닉네임은 2자 이상 32자 이하로 설정해주세요.");
+                return;
+            }
+
+            // 1. 로컬 저장 (가장 중요)
+            localStorage.setItem('wb_nickname', newNickname);
+            
+            // 2. 서버 전송
+            const profile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}');
+            if (profile.sub) {
+                try {
+                    await fetch(`${API_BASE}/api/user/update`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: profile.sub, nickname: newNickname })
+                    });
+                } catch (e) { 
+                    console.error("서버 저장 실패:", e); 
+                }
+            }
+
+            // 3. UI 갱신
+            document.getElementById('name-modal').style.display = 'none';
+            checkLoginStatus(); // 즉시 UI 업데이트
+            
+            alert(`환영합니다, ${newNickname}님!`);
+        }
+
+        // --- 로그인 상태 관리 (ID 수정됨) ---
         function checkLoginStatus() {
-            const btn = document.getElementById('main-login-btn');
-            const nameDisplay = document.getElementById('user-name-display');
-            const storedProfile = localStorage.getItem('wb_auth_profile');
+            const btn = document.getElementById('main-login-btn'); // ID 정확히 매칭
+            const profileContainer = document.getElementById('profile-container');
+            const nameDisplay = document.getElementById('user-name-display'); // ID 정확히 매칭
 
-            if (storedProfile) {
-                // [상태: 로그인 됨]
-                const profile = JSON.parse(storedProfile);
-        
-                // 1. 버튼을 'LOGOUT'으로 변경
-                btn.innerText = "LOGOUT";
-                btn.classList.add('btn-logout'); 
-        
-                // 2. 이름 표시
-                if(nameDisplay) nameDisplay.innerText = `AGENT: ${profile.name}`;
+            const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true';
+
+            if (isLoggedIn) {
+                // [로그인 상태]
+                if(btn) {
+                    btn.innerText = "LOGOUT";
+                    btn.classList.add('btn-logout');
+                    btn.onclick = handleAuth;
+                }
                 
-                // 3. 서버에서 내 최신 레벨 가져오기
-                // API_BASE가 없으면 여기서 에러남!
-                fetch(`${API_BASE}/api/user/${profile.sub}`)
-                    .then(res => res.json())
-                    .then(data => {
-                        localStorage.setItem('wb_user_lv', data.level);
-                        localStorage.setItem('wb_user_xp', data.xp);
-                        updateProfile();
-                    })
-                    .catch(err => console.log("서버 연결 실패 (오프라인 모드)", err));
+                // 닉네임 표시
+                const nick = localStorage.getItem('wb_nickname');
+                if(nameDisplay) {
+                    nameDisplay.innerText = nick ? nick : "PLAYER";
+                    nameDisplay.style.color = "#00e5ff"; 
+                }
 
+                updateProfile(); 
             } else {
-                // [상태: 비로그인]
-                btn.innerText = "LOGIN";
-                btn.classList.remove('btn-logout');
-                if(nameDisplay) nameDisplay.innerText = "GUEST MODE";
+                // [비로그인 상태]
+                if(btn) {
+                    btn.innerText = "LOGIN";
+                    btn.classList.remove('btn-logout');
+                    btn.onclick = handleAuth;
+                }
+                if(nameDisplay) {
+                    nameDisplay.innerText = "GUEST MODE";
+                    nameDisplay.style.color = "#888";
+                }
             }
         }
 
-        // 버튼 클릭 시 실행되는 함수
-        function handleAuthClick() {
-            const storedProfile = localStorage.getItem('wb_auth_profile');
-    
-            if (storedProfile) {
-                // 이미 로그인 상태면 -> 로그아웃 처리
+        function handleAuth() {
+            const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true';
+            if (isLoggedIn) {
                 if(confirm("로그아웃 하시겠습니까?")) {
-                    localStorage.removeItem('wb_auth_profile');
-                    localStorage.removeItem('wb_user_xp'); 
-                    location.reload(); 
+                    localStorage.clear(); // 모든 정보 삭제
+                    location.reload();
                 }
             } else {
-                // 로그인 안 된 상태면 -> 로그인 페이지로 이동!
                 location.href = 'login.html';
             }
         }
 
-        const speedSlider = document.getElementById('speed-slider');
-        const speedDisplay = document.getElementById('speed-display');
-
-        // ★ 레벨 데이터 로드 및 표시
         function updateProfile() {
             const lv = parseInt(localStorage.getItem('wb_user_lv') || "1");
             const xp = parseInt(localStorage.getItem('wb_user_xp') || "0");
             const nextXp = lv * 500; 
-            
             document.getElementById('user-lv').innerText = `LV. ${lv}`;
-            const percent = Math.min(100, (xp / nextXp) * 100);
-            document.getElementById('user-xp-fill').style.width = `${percent}%`;
+            document.getElementById('user-xp-fill').style.width = `${Math.min(100, xp/nextXp*100)}%`;
             document.getElementById('user-xp-text').innerText = `${xp} / ${nextXp} XP`;
         }
-        updateProfile(); 
 
-        const savedSpeed = localStorage.getItem('wb_user_speed');
-        if (savedSpeed) {
-            speedSlider.value = savedSpeed;
-            speedDisplay.innerText = parseFloat(savedSpeed).toFixed(1);
+        // --- 통합 설정창 로직 (기존 유지) ---
+        const settingsModal = document.getElementById('settings-modal');
+        const speedSlider = document.getElementById('speed-slider');
+        const speedDisplay = document.getElementById('speed-display');
+        const sfxSlider = document.getElementById('sfx-volume');
+        const sfxVal = document.getElementById('sfx-val');
+        const offsetDisplay = document.getElementById('offset-display');
+
+        function openSettings() {
+            settingsModal.style.display = 'flex';
+            offsetDisplay.innerText = localStorage.getItem('wb_global_offset') || 0;
         }
-
-        speedSlider.addEventListener('input', (e) => {
+        function closeSettings(e) {
+            if (e && e.target !== settingsModal && e.target.className !== 'btn-close-settings') return;
+            settingsModal.style.display = 'none';
+        }
+        function initSettings() {
+            const savedSpeed = localStorage.getItem('wb_user_speed') || "5.0";
+            if(speedSlider) {
+                speedSlider.value = savedSpeed;
+                speedDisplay.innerText = parseFloat(savedSpeed).toFixed(1);
+            }
+            const savedVol = localStorage.getItem('wb_sfx_volume') || "0.7";
+            if(sfxSlider) {
+                sfxSlider.value = savedVol;
+                sfxVal.innerText = Math.round(savedVol * 100) + "%";
+            }
+        }
+        if(speedSlider) speedSlider.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value).toFixed(1);
             speedDisplay.innerText = val;
             localStorage.setItem('wb_user_speed', val);
         });
-
-        // 오디오 싱크 로직
-        let audioCtx; let calibInterval; let nextBeatTime = 0;
-        const BPM = 120; const INTERVAL_SEC = 60 / BPM; 
-        let tapDiffs = []; let isCalibrating = false;
-
-        function openCalib() {
-            document.getElementById('calib-overlay').style.display = 'flex';
-            const currentOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
-            document.getElementById('offset-input').value = currentOffset;
-            document.getElementById('calib-msg').innerText = "Click circle to start test";
-            tapDiffs = []; isCalibrating = false;
-        }
-        function closeCalib(e) {
-            if(e) e.stopPropagation();
-            document.getElementById('calib-overlay').style.display = 'none';
-            stopCalib();
-        }
-        function adjustOffset(amount) {
-            const input = document.getElementById('offset-input');
-            let val = parseInt(input.value) || 0;
-            val += amount; input.value = val; manualInput();
-        }
-        function manualInput() {
-            const input = document.getElementById('offset-input');
-            const val = parseInt(input.value) || 0;
-            localStorage.setItem('wb_global_offset', val);
-        }
-        function startCalib() {
-            if(isCalibrating) return;
-            isCalibrating = true; tapDiffs = [];
-            document.getElementById('calib-msg').innerText = "Listen & Tap!";
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            nextBeatTime = audioCtx.currentTime + 0.5;
-            scheduleBeep();
-        }
-        function stopCalib() { clearTimeout(calibInterval); isCalibrating = false; }
-        function scheduleBeep() {
-            if(!isCalibrating) return;
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-            osc.connect(gain); gain.connect(audioCtx.destination);
-            osc.frequency.value = 1000; gain.gain.value = 0.1;
-            osc.start(nextBeatTime); osc.stop(nextBeatTime + 0.05);
-            const delay = (nextBeatTime - audioCtx.currentTime) * 1000;
-            setTimeout(() => {
-                const circle = document.getElementById('calib-circle');
-                circle.classList.add('flash');
-                setTimeout(() => circle.classList.remove('flash'), 50);
-            }, delay);
-            nextBeatTime += INTERVAL_SEC;
-            calibInterval = setTimeout(scheduleBeep, delay + 200); 
-        }
-        function handleTap(e) {
-            if(e && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return;
-            if (!isCalibrating) { startCalib(); return; }
-            const tapTime = audioCtx.currentTime;
-            const timeFromPrev = (tapTime - (nextBeatTime - INTERVAL_SEC));
-            const timeToNext = (nextBeatTime - tapTime);
-            let diff = (Math.abs(timeFromPrev) < Math.abs(timeToNext)) ? timeFromPrev : -timeToNext;
-            if(Math.abs(diff) < 0.2) {
-                tapDiffs.push(diff * 1000); 
-                const circle = document.getElementById('calib-circle');
-                circle.classList.add('active');
-                setTimeout(() => circle.classList.remove('active'), 100);
-                const currentAvg = Math.round(tapDiffs.reduce((a,b)=>a+b, 0) / tapDiffs.length);
-                document.getElementById('offset-input').value = currentAvg;
-                localStorage.setItem('wb_global_offset', currentAvg);
-                if(tapDiffs.length >= 8) {
-                    stopCalib();
-                    document.getElementById('calib-msg').innerHTML = "<span style='color:#00e5ff'>AUTO SYNC COMPLETE!</span>";
-                }
-            }
-        }
-        window.addEventListener('keydown', (e) => {
-            if(e.code === 'Space' && document.getElementById('calib-overlay').style.display === 'flex') handleTap();
+        if(sfxSlider) sfxSlider.addEventListener('input', (e) => {
+            const vol = e.target.value;
+            sfxVal.innerText = Math.round(vol * 100) + "%";
+            localStorage.setItem('wb_sfx_volume', vol);
         });
 
+        // --- 곡 목록 로딩 (기존 유지) ---
         window.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('song-list');
+            if(!list) return;
+            
             try {
-                // [수정 후] 뒤에 현재 시간을 붙여서 무조건 새로 받게 함
                 const response = await fetch('song_list.json?t=' + new Date().getTime());
-                if (!response.ok) throw new Error("song_list.json을 찾을 수 없습니다.");
                 const songs = await response.json();
                 list.innerHTML = ""; 
 
                 songs.forEach(song => {
                     const diffs = [];
                     song.charts.forEach(filename => {
-                        const lowerName = filename.toLowerCase();
-                        let type = '';
-                        if (lowerName.includes('normal')) type = 'normal';
-                        else if (lowerName.includes('hard')) type = 'hard';
-                        else if (lowerName.includes('troll')) type = 'troll';
-
+                        const lower = filename.toLowerCase();
+                        let type = lower.includes('normal') ? 'normal' : lower.includes('hard') ? 'hard' : lower.includes('troll') ? 'troll' : '';
                         if (type) {
-                            const numMatch = filename.match(/_(\d+)\.json$/);
-                            const level = numMatch ? numMatch[1] : null;
-                            const fileKey = filename.replace(/\.json$/i, ''); 
-
-                            diffs.push({
-                                type: type,
-                                level: level ? parseInt(level) : 0,
-                                levelRaw: level,
-                                fileKey: fileKey
-                            });
+                            const level = filename.match(/_(\d+)\.json$/)?.[1];
+                            diffs.push({ type, level: parseInt(level||0), levelRaw: level, fileKey: filename.replace(/\.json$/i, '') });
                         }
                     });
-
                     const typeOrder = { 'normal': 1, 'hard': 2, 'troll': 3 };
-                    diffs.sort((a, b) => {
-                        if (typeOrder[a.type] !== typeOrder[b.type]) return typeOrder[a.type] - typeOrder[b.type];
-                        return a.level - b.level;
-                    });
+                    diffs.sort((a, b) => (typeOrder[a.type] - typeOrder[b.type]) || (a.level - b.level));
 
                     const card = document.createElement('div');
                     card.className = 'song-card';
-                    
                     let diffButtons = '';
                     diffs.forEach(d => {
-                        const scoreKey = `wb_score_${song.folder}_${d.fileKey}`;
-                        const savedScore = localStorage.getItem(scoreKey) || '000000';
-                        const levelHtml = d.levelRaw ? `<span class="lv-badge">Lv.${d.levelRaw}</span>` : '';
-
-                        const badgeKey = `wb_badge_${song.folder}_${d.fileKey}`;
-                        const badgeType = localStorage.getItem(badgeKey); 
-                        
-                        let badgeHtml = "";
-                        if (badgeType === "TB") badgeHtml = "<span class='badge-icon badge-tb'>👑 TB</span>";
-                        else if (badgeType === "FC") badgeHtml = "<span class='badge-icon badge-fc'>★ FC</span>";
+                        const score = localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`) || '000000';
+                        const badge = localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`);
+                        let badgeHtml = badge === "TB" ? "<span class='badge-icon' style='color:#d500f9'>👑</span>" : (badge === "FC" ? "<span class='badge-icon' style='color:#00e5ff'>★</span>" : "");
 
                         diffButtons += `
                             <div style="display:flex; align-items:center; width:100%; margin-bottom:10px;">
                                 <button class="btn-diff ${d.type}" style="flex:1;" onclick="play('${song.folder}', '${d.fileKey}')">
-                                    <div class="left-part">
-                                        <span>${d.type.toUpperCase()}</span>
-                                        ${levelHtml}
-                                    </div>
-                                    <span class="score-badge">🏆 ${savedScore}${badgeHtml}</span>
+                                    <div class="left-part"><span>${d.type.toUpperCase()}</span> ${d.levelRaw ? `<span class="lv-badge">Lv.${d.levelRaw}</span>` : ''}</div>
+                                    <span class="score-badge">🏆 ${score}${badgeHtml}</span>
                                 </button>
-                                <button class="btn-rank-icon" onclick="openRanking('${song.folder}', '${d.fileKey}', '${song.title}', '${d.type}')">
-                                    👑
-                                </button>
+                                <button class="btn-rank-icon" onclick="openRanking('${song.folder}', '${d.fileKey}', '${song.title}', '${d.type}')">👑</button>
                             </div>`;
                     });
-
-                    card.innerHTML = `
-                        <div class="card-cover">🎵</div>
-                        <div class="card-info">
-                            <div class="card-title">${song.title}</div>
-                            <div class="card-artist">${song.artist}</div>
-                            <div class="diff-box">${diffButtons}</div>
-                        </div>
-                    `;
+                    card.innerHTML = `<div class="card-cover">🎵</div><div class="card-info"><div class="card-title">${song.title}</div><div class="card-artist">${song.artist}</div><div class="diff-box">${diffButtons}</div></div>`;
                     list.appendChild(card);
                 });
-
-            } catch (err) {
-                console.error(err);
-                list.innerHTML = `<div class="status-msg" style="color:#ff5555">ERROR: song_list.json Error</div>`;
-            }
+            } catch (e) { list.innerHTML = `<div class="status-msg" style="color:#ff5555">SONG LIST ERROR</div>`; }
         });
 
         function play(folder, fileKey) {
-            const speed = speedSlider.value;
-            window.location.href = `game.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speed}`;
+            window.location.href = `game.html?song=${encodeURIComponent(folder)}&diff=${fileKey}&speed=${speedSlider.value}`;
         }
 
-        // ★ 랭킹 팝업 열기
         async function openRanking(songFolder, diffKey, title, type) {
             const modal = document.getElementById('rank-modal');
             const list = document.getElementById('rank-list-container');
             const header = document.getElementById('rank-title');
-    
             modal.style.display = 'flex';
             header.innerText = `${title} [${type.toUpperCase()}]`;
-            list.innerHTML = `<div style="text-align:center; padding:30px; color:#00e5ff; animation:blink 1s infinite;">CONNECTING TO SERVER...</div>`;
+            list.innerHTML = `<div style="text-align:center; padding:30px; color:#00e5ff; animation:blink 1s infinite;">CONNECTING...</div>`;
 
             try {
-                // ★ 여기가 문제였음! API_BASE가 없어서 에러남
                 const res = await fetch(`${API_BASE}/api/ranking/${songFolder}/${diffKey}`);
                 const data = await res.json();
-
-                if (data.length === 0) {
-                    list.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">NO RECORDS YET.<br>BE THE FIRST!</div>`;
-                    return;
-                }
-
+                if (data.length === 0) { list.innerHTML = `<div style="text-align:center; padding:40px; color:#666;">NO RECORDS YET</div>`; return; }
                 let html = "";
                 data.forEach((user, idx) => {
                     const rank = idx + 1;
-                    let rankClass = "";
-                    if(rank === 1) rankClass = "top1";
-                    else if(rank === 2) rankClass = "top2";
-                    else if(rank === 3) rankClass = "top3";
-
+                    let rankClass = rank === 1 ? "top1" : (rank === 2 ? "top2" : (rank === 3 ? "top3" : ""));
                     const lv = user.level ? `LV. ${user.level}` : "Unknown";
-
-                    html += `
-                        <div class="rank-item">
-                            <div class="rank-rank ${rankClass}">#${rank}</div>
-                            <div class="rank-info">
-                                <span class="rank-name">${user.userName}</span>
-                                <span class="rank-lv">${lv}</span>
-                            </div>
-                            <div class="rank-score">${user.score.toLocaleString()}</div>
-                        </div>
-                    `;
+                    html += `<div class="rank-item"><div class="rank-rank ${rankClass}">#${rank}</div><div class="rank-info"><span class="rank-name">${user.userName}</span><span class="rank-lv">${lv}</span></div><div class="rank-score">${user.score.toLocaleString()}</div></div>`;
                 });
                 list.innerHTML = html;
-
-            } catch (e) {
-                // API_BASE 변수가 없으니 여기서 잡혀서 "SERVER ERROR"라고 떴던 것임
-                console.error(e);
-                list.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">SERVER ERROR<br><span style="font-size:12px;color:#666;">(Check Console)</span></div>`;
-            }
+            } catch (e) { list.innerHTML = `<div style="text-align:center; color:#ff5555; padding:20px;">SERVER ERROR</div>`; }
         }
+        function closeRank() { document.getElementById('rank-modal').style.display = 'none'; }
+        document.getElementById('rank-modal').addEventListener('click', (e) => { if (e.target.id === 'rank-modal') closeRank(); });
 
-        // 팝업 닫기
-        function closeRank() {
-            document.getElementById('rank-modal').style.display = 'none';
-        }
-
-        // 배경 누르면 닫기
-        document.getElementById('rank-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'rank-modal') closeRank();
-        });
+        // --- 싱크 위법 로직 (기존 유지) ---
+        let audioCtx; let calibInterval; let nextBeatTime = 0; const BPM = 120; const INTERVAL_SEC = 60 / BPM; let tapDiffs = []; let isCalibrating = false;
+        function manualInput() { const val = document.getElementById('offset-input').value; localStorage.setItem('wb_global_offset', val); offsetDisplay.innerText = val; }
+        function openCalib() { settingsModal.style.display = 'none'; document.getElementById('calib-overlay').style.display = 'flex'; document.getElementById('offset-input').value = localStorage.getItem('wb_global_offset') || 0; document.getElementById('calib-msg').innerText = "Click circle to start test"; tapDiffs = []; isCalibrating = false; }
+        function closeCalib(e) { if(e) e.stopPropagation(); document.getElementById('calib-overlay').style.display = 'none'; stopCalib(); openSettings(); }
+        function adjustOffset(amount) { const input = document.getElementById('offset-input'); input.value = parseInt(input.value) + amount; manualInput(); }
+        function startCalib() { if(isCalibrating) return; isCalibrating = true; tapDiffs = []; document.getElementById('calib-msg').innerText = "Listen & Tap!"; if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); nextBeatTime = audioCtx.currentTime + 0.5; scheduleBeep(); }
+        function stopCalib() { clearTimeout(calibInterval); isCalibrating = false; }
+        function scheduleBeep() { if(!isCalibrating) return; const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); osc.connect(gain); gain.connect(audioCtx.destination); osc.frequency.value = 1000; gain.gain.value = 0.1; osc.start(nextBeatTime); osc.stop(nextBeatTime + 0.05); const delay = (nextBeatTime - audioCtx.currentTime) * 1000; setTimeout(() => { const circle = document.getElementById('calib-circle'); circle.classList.add('flash'); setTimeout(() => circle.classList.remove('flash'), 50); }, delay); nextBeatTime += INTERVAL_SEC; calibInterval = setTimeout(scheduleBeep, delay + 200); }
+        function handleTap(e) { if(e && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return; if (!isCalibrating) { startCalib(); return; } const tapTime = audioCtx.currentTime; const timeFromPrev = (tapTime - (nextBeatTime - INTERVAL_SEC)); const timeToNext = (nextBeatTime - tapTime); let diff = (Math.abs(timeFromPrev) < Math.abs(timeToNext)) ? timeFromPrev : -timeToNext; if(Math.abs(diff) < 0.2) { tapDiffs.push(diff * 1000); const circle = document.getElementById('calib-circle'); circle.classList.add('active'); setTimeout(() => circle.classList.remove('active'), 100); const currentAvg = Math.round(tapDiffs.reduce((a,b)=>a+b, 0) / tapDiffs.length); document.getElementById('offset-input').value = currentAvg; manualInput(); if(tapDiffs.length >= 8) { stopCalib(); document.getElementById('calib-msg').innerHTML = "<span style='color:#00e5ff'>AUTO SYNC COMPLETE!</span>"; } } }
+        window.addEventListener('keydown', (e) => { if(e.code === 'Space' && document.getElementById('calib-overlay').style.display === 'flex') handleTap(); });
     </script>
 </body>
 </html>

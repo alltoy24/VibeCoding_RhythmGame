@@ -108,17 +108,11 @@
     </div>
 
     <script>
-        // ==========================================
-        // ★ [설정] 아래 3가지를 꼭 채워주세요! ★
-        // ==========================================
-        const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app"; // 님의 진짜 서버 주소
+        const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app"; 
         const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
         const KAKAO_JS_KEY = "57aace86fddf8b4338c5967ae0762a42"; 
-        // ==========================================
 
-        // 초기화
         window.onload = function() {
-            // 구글 초기화
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
                 callback: handleGoogleResponse
@@ -127,19 +121,15 @@
                 document.getElementById("google-login-btn"),
                 { theme: "outline", size: "large", width: 320, shape: "rectangular" }
             );
-
-            // 카카오 초기화
             try { Kakao.init(KAKAO_JS_KEY); } catch(e) {}
         };
 
-        // 1. 구글 로그인 처리
         function handleGoogleResponse(response) {
             showLoading();
             const profile = parseJwt(response.credential);
             completeLogin(profile);
         }
 
-        // 2. 카카오 로그인 처리
         function loginWithKakao() {
             Kakao.Auth.login({
                 success: function(authObj) {
@@ -157,36 +147,48 @@
                         fail: function(error) { hideLoading(); alert('정보 로드 실패'); }
                     });
                 },
-                fail: function(err) { alert('카카오 로그인 창이 닫혔거나 실패했습니다.'); },
+                fail: function(err) { alert('카카오 로그인 실패'); },
             });
         }
 
-        // ★ [공통] 로그인 성공 후 처리
-        // 여기서 서버에 "나 왔어!" 하고 레벨 정보를 받아옵니다.
+        // ★ [핵심 수정] 로그인 완료 처리
         function completeLogin(profile) {
             console.log("LOGIN SUCCESS:", profile.name);
             localStorage.setItem('wb_auth_profile', JSON.stringify(profile));
+            
+            // 1. 로그인 상태 저장
+            localStorage.setItem('wb_logged_in', 'true');
 
-            // 서버에 유저 정보 동기화 (없으면 생성, 있으면 레벨 가져오기)
+            // 2. ★ index.html에게 "방금 로그인했음"을 알리는 신호
+            localStorage.setItem('wb_just_logged_in', 'true');
+
+            // 3. 서버에서 유저 정보(레벨, 닉네임) 가져오기
             fetch(`${API_BASE}/api/user/${profile.sub}`)
                 .then(res => res.json())
                 .then(data => {
-                    // 서버에서 받은 레벨/XP 저장
                     localStorage.setItem('wb_user_lv', data.level);
                     localStorage.setItem('wb_user_xp', data.xp);
                     
-                    // index.html로 귀환!
+                    // ★ 중요: 서버에 저장된 닉네임이 있다면 가져와서 저장!
+                    // (닉네임이 있으면 index.html이 닉네임 설정창을 띄우지 않음)
+                    if (data.nickname) {
+                        localStorage.setItem('wb_nickname', data.nickname);
+                    } else {
+                        // 닉네임이 없으면 삭제 (확실하게 모달을 띄우기 위해)
+                        localStorage.removeItem('wb_nickname');
+                    }
+                    
+                    // 메인 화면으로 이동
                     location.href = 'index.html';
                 })
                 .catch(err => {
                     console.error("서버 연결 실패:", err);
-                    // 서버 에러나도 일단 로그인은 시켜줌 (오프라인 모드 느낌)
+                    // 서버 에러나도 일단 로그인 처리는 해줌 (닉네임 설정창은 뜸)
                     localStorage.setItem('wb_user_lv', 1);
                     location.href = 'index.html';
                 });
         }
 
-        // JWT 디코딩 (구글용)
         function parseJwt (token) {
             var base64Url = token.split('.')[1];
             var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
