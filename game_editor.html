@@ -134,6 +134,7 @@
         </div>
         <hr style="width:100%; border-color:#333; margin: 5px 0;">
         <div class="control-group">
+            <button id="btn-record" style="background:#444; color:#aaa; border:1px solid #666; margin-bottom:5px;">🔴 RECORD: OFF</button>
             <button id="btn-play" class="primary">▶ EDIT PLAY (Space)</button>
             <button id="btn-stop">⏹ STOP</button>
         </div>
@@ -230,7 +231,6 @@
             gainNode.connect(audioCtx.destination);
 
             // time이 0보다 크면 그 시간에 예약, 아니면 즉시 재생
-            // ★ SFX_FIXED_TRIM(0.55초) 만큼 앞부분을 자르고 재생
             const playTime = time > 0 ? time : audioCtx.currentTime;
             source.start(playTime, SFX_FIXED_TRIM); 
         }
@@ -280,6 +280,7 @@
         const gameCtx = gameCanvas.getContext('2d');
         const resultOverlay = document.getElementById('result-overlay');
         const autoIndicator = document.getElementById('auto-indicator'); 
+        const recBtn = document.getElementById('btn-record');
         
         gameCanvas.width = 400;
         gameCanvas.height = window.innerHeight;
@@ -301,6 +302,9 @@
         let totalMaxHits = 0;
         let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
         let forceFinishTimer = null; 
+
+        // [변수 선언부 아래에 추가]
+        let isRecording = false; // 녹화 모드 상태
 
         const urlParams = new URLSearchParams(window.location.search);
         const songParam = urlParams.get('song');
@@ -356,7 +360,7 @@
                 beatNum = data.beat;
                 document.getElementById('beat-num').value = beatNum;
             }
-            if(data.beatDenom) { // 분모가 있으면 불러오고 없으면 4
+            if(data.beatDenom) { 
                 beatDenom = data.beatDenom;
                 document.getElementById('beat-denom').value = beatDenom;
             } else {
@@ -409,6 +413,22 @@
                 } catch(err) { alert("Load Error: " + err); }
             };
             reader.readAsText(file);
+        });
+
+        // [이벤트 리스너 모여있는 곳에 추가]
+        recBtn.addEventListener('click', () => {
+            isRecording = !isRecording;
+            if(isRecording) {
+                recBtn.innerText = "🔴 RECORD: ON";
+                recBtn.style.background = "#ff0000";
+                recBtn.style.color = "#fff";
+                recBtn.style.boxShadow = "0 0 15px rgba(255,0,0,0.5)";
+            } else {
+                recBtn.innerText = "🔴 RECORD: OFF";
+                recBtn.style.background = "#444";
+                recBtn.style.color = "#aaa";
+                recBtn.style.boxShadow = "none";
+            }
         });
 
         document.getElementById('bpm').addEventListener('change', e => bpm = parseFloat(e.target.value));
@@ -532,8 +552,6 @@
             const currentMs = audio.currentTime * 1000;
             const chartMs = currentMs - offset;
             // ★ [핵심 수정] 분모(beatDenom)까지 고려한 한 마디 시간 계산
-            // 4/4박자 -> (4/4)*4 = 4박
-            // 6/8박자 -> (4/8)*6 = 3박 (시간상)
             const msPerMeasure = (60 / bpm) * (4 / beatDenom) * beatNum * 1000;
             const y = Math.max(0, (chartMs / msPerMeasure) * measureHeight);
             playHead.style.transform = `translateY(${y}px)`;
@@ -587,7 +605,7 @@
         }
 
         // ==========================================
-        //              GAME LOGIC
+        //              GAME LOGIC
         // ==========================================
         
         document.getElementById('btn-test').addEventListener('click', () => {
@@ -686,20 +704,71 @@
             setTimeout(showResult, 500);
         }
 
+        // ==========================================
+        // ★ [수정됨] 키보드 이벤트 리스너 (녹화 기능 추가됨!)
+        // ==========================================
         const KEY_MAP = ['d', 'f', 'j', 'k'];
+        
         window.addEventListener('keydown', e => {
-            if(e.code === 'Space' && !isGameTesting && !songParam) { e.preventDefault(); toggleEditPlay(); }
+            // 1. 에디터 단축키 (재생/정지, 테스트 시작/종료)
+            if(e.code === 'Space' && !isGameTesting && !songParam) { 
+                e.preventDefault(); 
+                toggleEditPlay(); 
+            }
             if(e.code === 'Enter' && !isGameTesting && !songParam) {
                 const isAuto = document.getElementById('chk-auto').checked;
                 startTestMode(isAuto);
             }
             if(e.code === 'Escape' && isGameTesting && !songParam) stopTestMode();
             
+            const laneIdx = KEY_MAP.indexOf(e.key.toLowerCase());
+
+            // 2. [게임 테스트 모드] 입력 처리
             if(isGameTesting && !gameFinished && !isAutoMode) {
-                const lane = KEY_MAP.indexOf(e.key.toLowerCase());
-                if(lane !== -1 && !activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
+                if(laneIdx !== -1 && !activeKeys[laneIdx]) { 
+                    activeKeys[laneIdx] = true; 
+                    checkHit(laneIdx); 
+                }
+            }
+
+            // 3. ★ [신규 추가] 실시간 녹화 로직 (에디터 재생 중 + 녹화 켜짐 + 키보드 눌림)
+            if (isEditPlaying && isRecording && laneIdx !== -1) {
+                // (1) 현재 재생 시간 구하기
+                const currentMs = audio.currentTime * 1000;
+                const chartMs = currentMs - offset;
+
+                // (2) 한 마디의 길이(ms) 계산 (박자표 반영)
+                const msPerMeasure = (60 / bpm) * (4 / beatDenom) * beatNum * 1000;
+
+                // (3) 현재 위치가 몇 번째 마디의, 어느 지점인지 계산
+                const totalMeasurePos = chartMs / msPerMeasure;
+                let mIdx = Math.floor(totalMeasurePos); // 마디 인덱스
+                
+                // (4) 퀀타이징 (자석 효과)
+                const split = parseInt(splitInput.value) || 16;
+                const rawRatio = totalMeasurePos - mIdx;
+                const snappedRatio = Math.round(rawRatio * split) / split;
+                let pos192 = Math.round(snappedRatio * BASE_RES);
+
+                // 예외 처리: 다음 마디로 넘어간 경우
+                if (pos192 >= BASE_RES) {
+                    mIdx++;
+                    pos192 = 0;
+                }
+
+                // (5) 노트 추가 (중복 방지)
+                if (measures[mIdx]) {
+                    const exists = measures[mIdx].notes.some(n => n.lane === laneIdx && Math.abs(n.pos - pos192) < 2);
+                    if (!exists) {
+                        measures[mIdx].notes.push({ lane: laneIdx, pos: pos192, len: 0 });
+                        playSfx('hit'); // 찍히는 소리
+                        drawGrid();     // 화면 갱신
+                    }
+                }
             }
         });
+
+        // 키 뗐을 때 처리 (게임용)
         window.addEventListener('keyup', e => {
             if(isGameTesting && !gameFinished && !isAutoMode) {
                 const lane = KEY_MAP.indexOf(e.key.toLowerCase());
@@ -708,7 +777,7 @@
         });
 
         // ==========================================
-        // ★ [핵심] 게임 루프
+        //              GAME LOOP
         // ==========================================
         function gameLoop() {
             if(!isGameTesting || gameFinished) return;
@@ -743,32 +812,24 @@
             const NOTE_SPEED_PX = 100 * noteSpeed; 
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
 
-            // ★ 오토 플레이 로직 (소리 예약 + 비주얼 분리)
+            // ★ 오토 플레이 로직
             if (isAutoMode) {
                 activeNotes.forEach(n => {
-                    // 1. 소리 먼저 재생 (45ms 미리 명령 내려서 딜레이 상쇄)
                     if (!n.audioPlayed && currentTime >= n.time - 120) {
                         n.audioPlayed = true; 
                         if(n.len > 0) playSfx('hold_start');
                         else playSfx('hit');
                     }
-
-
-                    // 2. 비주얼 (정박)
                     if (!n.hit && currentTime >= n.time) {
                         n.hit = true; n.holding = true;
                         if(n.len === 0) n.finished = true;
-                        
                         activeKeys[n.lane] = true; 
                         createParticles(n.lane);
                         combo++; totalHits++; score += scorePerHit; totalRateSum += 100;
                         judgeStats.perfect++; 
                         updateGameHUD(); showJudge("PERFECT", n.lane, "#00e5ff");
-                        
                         if(n.len === 0) setTimeout(() => { if(!n.holding) activeKeys[n.lane] = false; }, 50);
                     }
-                    
-                    // 3. 롱노트 종료
                     if (n.hit && n.len > 0 && !n.finished) {
                         activeKeys[n.lane] = true;
                         if (currentTime >= n.endTime) {
