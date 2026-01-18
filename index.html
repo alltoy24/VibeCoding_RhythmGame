@@ -178,6 +178,21 @@
         #offset-input { background: transparent; border: none; border-bottom: 2px solid var(--accent); color: #fff; font-size: 30px; font-family: 'Orbitron'; text-align: center; width: 120px; outline: none; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
+        /* 닉네임 + 수정 버튼 컨테이너 */
+        .nickname-container {
+            display: flex; align-items: center; gap: 8px; margin-bottom: 5px;
+        }
+
+        /* 연필 아이콘 버튼 */
+        .btn-edit-nick {
+            background: none; border: none; cursor: pointer;
+            color: #666; font-size: 14px; transition: 0.2s;
+            padding: 0; display: flex; align-items: center;
+        }
+        .btn-edit-nick:hover {
+            color: #00e5ff; transform: scale(1.1) rotate(15deg);
+        }
+
         .status-msg { margin-top: 50px; font-size: 20px; color: #888; font-family: 'Orbitron'; animation: blink 1.5s infinite; }
         @keyframes float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
         @keyframes blink { 50% { opacity: 0.5; } }
@@ -228,12 +243,19 @@
         </div>
     </div>
 
-    <div class="profile-card" id="profile-container">
+    <div class="profile-card" id="profile-container" style="display:none;">
         <div class="lv-label" id="user-lv">LV. 1</div>
         <div class="xp-bar-bg"><div class="xp-bar-fill" id="user-xp-fill"></div></div>
         <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
-        <div id="user-name-display">GUEST MODE</div>
-        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuth()">LOGIN</button>
+    
+        <div class="nickname-container">
+            <div id="user-name-display">GUEST MODE</div>
+            <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)" style="display:none;">
+                ✏️
+            </button>
+        </div>
+
+        <button id="main-login-btn" class="custom-login-btn" onclick="handleAuthClick()">LOGIN</button>
     </div>
 
     <header>
@@ -334,11 +356,14 @@
             alert(`환영합니다, ${newNickname}님!`);
         }
 
-        // --- 로그인 상태 관리 (ID 수정됨) ---
+        // --- 로그인 상태 관리 ---
         function checkLoginStatus() {
-            const btn = document.getElementById('main-login-btn'); // ID 정확히 매칭
+            const btn = document.getElementById('main-login-btn');
             const profileContainer = document.getElementById('profile-container');
-            const nameDisplay = document.getElementById('user-name-display'); // ID 정확히 매칭
+            const nameDisplay = document.getElementById('user-name-display');
+    
+            // ★ 연필 버튼 요소 가져오기
+            const editBtn = document.getElementById('btn-edit-nick');
 
             const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true';
 
@@ -349,13 +374,17 @@
                     btn.classList.add('btn-logout');
                     btn.onclick = handleAuth;
                 }
-                
-                // 닉네임 표시
+        
+                if(profileContainer) profileContainer.style.display = "flex";
+        
                 const nick = localStorage.getItem('wb_nickname');
                 if(nameDisplay) {
                     nameDisplay.innerText = nick ? nick : "PLAYER";
                     nameDisplay.style.color = "#00e5ff"; 
                 }
+
+                // ★ [추가] 로그인 상태면 연필 버튼 보이기
+                if(editBtn) editBtn.style.display = "block";
 
                 updateProfile(); 
             } else {
@@ -365,10 +394,14 @@
                     btn.classList.remove('btn-logout');
                     btn.onclick = handleAuth;
                 }
+                if(profileContainer) profileContainer.style.display = "flex"; 
                 if(nameDisplay) {
                     nameDisplay.innerText = "GUEST MODE";
                     nameDisplay.style.color = "#888";
                 }
+
+                // ★ [추가] 비로그인 상태면 연필 버튼 숨기기
+                if(editBtn) editBtn.style.display = "none";
             }
         }
 
