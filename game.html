@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : PURPLE HAZE</title>
+    <title>WEB BEAT : GREEN MATRIX</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* [기본 설정 & 폰트] */
@@ -13,7 +13,7 @@
             --secondary: #ff0055; 
             --text: #fff; 
             --fever-gold: #ffd700; 
-            --fever-max: #d500f9; /* ★ 변경: 네온 퍼플 */
+            --fever-max: #00ff00; /* 네온 그린 */
         }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; }
         
@@ -62,10 +62,10 @@
             border-color: rgba(255, 215, 0, 0.6);
             box-shadow: 0 0 80px rgba(255, 215, 0, 0.4), inset 0 0 40px rgba(255, 215, 0, 0.1);
         }
-        /* ★ 피버 MAX 모드 (Purple) - 변경됨 */
+        /* ★ 슈퍼 피버 모드 (Green) */
         #game-canvas-container.fever-max-mode {
-            border-color: rgba(213, 0, 249, 0.8);
-            box-shadow: 0 0 100px rgba(213, 0, 249, 0.6), inset 0 0 50px rgba(213, 0, 249, 0.2);
+            border-color: rgba(0, 255, 0, 0.8);
+            box-shadow: 0 0 100px rgba(0, 255, 0, 0.6), inset 0 0 50px rgba(0, 255, 0, 0.2);
         }
 
         canvas.game { display: block; width: 100%; height: 100%; }
@@ -346,7 +346,7 @@
 
         const FEVER_LV1 = 50;  
         const FEVER_LV2 = 100;
-        const FEVER_LV3 = 250; 
+        const FEVER_LV3 = 200; 
         
         let isFever = false;
         let fireflies = [];
@@ -362,10 +362,13 @@
                 this.size = Math.random() * 3 + 1;
                 this.baseAlpha = Math.random() * 0.5 + 0.3;
                 this.phase = Math.random() * Math.PI * 2; 
-                // ★ 250 콤보 이상 시 보라색으로 변경
-                this.color = (combo >= FEVER_LV3) ? 
-                    (Math.random() > 0.5 ? '#d500f9' : '#aa00ff') : // Purple
+                
+                // 생성 시점의 색상 설정 (초기값)
+                const isMax = combo >= FEVER_LV3;
+                this.color = isMax ? 
+                    (Math.random() > 0.5 ? '#00ff00' : '#ccff00') : // Green/Lime
                     (Math.random() > 0.5 ? '#ffd700' : '#00e5ff'); // Gold/Cyan
+                
                 this.scattering = false;
             }
             update() {
@@ -652,12 +655,10 @@
             }
         }
 
-        // ★ 피버 로직 (3단계)
         function checkFeverState(currentCombo) {
             const container = document.getElementById('game-canvas-container');
             const hud = document.getElementById('g-combo');
 
-            // 1단계: 50+ (Gold Gear)
             if (currentCombo === FEVER_LV1) {
                 isFever = true; 
                 playSfx('fever'); 
@@ -665,18 +666,22 @@
                 hud.classList.add('fever-text');
             }
 
-            // 2단계: 100+ (Gold Background)
             if (currentCombo === FEVER_LV2) {
                 playSfx('fever'); 
             }
 
-            // 3단계: 250+ (Purple Mode)
+            // ★ 250 콤보 진입 시 (강제 색상 변환)
             if (currentCombo === FEVER_LV3) {
                 playSfx('fever'); 
                 container.classList.remove('fever-mode'); 
-                container.classList.add('fever-max-mode'); // Purple
+                container.classList.add('fever-max-mode'); 
                 hud.classList.remove('fever-text');
                 hud.classList.add('fever-max-text');
+
+                // ★ [중요] 기존에 떠있던 모든 반딧불이 색상 즉시 변경
+                fireflies.forEach(p => {
+                    p.color = Math.random() > 0.5 ? '#00ff00' : '#ccff00';
+                });
             }
         }
 
@@ -698,35 +703,34 @@
         function drawFeverGearEffect() {
             if (!isFever) return;
 
-            // 바닥에서 입자 생성 (1단계~3단계 모두)
             if (Math.random() < 0.3) {
                 gearParticles.push({
                     x: TRACK_X_OFFSET + Math.random() * (LANE_WIDTH * 4),
                     y: gameCanvas.height,
                     size: Math.random() * 4 + 2,
-                    speedY: Math.random() * 1.5 + 0.5, // ★ 속도 대폭 감소 (은은하게)
+                    speedY: Math.random() * 1.5 + 0.5, 
                     life: 1.0,
-                    offset: Math.random() * 100 // S자 무빙 위상
+                    offset: Math.random() * 100 
                 });
             }
 
-            // 3단계일 땐 색상 변경 (보라색)
             const isInferno = combo >= FEVER_LV3;
-            const particleColor = isInferno ? '#d500f9' : '#ffd700';
+            // ★ 초록색으로 변경
+            const particleColor = isInferno ? '#00ff00' : '#ffd700';
 
             for (let i = gearParticles.length - 1; i >= 0; i--) {
                 let p = gearParticles[i];
                 p.y -= p.speedY;
                 
-                // ★ S자 무빙 (Wave)
+                // S자 무빙
                 p.x += Math.sin(p.y * 0.02 + p.offset) * 0.5;
 
-                p.life -= 0.005; // 수명 감소 속도도 낮춤
+                p.life -= 0.005; 
 
                 if (p.life <= 0) {
                     gearParticles.splice(i, 1);
                 } else {
-                    gameCtx.globalAlpha = p.life * 0.5; // 투명도도 낮춰서 방해 덜 되게
+                    gameCtx.globalAlpha = p.life * 0.5;
                     gameCtx.fillStyle = particleColor;
                     gameCtx.shadowBlur = 15;
                     gameCtx.shadowColor = particleColor;
@@ -742,7 +746,6 @@
         function updateBgParticles() {
             bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
             
-            // 100콤보 이상일 때 배경 파티클
             if (combo >= FEVER_LV2 && fireflies.length < 100) {
                 if(Math.random() < 0.1) fireflies.push(new Firefly());
             }
@@ -816,7 +819,7 @@
         function drawGameScreen(currentTime) {
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
             
-            drawFeverGearEffect(); // ★ 기어 이펙트 (S자 무빙)
+            drawFeverGearEffect();
 
             drawLaneBeams();
             drawJudgmentLine();
@@ -960,7 +963,7 @@
                 if(combo > maxCombo) maxCombo = combo; 
                 score += (rate / 100) * scorePerHit; 
                 createParticles(lane); 
-                checkFeverState(combo); // ★ 피버 체크
+                checkFeverState(combo); 
             } else { 
                 combo = 0; 
                 resetFever(); 
@@ -989,6 +992,7 @@
                 } else {
                     n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; combo++; judgeStats.perfect++; 
                     createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff"); playSfx('hold_end');
+                    if(combo >= FEVER_LV1) checkFeverState(combo);
                 }
                 
                 checkFinish();
@@ -1006,8 +1010,8 @@
 
         function drawJudgmentLine() {
             gameCtx.shadowBlur = 10; 
-            // ★ 판정선 색상 (보라색 추가)
-            const lineColor = (combo >= FEVER_LV3) ? '#d500f9' : (isFever ? '#ffd700' : '#00e5ff');
+            // ★ 판정선 색상 (초록색)
+            const lineColor = (combo >= FEVER_LV3) ? '#00ff00' : (isFever ? '#ffd700' : '#00e5ff');
             gameCtx.shadowColor = lineColor;
             gameCtx.strokeStyle = lineColor;
             gameCtx.lineWidth = 3;
