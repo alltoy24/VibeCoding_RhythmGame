@@ -435,6 +435,12 @@
             </div>
 
             <div class="setting-row">
+                <span>GEAR OPACITY</span>
+                <input type="range" id="opacity-slider" min="0" max="100" step="5" value="70">
+                <span class="setting-val" id="opacity-val">70%</span>
+            </div>
+
+            <div class="setting-row">
                 <span>AUDIO OFFSET</span>
                 <div style="display:flex; align-items:center; gap:10px;">
                     <span class="setting-val" id="offset-display" style="width:auto;">0</span> ms
@@ -603,6 +609,11 @@
         const speedDisplay = document.getElementById('speed-display');
         const sfxSlider = document.getElementById('sfx-volume');
         const sfxVal = document.getElementById('sfx-val');
+        
+        // ★ [NEW] 투명도 슬라이더 변수 선언
+        const opacitySlider = document.getElementById('opacity-slider');
+        const opacityVal = document.getElementById('opacity-val');
+
         const offsetDisplay = document.getElementById('offset-display');
 
         function openSettings() {
@@ -624,6 +635,13 @@
                 sfxSlider.value = savedVol;
                 sfxVal.innerText = Math.round(savedVol * 100) + "%";
             }
+            
+            // ★ [NEW] 투명도 초기화 로직
+            const savedOpacity = localStorage.getItem('wb_gear_opacity') || "70";
+            if(opacitySlider) {
+                opacitySlider.value = savedOpacity;
+                opacityVal.innerText = savedOpacity + "%";
+            }
         }
         speedSlider.addEventListener('input', (e) => {
             const val = parseFloat(e.target.value).toFixed(1);
@@ -635,8 +653,17 @@
             sfxVal.innerText = Math.round(vol * 100) + "%";
             localStorage.setItem('wb_sfx_volume', vol);
         });
+        
+        // ★ [NEW] 투명도 조절 이벤트 리스너
+        if(opacitySlider) {
+            opacitySlider.addEventListener('input', (e) => {
+                const val = e.target.value;
+                opacityVal.innerText = val + "%";
+                localStorage.setItem('wb_gear_opacity', val);
+            });
+        }
 
-        // --- 곡 목록 로딩 (그리드 적용됨) ---
+        // --- 곡 목록 로딩 ---
         window.addEventListener('DOMContentLoaded', async () => {
             const list = document.getElementById('song-list');
             if(!list) return;
@@ -734,6 +761,7 @@
             if (e && e.target !== rankModal && e.target.className !== 'modal-close') return;
             rankModal.style.display = 'none'; 
         }
+        document.getElementById('rank-modal').addEventListener('click', (e) => { if (e.target.id === 'rank-modal') closeRank(); });
 
         // --- 싱크 조절 (Audio Calibration) ---
         let audioCtx; let calibInterval; let nextBeatTime = 0; const BPM = 120; const INTERVAL_SEC = 60 / BPM; let tapDiffs = []; let isCalibrating = false;
