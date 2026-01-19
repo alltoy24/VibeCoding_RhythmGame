@@ -2,12 +2,19 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : PLAYER (V29 Opacity)</title>
+    <title>WEB BEAT : PURPLE HAZE</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         /* [기본 설정 & 폰트] */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
-        :root { --bg: #050505; --accent: #00e5ff; --secondary: #ff0055; --text: #fff; }
+        :root { 
+            --bg: #050505; 
+            --accent: #00e5ff; 
+            --secondary: #ff0055; 
+            --text: #fff; 
+            --fever-gold: #ffd700; 
+            --fever-max: #d500f9; /* ★ 변경: 네온 퍼플 */
+        }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; }
         
         canvas.game { touch-action: none; -webkit-user-select: none; user-select: none; }
@@ -19,9 +26,13 @@
         #bga-fallback { width: 100%; height: 100%; background: radial-gradient(circle at center, #1a0b2e 0%, #000000 80%); display: none; perspective: 1000px; overflow: hidden; }
         #bga-grid { position: absolute; bottom: -50%; left: -50%; width: 200%; height: 100%; background-image: linear-gradient(transparent 95%, rgba(0, 229, 255, 0.3) 95%), linear-gradient(90deg, transparent 95%, rgba(123, 31, 162, 0.3) 95%); background-size: 60px 60px; transform: rotateX(60deg); animation: grid-scroll 2s linear infinite; mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%); }
         #bga-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.1; }
+        
+        /* ★ 배경 이펙트용 캔버스 */
+        #bgCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+
         @keyframes grid-scroll { 0% { background-position: 0 0; } 100% { background-position: 0 60px; } }
         .bga-pulse #bga-grid { filter: brightness(2.0) drop-shadow(0 0 10px var(--accent)); transition: 0.1s; }
-        #bga-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: overlay; z-index: 1; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 20%, transparent 80%, rgba(0,0,0,0.8)); }
+        #bga-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: overlay; z-index: 3; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 20%, transparent 80%, rgba(0,0,0,0.8)); }
         
         .effect-glitch { animation: glitch-anim 0.2s infinite; background: rgba(255, 0, 85, 0.1); }
         .effect-flash { animation: flash-anim 0.5s forwards; }
@@ -42,16 +53,30 @@
         #game-canvas-container { 
             position: relative; width: 480px; height: 100%; 
             border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); 
-            box-shadow: 0 0 80px rgba(0,0,0,0.8); 
-            /* ★ 초기 배경값 (JS로 덮어씌움) */
-            background: rgba(0,0,0,0.6); 
-            flex-shrink: 0; backdrop-filter: blur(3px);
+            box-shadow: 0 0 80px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); flex-shrink: 0; backdrop-filter: blur(3px);
+            transition: border-color 0.5s, box-shadow 0.5s;
         }
+        
+        /* ★ 피버 모드 (Gold) */
+        #game-canvas-container.fever-mode {
+            border-color: rgba(255, 215, 0, 0.6);
+            box-shadow: 0 0 80px rgba(255, 215, 0, 0.4), inset 0 0 40px rgba(255, 215, 0, 0.1);
+        }
+        /* ★ 피버 MAX 모드 (Purple) - 변경됨 */
+        #game-canvas-container.fever-max-mode {
+            border-color: rgba(213, 0, 249, 0.8);
+            box-shadow: 0 0 100px rgba(213, 0, 249, 0.6), inset 0 0 50px rgba(213, 0, 249, 0.2);
+        }
+
         canvas.game { display: block; width: 100%; height: 100%; }
         
         #game-hud { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
         .hud-item { flex: 1; }
-        .hud-text { font-family: 'Orbitron', sans-serif; font-weight:700; font-size: 28px; color: #fff; text-shadow: 0 0 10px rgba(0, 229, 255, 0.5); letter-spacing: 1px; }
+        .hud-text { font-family: 'Orbitron', sans-serif; font-weight:700; font-size: 28px; color: #fff; text-shadow: 0 0 10px var(--accent); transition: color 0.3s; }
+        
+        .fever-text { color: var(--fever-gold) !important; text-shadow: 0 0 20px var(--fever-gold) !important; transform: scale(1.1); }
+        .fever-max-text { color: var(--fever-max) !important; text-shadow: 0 0 30px var(--fever-max) !important; transform: scale(1.2); animation: shake 0.2s infinite; }
+
         .hud-sub { font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #aaa; font-weight: 600; letter-spacing: 1px; }
         #g-avg-box { position: absolute; bottom: 15%; width: 100%; text-align: center; pointer-events: none; }
         #g-avg { font-family: 'Consolas', monospace; font-size: 12px; font-weight: bold; color: #666; }
@@ -72,7 +97,7 @@
         .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .res-rank { font-family: 'Orbitron', sans-serif; font-weight:900; font-size: 140px; color: #fff; text-shadow: 0 0 40px currentColor; margin-bottom: 10px; line-height: 1; }
         .res-rank.S { color: #00e5ff; } .res-rank.A { color: #00ff00; } .res-rank.B { color: #ffff00; } .res-rank.C { color: #ff8800; } .res-rank.F { color: #ff0000; }
-        .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 80%; max-width: 500px; margin-bottom: 30px; }
+        .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 80%; max-width: 600px; margin-bottom: 30px; }
         .res-box { text-align: center; }
         .res-label { color: #888; font-size: 12px; margin-bottom: 5px; font-weight:bold; letter-spacing:1px; } .res-val { color: #fff; font-size: 24px; font-family: 'Orbitron', sans-serif; }
         .res-detail { display: flex; justify-content: space-between; width: 90%; max-width: 500px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; border: 1px solid #333; }
@@ -84,7 +109,6 @@
         .btn-common:hover { background: var(--accent); color: #000; box-shadow: 0 0 40px var(--accent); transform: scale(1.05); }
         .btn-secondary { border-color: #666; color: #aaa; box-shadow: none; text-shadow: none; }
         .btn-secondary:hover { background: #333; color: #fff; }
-
         .res-song-title { font-family: 'Orbitron'; font-size: 40px; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--accent); margin-bottom: 5px; text-align:center; }
         .res-diff-name { font-family: 'Segoe UI'; font-size: 18px; color: #aaa; letter-spacing: 5px; margin-bottom: 30px; text-transform: uppercase; font-weight: 600; }
 
@@ -127,6 +151,7 @@
             <div id="bga-stars"></div>
             <div id="bga-grid"></div>
         </div>
+        <canvas id="bgCanvas"></canvas>
         <div id="bga-overlay"></div>
     </div>
 
@@ -165,6 +190,10 @@
         const bgaFallback = document.getElementById('bga-fallback');
         const bgaOverlay = document.getElementById('bga-overlay');
         const bgaGrid = document.getElementById('bga-grid');
+        
+        const bgCanvas = document.getElementById('bgCanvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        
         let useVideoBga = false;
 
         const warnLeft = document.getElementById('warn-left');
@@ -228,6 +257,7 @@
         loadSound('ap_main', 'sfx/all_perfect.mp3');
         loadSound('ap_layer', 'sfx/glitch.mp3');
         loadSound('menu_open', 'sfx/drawer.mp3'); 
+        loadSound('fever', 'sfx/fever.mp3');
 
         function playSfx(name) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -272,6 +302,22 @@
         }
         gameCanvas.height = window.innerHeight;
 
+        function resizeBg() {
+            bgCanvas.width = window.innerWidth;
+            bgCanvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', () => { 
+            gameCanvas.height = window.innerHeight;
+            if(isMobile) {
+                gameCanvas.width = window.innerWidth;
+                LANE_WIDTH = window.innerWidth / 4;
+                NOTE_WIDTH = LANE_WIDTH * 0.9;
+                NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
+            }
+            resizeBg();
+        });
+        resizeBg();
+
         const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
         
         let gameFinished = false;
@@ -298,15 +344,61 @@
         let pauseTime = 0;
         let countdownTimer = null;
 
-        window.addEventListener('resize', () => { 
-            gameCanvas.height = window.innerHeight;
-            if(isMobile) {
-                gameCanvas.width = window.innerWidth;
-                LANE_WIDTH = window.innerWidth / 4;
-                NOTE_WIDTH = LANE_WIDTH * 0.9;
-                NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
+        const FEVER_LV1 = 50;  
+        const FEVER_LV2 = 100;
+        const FEVER_LV3 = 250; 
+        
+        let isFever = false;
+        let fireflies = [];
+        let gearParticles = [];
+
+        // ★ 반딧불이 (배경)
+        class Firefly {
+            constructor() {
+                this.x = Math.random() * bgCanvas.width;
+                this.y = Math.random() * bgCanvas.height;
+                this.vx = (Math.random() - 0.5) * 0.5; 
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 3 + 1;
+                this.baseAlpha = Math.random() * 0.5 + 0.3;
+                this.phase = Math.random() * Math.PI * 2; 
+                // ★ 250 콤보 이상 시 보라색으로 변경
+                this.color = (combo >= FEVER_LV3) ? 
+                    (Math.random() > 0.5 ? '#d500f9' : '#aa00ff') : // Purple
+                    (Math.random() > 0.5 ? '#ffd700' : '#00e5ff'); // Gold/Cyan
+                this.scattering = false;
             }
-        });
+            update() {
+                if(this.scattering) {
+                    this.x += this.vx * 10;
+                    this.y += this.vy * 10;
+                    this.baseAlpha -= 0.05;
+                } else {
+                    this.x += this.vx;
+                    this.y += this.vy;
+                    this.phase += 0.05;
+                }
+                if (!this.scattering) {
+                    if (this.x < 0) this.x = bgCanvas.width;
+                    if (this.x > bgCanvas.width) this.x = 0;
+                    if (this.y < 0) this.y = bgCanvas.height;
+                    if (this.y > bgCanvas.height) this.y = 0;
+                }
+            }
+            draw(ctx) {
+                if (this.baseAlpha <= 0) return;
+                const alpha = Math.max(0, this.baseAlpha + (this.scattering ? 0 : Math.sin(this.phase) * 0.2));
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = this.color;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+                ctx.fill();
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1.0;
+            }
+        }
 
         audio.onended = () => { 
             if (!gameFinished && !isPaused) finishGame(); 
@@ -328,11 +420,10 @@
             const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
             offset += userGlobalOffset; 
             
-            // ★ [추가] 기어 투명도 적용
             const savedOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || "70");
             const alpha = savedOpacity / 100;
             document.getElementById('game-canvas-container').style.background = `rgba(0, 0, 0, ${alpha})`;
-
+            
             loadGameData(song, diff);
         });
 
@@ -443,12 +534,18 @@
 
         function startGame() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
+            
             document.getElementById('loading-screen').style.display = 'none';
             buildSpeedMap();
 
             combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; totalOffsetDiff = 0; score = 0;
             judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
             activeNotes = []; particles = []; recentHits = []; judgments = [];
+            
+            fireflies = [];
+            gearParticles = []; 
+            resetFever(); 
+
             finishEffect.innerHTML = "";
             updateGameHUD();
             
@@ -475,7 +572,6 @@
 
         function togglePause() {
             if (gameFinished) return;
-            
             if (isResuming) {
                 clearInterval(countdownTimer);
                 isResuming = false;
@@ -556,6 +652,112 @@
             }
         }
 
+        // ★ 피버 로직 (3단계)
+        function checkFeverState(currentCombo) {
+            const container = document.getElementById('game-canvas-container');
+            const hud = document.getElementById('g-combo');
+
+            // 1단계: 50+ (Gold Gear)
+            if (currentCombo === FEVER_LV1) {
+                isFever = true; 
+                playSfx('fever'); 
+                container.classList.add('fever-mode');
+                hud.classList.add('fever-text');
+            }
+
+            // 2단계: 100+ (Gold Background)
+            if (currentCombo === FEVER_LV2) {
+                playSfx('fever'); 
+            }
+
+            // 3단계: 250+ (Purple Mode)
+            if (currentCombo === FEVER_LV3) {
+                playSfx('fever'); 
+                container.classList.remove('fever-mode'); 
+                container.classList.add('fever-max-mode'); // Purple
+                hud.classList.remove('fever-text');
+                hud.classList.add('fever-max-text');
+            }
+        }
+
+        function resetFever() {
+            isFever = false;
+            const container = document.getElementById('game-canvas-container');
+            const hud = document.getElementById('g-combo');
+            
+            container.classList.remove('fever-mode');
+            container.classList.remove('fever-max-mode');
+            hud.classList.remove('fever-text');
+            hud.classList.remove('fever-max-text');
+            
+            fireflies.forEach(p => p.scattering = true);
+            gearParticles.forEach(p => p.life = 0.1); 
+        }
+
+        // ★ 기어 내부 피버 이펙트 (S자 무빙 + 속도 낮춤)
+        function drawFeverGearEffect() {
+            if (!isFever) return;
+
+            // 바닥에서 입자 생성 (1단계~3단계 모두)
+            if (Math.random() < 0.3) {
+                gearParticles.push({
+                    x: TRACK_X_OFFSET + Math.random() * (LANE_WIDTH * 4),
+                    y: gameCanvas.height,
+                    size: Math.random() * 4 + 2,
+                    speedY: Math.random() * 1.5 + 0.5, // ★ 속도 대폭 감소 (은은하게)
+                    life: 1.0,
+                    offset: Math.random() * 100 // S자 무빙 위상
+                });
+            }
+
+            // 3단계일 땐 색상 변경 (보라색)
+            const isInferno = combo >= FEVER_LV3;
+            const particleColor = isInferno ? '#d500f9' : '#ffd700';
+
+            for (let i = gearParticles.length - 1; i >= 0; i--) {
+                let p = gearParticles[i];
+                p.y -= p.speedY;
+                
+                // ★ S자 무빙 (Wave)
+                p.x += Math.sin(p.y * 0.02 + p.offset) * 0.5;
+
+                p.life -= 0.005; // 수명 감소 속도도 낮춤
+
+                if (p.life <= 0) {
+                    gearParticles.splice(i, 1);
+                } else {
+                    gameCtx.globalAlpha = p.life * 0.5; // 투명도도 낮춰서 방해 덜 되게
+                    gameCtx.fillStyle = particleColor;
+                    gameCtx.shadowBlur = 15;
+                    gameCtx.shadowColor = particleColor;
+                    gameCtx.beginPath();
+                    gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                    gameCtx.fill();
+                    gameCtx.shadowBlur = 0;
+                }
+            }
+            gameCtx.globalAlpha = 1.0;
+        }
+
+        function updateBgParticles() {
+            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+            
+            // 100콤보 이상일 때 배경 파티클
+            if (combo >= FEVER_LV2 && fireflies.length < 100) {
+                if(Math.random() < 0.1) fireflies.push(new Firefly());
+            }
+
+            for (let i = fireflies.length - 1; i >= 0; i--) {
+                let p = fireflies[i];
+                p.update();
+                p.draw(bgCtx);
+                
+                if (p.baseAlpha <= 0) {
+                    fireflies.splice(i, 1);
+                }
+            }
+        }
+
         function gameLoop() {
             if(gameFinished) return;
             gameAnimId = requestAnimationFrame(gameLoop);
@@ -564,6 +766,8 @@
                 drawGameScreen(audio.currentTime * 1000); 
                 return; 
             }
+
+            updateBgParticles();
 
             const now = Date.now();
             let currentTime = -9999;
@@ -611,6 +815,9 @@
 
         function drawGameScreen(currentTime) {
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+            
+            drawFeverGearEffect(); // ★ 기어 이펙트 (S자 무빙)
+
             drawLaneBeams();
             drawJudgmentLine();
 
@@ -637,6 +844,7 @@
                             combo = 0; totalHits++; judgeStats.miss++; 
                             if(n.len > 0) totalHits++; 
                             updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
+                            resetFever(); 
                         }
                     }
                     continue; 
@@ -649,6 +857,7 @@
                         if(n.len > 0) totalHits++; 
                         updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
                         checkFinish();
+                        resetFever(); 
                     }
                 }
 
@@ -740,20 +949,22 @@
             totalHits++; 
             if (typeof playSfx === 'function') { if (n.len > 0) playSfx('hold_start'); else playSfx('hit'); }
 
-            if (!useVideoBga && combo % 4 === 0) {
-                bgaFallback.classList.remove('bga-pulse');
-                void bgaFallback.offsetWidth; 
-                bgaFallback.classList.add('bga-pulse');
-            }
-
             let judge="No..", clr="#888", rate=0;
             if(absDiff <=48) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
             else if(absDiff <= 72) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
             else if(absDiff <= 108) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
             else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
 
-            if(rate > 0) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
-            else { combo = 0; }
+            if(rate > 0) { 
+                combo++; 
+                if(combo > maxCombo) maxCombo = combo; 
+                score += (rate / 100) * scorePerHit; 
+                createParticles(lane); 
+                checkFeverState(combo); // ★ 피버 체크
+            } else { 
+                combo = 0; 
+                resetFever(); 
+            }
             
             totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); 
             recentHits.push({ diff: currentTime - n.time, color: clr, life: 600, maxLife: 600 });
@@ -774,6 +985,7 @@
                 
                 if (remaining > safeZone) { 
                     n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No..", lane, "#555");
+                    resetFever();
                 } else {
                     n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; combo++; judgeStats.perfect++; 
                     createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff"); playSfx('hold_end');
@@ -793,8 +1005,14 @@
         }
 
         function drawJudgmentLine() {
-            gameCtx.shadowBlur = 10; gameCtx.shadowColor = '#00e5ff'; gameCtx.strokeStyle = '#00e5ff'; gameCtx.lineWidth = 3;
+            gameCtx.shadowBlur = 10; 
+            // ★ 판정선 색상 (보라색 추가)
+            const lineColor = (combo >= FEVER_LV3) ? '#d500f9' : (isFever ? '#ffd700' : '#00e5ff');
+            gameCtx.shadowColor = lineColor;
+            gameCtx.strokeStyle = lineColor;
+            gameCtx.lineWidth = 3;
             gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(gameCanvas.width, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0;
+            
             gameCtx.strokeStyle = 'rgba(255,255,255,0.3)'; gameCtx.lineWidth = 2;
             for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = TRACK_X_OFFSET + i*LANE_WIDTH; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); }
         }
@@ -919,9 +1137,6 @@
                 if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
                 else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
 
-                // ★ [수정] 결과창 디자인 업데이트
-                // 1. RESULT 텍스트 삭제 -> 곡 제목 + 난이도 표시
-                // 2. CONTINUE 버튼 스타일 변경
                 const songName = decodeURIComponent(songParam);
                 const diffName = diffParam.toUpperCase();
 
@@ -964,4 +1179,4 @@
         }
     </script>
 </body>
-</html>"
+</html>
