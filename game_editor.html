@@ -2,29 +2,26 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Perfect Auto Sync)</title>
+    <title>WEB BEAT : EDITOR (Ultimate V17)</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
         :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
         
         #sidebar { 
-            width: 320px; min-width: 320px; 
-            background: var(--panel); padding: 15px; 
-            border-right: 1px solid #333; 
-            display: flex; flex-direction: column; gap: 12px; 
-            z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7);
-            overflow-y: auto; max-height: 100vh;
+            width: 320px; min-width: 320px; background: var(--panel); padding: 15px; 
+            border-right: 1px solid #333; display: flex; flex-direction: column; gap: 12px; 
+            z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7); overflow-y: auto; max-height: 100vh;
         }
         #sidebar::-webkit-scrollbar { width: 8px; }
         #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        #sidebar::-webkit-scrollbar-thumb:hover { background: var(--accent); }
-
+        
         h2 { margin: 0 0 10px 0; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 5px; font-size: 20px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
         .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; }
         .group-title { font-size: 11px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 4px; }
+        
         input, select, button { padding: 6px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 11px; }
         input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--accent); }
-        input:focus, select:focus { border-color: var(--accent); outline: none; }
         button { cursor: pointer; font-weight: bold; transition: 0.2s; text-transform: uppercase; }
         button:hover { background: #444; filter: brightness(1.2); }
         button.primary { background: var(--accent); color: #000; border: none; box-shadow: 0 0 10px rgba(0, 229, 255, 0.2); }
@@ -32,122 +29,58 @@
         
         .row { display: flex; gap: 5px; align-items: center; } .row > * { flex: 1; }
         .val-label { font-size: 12px; color: var(--accent); font-weight: bold; width: 40px; text-align: right; }
-
         .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; background: #222; padding: 8px; border-radius: 4px; }
-        .checkbox-label input { width: auto; margin: 0; cursor: pointer; accent-color: #7b1fa2; }
+        input[type="file"] { display: none; }
+        .file-label { display: block; padding: 8px; background: #333; text-align: center; border-radius: 4px; cursor: pointer; border: 1px dashed #666; font-size: 12px; }
 
         #editor-view { flex: 1; display: flex; flex-direction: column; position: relative; }
-        /* 기존 #canvas-layer, #editor-container 스타일을 찾아서 아래 내용으로 수정/확인 */
-
-        #editor-container { 
-            flex: 1; 
-            overflow-y: scroll; /* 스크롤은 여기서 발생 */
-            background: #0a0a0a; 
-            display: flex; 
-            justify-content: center; 
-            position: relative; /* 추가 */
-        }
-
-        #canvas-layer { 
-            position: relative; 
-            width: 400px; 
-            /* height는 JS에서 동적으로 설정됨 (엄청 길게) */
-            background: transparent; /* 배경 투명 */
-        }
-
-        /* ★ [핵심] 캔버스는 화면에 딱 붙어있어야 함 */
-        #gridCanvas {
-            position: sticky; 
-            top: 0; 
-            display: block;
-            background: #000;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
-        }
-
-        #play-head { 
-            position: absolute; left: 0; width: 100%; height: 2px; 
-            background: #ff0055; z-index: 5; display: none; pointer-events: none; 
-            box-shadow: 0 0 10px #ff0055; will-change: transform;
-        }
+        #editor-container { flex: 1; overflow-y: scroll; background: #0a0a0a; display: flex; justify-content: center; position: relative; }
+        #canvas-layer { position: relative; width: 400px; background: transparent; }
+        #gridCanvas { position: sticky; top: 0; display: block; background: #000; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        #play-head { position: absolute; left: 0; width: 100%; height: 2px; background: #ff0055; z-index: 5; display: none; pointer-events: none; box-shadow: 0 0 10px #ff0055; will-change: transform; }
         .lane-header { display: flex; width: 400px; margin: 0 auto; background: #222; font-weight: bold; font-size: 12px; text-align: center; border-bottom: 2px solid #444; }
         .lane-header div { flex: 1; padding: 8px 0; border-right: 1px solid #333; color: #888; }
 
-        #game-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 50; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        #game-canvas-container { position: relative; width: 400px; height: 100%; border-left: 2px solid #333; border-right: 2px solid #333; }
+        #game-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 50; display: none; flex-direction: row; align-items: stretch; justify-content: center; }
+        #game-canvas-container { position: relative; width: 400px; height: 100%; border-left: 2px solid #333; border-right: 2px solid #333; overflow: hidden; flex-shrink: 0; background: #000; }
         canvas.game { display: block; width: 100%; height: 100%; }
         
         #game-hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; }
         .hud-item { flex: 1; }
         .hud-text { font-family: 'Impact', sans-serif; font-size: 32px; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); letter-spacing: 1px; }
         .hud-sub { font-size: 12px; color: #888; font-weight: bold; }
-        
         #g-avg-box { position: absolute; bottom: 120px; width: 100%; text-align: center; pointer-events: none; }
         #g-avg { font-family: 'Consolas', monospace; font-size: 14px; font-weight: bold; color: #888; text-shadow: 0 0 2px #000; }
-        #test-msg { position: absolute; bottom: 20px; color: #555; font-size: 12px; animation: blink 2s infinite; }
-        @keyframes blink { 50% { opacity: 0.3; } }
-        
-        #result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 100; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .res-rank { font-family: 'Impact', sans-serif; font-size: 120px; color: #fff; text-shadow: 0 0 20px currentColor; margin-bottom: 20px; }
-        .res-rank.S { color: #00e5ff; } .res-rank.A { color: #00ff00; } .res-rank.B { color: #ffff00; } 
-        .res-rank.C { color: #ff8800; } .res-rank.F { color: #ff0000; }
-        
-        .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 40px; font-size: 24px; font-weight: bold; margin-bottom: 40px; }
-        .res-box { text-align: center; }
-        .res-label { color: #888; font-size: 14px; margin-bottom: 5px; } .res-val { color: #fff; font-size: 24px; font-weight: bold; }
-
-        .res-detail { display: flex; justify-content: space-between; width: 90%; max-width: 500px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 15px; border: 1px solid #333; }
-        .detail-item { text-align: center; }
-        .detail-label { font-size: 12px; font-weight: bold; margin-bottom: 5px; }
-        .detail-val { font-size: 20px; color: #fff; }
-
-        .btn-close { margin-top: 40px; padding: 15px 40px; font-size: 18px; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: 900; }
-        .btn-close:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(255,255,255,0.5); }
-
-        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 100; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
-        .loading-text { font-family: 'Impact'; font-size: 40px; margin-bottom: 20px; animation: blink 1s infinite; }
-        .btn-start-game { padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ff0055; color: white; border: none; border-radius: 50px; cursor: pointer; display: none; }
-        
-        input[type="file"] { display: none; }
-        .file-label { display: block; padding: 8px; background: #333; text-align: center; border-radius: 4px; cursor: pointer; border: 1px dashed #666; font-size: 12px; }
-        .file-label:hover { background: #444; border-color: var(--accent); color: var(--accent); }
-        
         #auto-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Impact'; font-size: 80px; color: rgba(123, 31, 162, 0.3); pointer-events: none; display: none; z-index: 55; }
+        #finish-effect { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; pointer-events: none; z-index: 80; }
 
-        /* [수정] 테스트 컨트롤러 (드래그 가능하도록 변경) */
-        #test-controls {
-            position: absolute; 
-            bottom: 50px; left: 50%; transform: translateX(-50%); /* 초기 위치 */
-            width: 400px; padding: 0; /* 패딩 제거 (내부에서 처리) */
-            background: rgba(20, 20, 20, 0.95);
-            border: 1px solid #444; border-radius: 8px; 
-            z-index: 200; /* z-index 높임 */
-            display: none; flex-direction: column; 
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
-            overflow: hidden;
-        }
+        .side-warn-col { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; background: transparent; }
+        .chevron { width: 60px; height: 60px; border-top: 12px solid currentColor; border-right: 12px solid currentColor; transform: rotate(-45deg); margin: 20px 0; }
+        .warn-up { opacity: 1; } .warn-up .chevron { color: #ff0055; filter: drop-shadow(0 0 20px #ff0055); animation: chevUp 0.3s infinite; } .warn-up .warn-label { color: #ff0055; text-shadow: 0 0 20px #ff0055; }
+        .warn-down { opacity: 1; } .warn-down .chevron { color: #00e5ff; transform: rotate(135deg); filter: drop-shadow(0 0 20px #00e5ff); animation: chevDown 0.5s infinite; } .warn-down .warn-label { color: #00e5ff; text-shadow: 0 0 20px #00e5ff; }
+        .warn-label { font-family: 'Impact', sans-serif; font-size: 40px; margin: 30px 0; letter-spacing: 4px; text-align: center; line-height: 1.2; }
+        @keyframes chevUp { 0% { transform: translateY(30px) rotate(-45deg); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(-30px) rotate(-45deg); opacity:0; } }
+        @keyframes chevDown { 0% { transform: translateY(-30px) rotate(135deg); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(30px) rotate(135deg); opacity:0; } }
 
-        /* [추가] 드래그 손잡이 */
-        #drag-handle {
-            width: 100%; height: 25px;
-            background: linear-gradient(90deg, #333, #444);
-            cursor: grab; display: flex; justify-content: center; align-items: center;
-            border-bottom: 1px solid #555;
-        }
-        #drag-handle:active { cursor: grabbing; background: #00e5ff; color: #000; }
-        #drag-handle span {
-            width: 40px; height: 4px; background: #888; border-radius: 2px;
-        }
-
-        /* 내부 콘텐츠 패딩 */
+        #test-controls { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 400px; padding: 0; background: rgba(20, 20, 20, 0.95); border: 1px solid #444; border-radius: 8px; z-index: 200; display: none; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.8); overflow: hidden; }
+        #drag-handle { width: 100%; height: 25px; background: linear-gradient(90deg, #333, #444); cursor: grab; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid #555; }
+        #drag-handle span { width: 40px; height: 4px; background: #888; border-radius: 2px; }
         .ctrl-body { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-
-        /* 기존 스타일 유지 */
         #test-controls input[type=range] { width: 100%; height: 5px; accent-color: #00e5ff; cursor: pointer; }
         .ctrl-row { display: flex; justify-content: space-between; align-items: center; }
         #time-display { font-family: 'Consolas', monospace; color: #fff; font-size: 14px; }
         .btn-group button { background: #333; border: 1px solid #555; color: #fff; padding: 5px 10px; cursor: pointer; font-size: 12px; border-radius: 4px; }
-        .btn-group button:hover { background: #555; color: #00e5ff; }
+        #test-msg { position: absolute; bottom: 20px; color: #555; font-size: 12px; animation: blink 2s infinite; pointer-events: none;}
+        @keyframes blink { 50% { opacity: 0.3; } }
 
+        #result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
+        .res-rank { font-family: 'Impact', sans-serif; font-size: 120px; color: #fff; text-shadow: 0 0 20px currentColor; margin-bottom: 20px; }
+        .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 40px; font-size: 24px; font-weight: bold; margin-bottom: 40px; }
+        .btn-close { margin-top: 40px; padding: 15px 40px; font-size: 18px; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: 900; }
+
+        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
+        .loading-text { font-family: 'Impact'; font-size: 40px; margin-bottom: 20px; animation: blink 1s infinite; }
+        .btn-start-game { padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ff0055; color: white; border: none; border-radius: 50px; cursor: pointer; display: none; }
     </style>
 </head>
 <body>
@@ -160,7 +93,7 @@
     <div id="sidebar">
         <button onclick="location.href='index.html'" style="width:100%; background:#333; margin-bottom:10px; color:#aaa; font-size:11px;">🏠 GO TO SELECT</button>
 
-        <h2>🎹 EDITOR v13.0</h2>
+        <h2>🎹 EDITOR v17.0</h2>
         <div class="control-group">
             <div class="group-title">1. Files</div>
             <label class="file-label" for="audioFile">🎵 Load Audio (MP3)</label>
@@ -193,6 +126,20 @@
             <div class="row"><span>Split:</span><input type="number" id="split" value="16" min="1" max="64" style="width: 60px; text-align: center;"></div>
             <button onclick="addMeasures(4)" style="width:100%; margin-top:5px;">+ Add 4 Bars</button>
         </div>
+
+        <div class="control-group" style="border-color: #ffd700;">
+            <div class="group-title" style="color:#ffd700;">⚡ Speed Trick</div>
+            <div class="row">
+                <span>Mult:</span>
+                <input type="number" id="speed-mult-input" value="2.0" step="0.1" style="width:60px; text-align:center;">
+                <span style="font-size:10px;">x</span>
+            </div>
+            <button id="btn-toggle-speed" onclick="toggleSpeedEditMode()" style="width:100%; margin-top:5px; background:#444; border:1px solid #ffd700; color:#ffd700;">
+                OFF : NOTE MODE
+            </button>
+            <div style="font-size:10px; color:#888; margin-top:3px;">* Click Grid to Set Speed</div>
+        </div>
+
         <hr style="width:100%; border-color:#333; margin: 5px 0;">
         <div class="control-group">
             <button id="btn-record" style="background:#444; color:#aaa; border:1px solid #666; margin-bottom:5px;">🔴 RECORD: OFF</button>
@@ -213,6 +160,7 @@
         
         <button id="btn-export" style="background:#28a745; color:white; margin-top:10px; margin-bottom:10px; padding:12px; border:none; flex-shrink: 0;">💾 EXPORT JSON</button>
     </div>
+    
     <div id="editor-view">
         <div class="lane-header"><div>D</div><div>F</div><div>J</div><div>K</div></div>
         <div id="editor-container">
@@ -222,9 +170,17 @@
             </div>
         </div>
     </div>
+    
     <div id="game-view">
+        <div id="warn-left" class="side-warn-col">
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+            <div class="warn-label">SPEED<br>UP</div>
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+        </div>
+
         <div id="game-canvas-container">
             <canvas id="gameCanvas" class="game"></canvas>
+            <div id="finish-effect"></div>
             <div id="game-hud">
                 <div class="hud-item" style="text-align:left"><span class="hud-sub">RATE</span><br><span id="g-rate" class="hud-text">100%</span></div>
                 <div class="hud-item" style="text-align:center"><span class="hud-sub">SCORE</span><br><span id="g-score" class="hud-text">000000</span></div>
@@ -235,12 +191,16 @@
             <div id="result-overlay"></div>
         </div>
 
+        <div id="warn-right" class="side-warn-col">
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+            <div class="warn-label">SPEED<br>UP</div>
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+        </div>
+
         <div id="test-controls">
             <div id="drag-handle" onmousedown="startDrag(event)"><span></span></div>
-    
             <div class="ctrl-body">
                 <input type="range" id="seek-bar" value="0" min="0" step="0.01" style="width:100%; margin-bottom: 8px;">
-                
                 <div class="ctrl-row" style="margin-bottom: 8px;">
                     <span id="time-display">00:00</span>
                     <div class="btn-group">
@@ -248,7 +208,6 @@
                         <button onclick="togglePauseTest()" id="btn-pause">⏸ PAUSE</button>
                     </div>
                 </div>
-
                 <div class="ctrl-row" style="border-top: 1px solid #444; padding-top: 8px;">
                     <span style="font-size:12px; color:#aaa; width:40px;">SPEED</span>
                     <input type="range" id="rate-slider" min="0.25" max="2.0" step="0.05" value="1.0" style="flex:1; margin: 0 10px;">
@@ -258,19 +217,11 @@
         </div>
         <div id="test-msg">[ESC] Back to Editor</div>
     </div>
-    <script>
-        // ==========================================
-        // 1. 기본 설정 및 오디오 초기화
-        // ==========================================
-        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
-        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-        const SFX_FIXED_TRIM = 0; 
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
-            latencyHint: 'interactive', 
-            sampleRate: 44100
-        });
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive', sampleRate: 44100 });
         const soundBuffers = {};
+        const SFX_FIXED_TRIM = 0; 
 
         function warmUpAudio() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -296,6 +247,7 @@
         loadSound('hold_end', 'sfx/hold_end.mp3');
         loadSound('fc', 'sfx/full_combo.mp3');
         loadSound('ap', 'sfx/all_perfect.mp3');
+        loadSound('glitch', 'sfx/glitch.mp3');
 
         function playSfx(name, time = 0) {
             if (!soundBuffers[name]) return;
@@ -305,17 +257,14 @@
             gainNode.gain.value = 0.7;
             source.connect(gainNode);
             gainNode.connect(audioCtx.destination);
-            const playTime = time > 0 ? time : audioCtx.currentTime;
-            source.start(playTime, SFX_FIXED_TRIM); 
+            source.start(time > 0 ? time : audioCtx.currentTime, SFX_FIXED_TRIM); 
         }
 
-        // ==========================================
-        // 2. 에디터 변수 및 로직
-        // ==========================================
         let audio = new Audio();
         let bpm = 130, offset = 0;
         let beatNum = 4, beatDenom = 4;
         let measures = []; 
+        let speedEvents = []; 
         let measureHeight = 400; 
         
         const BASE_RES = 192; 
@@ -332,37 +281,40 @@
         const offsetInput = document.getElementById('offset');
         const bpmInput = document.getElementById('bpm');
 
-        // 초기화
+        let isSpeedEditMode = false;
+        const speedMultInput = document.getElementById('speed-mult-input');
+        const btnToggleSpeed = document.getElementById('btn-toggle-speed');
+
         for(let i=0; i<50; i++) measures.push({index: i, notes: []});
         resizeEditor(); drawGrid();
 
         editorContainer.addEventListener('scroll', () => { requestAnimationFrame(drawGrid); });
-
         document.getElementById('beat-num').addEventListener('change', e => beatNum = parseInt(e.target.value) || 4);
         document.getElementById('beat-denom').addEventListener('change', e => beatDenom = parseInt(e.target.value) || 4);
 
-        // ==========================================
-        // 3. 게임 뷰 및 테스트 모드 변수
-        // ==========================================
         const gameView = document.getElementById('game-view');
         const gameCanvas = document.getElementById('gameCanvas');
         const gameCtx = gameCanvas.getContext('2d');
         const resultOverlay = document.getElementById('result-overlay');
         const autoIndicator = document.getElementById('auto-indicator'); 
         const recBtn = document.getElementById('btn-record');
+        const finishEffect = document.getElementById('finish-effect');
         
+        const warnLeft = document.getElementById('warn-left');
+        const warnRight = document.getElementById('warn-right');
+
         gameCanvas.width = 400;
         gameCanvas.height = window.innerHeight;
         const HIT_LINE_Y = window.innerHeight * 0.85; 
         const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
         
-        // 게임 상태 변수
         let isGameTesting = false, gameFinished = false;
         let isAutoMode = false; 
         let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
         let activeKeys = [false, false, false, false];
         let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
-        let gameAnimId, noteSpeed = 5.0;
+        let gameAnimId, baseNoteSpeed = 5.0; 
+        let currentNoteSpeed = 5.0;          
         let scorePerHit = 0; 
         let startTimestamp = 0;
         const START_DELAY = 2000; 
@@ -372,36 +324,36 @@
         let forceFinishTimer = null; 
         let isRecording = false; 
 
-        // 테스트 컨트롤러 변수
         let isPaused = false;
         const seekBar = document.getElementById('seek-bar');
         const timeDisplay = document.getElementById('time-display');
         const pauseBtn = document.getElementById('btn-pause');
-
-        // ▼▼▼ [여기 추가하세요] ▼▼▼
         const rateSlider = document.getElementById('rate-slider');
         const rateVal = document.getElementById('rate-val');
 
-        // 배속 슬라이더 이벤트
-        rateSlider.addEventListener('input', e => {
-            const val = parseFloat(e.target.value);
-            audio.playbackRate = val; // 오디오 속도 변경
-            rateVal.innerText = val.toFixed(2) + "x";
-        });
-
-        // URL 파라미터 처리
         const urlParams = new URLSearchParams(window.location.search);
         const songParam = urlParams.get('song');
         const diffParam = urlParams.get('diff');
         const speedParam = urlParams.get('speed');
-
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
         if (songParam && diffParam) {
             document.getElementById('sidebar').style.display = 'none';
             document.getElementById('editor-view').style.display = 'none';
             document.getElementById('loading-screen').style.display = 'flex';
             loadGameData(songParam, diffParam);
+        }
+
+        function toggleSpeedEditMode() {
+            isSpeedEditMode = !isSpeedEditMode;
+            if(isSpeedEditMode) {
+                btnToggleSpeed.innerText = "ON : SPEED MODE ⚡";
+                btnToggleSpeed.style.background = "#ffd700";
+                btnToggleSpeed.style.color = "#000";
+            } else {
+                btnToggleSpeed.innerText = "OFF : NOTE MODE";
+                btnToggleSpeed.style.background = "#444";
+                btnToggleSpeed.style.color = "#ffd700";
+            }
         }
 
         async function loadGameData(song, diff) {
@@ -419,16 +371,12 @@
                 if(!audioRes.ok) throw new Error("Audio fetch failed");
                 const audioBlob = await audioRes.blob();
                 const audioUrl = URL.createObjectURL(audioBlob);
-                
                 audio.src = audioUrl;
                 audio.load();
-                
                 audio.oncanplaythrough = () => { 
                     loadingMsg.style.display = 'none'; 
                     startBtn.style.display = 'block'; 
                 };
-                audio.onerror = () => { throw new Error("Audio decode error"); };
-
             } catch (err) {
                 alert(`Error: ${err.message}\nPlease run with Live Server!`);
                 window.location.href = "index.html"; 
@@ -440,15 +388,28 @@
             if(data.offset !== undefined) offset = data.offset; else offset = 0;
             if(data.beat) { beatNum = data.beat; document.getElementById('beat-num').value = beatNum; }
             if(data.beatDenom) { beatDenom = data.beatDenom; document.getElementById('beat-denom').value = beatDenom; } 
-            else { beatDenom = 4; document.getElementById('beat-denom').value = 4; }
+            
+            // ★ [FIX] 정확한 박자 계산
+            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+
+            // ★ [FIX] 불러온 파일의 변속 이벤트에 좌표가 없으면 역산
+            if(data.speedEvents) {
+                speedEvents = data.speedEvents.map(ev => {
+                    if (ev.measureIdx === undefined) {
+                        const mIdx = Math.floor(ev.time / msPerMeasure);
+                        const p = ((ev.time % msPerMeasure) / msPerMeasure) * BASE_RES;
+                        return { ...ev, measureIdx: mIdx, pos: Math.round(p) };
+                    }
+                    return ev;
+                });
+            } else speedEvents = [];
 
             measures = []; 
             if(data.measures) {
                 const maxIdx = data.measures[data.measures.length-1].index;
                 for(let i=0; i<=maxIdx + 5; i++) measures.push({index: i, notes: []});
                 data.measures.forEach(m => {
-                    const fileSplit = m.split || 32; 
-                    const ratio = BASE_RES / fileSplit; 
+                    const ratio = BASE_RES / (m.split || 32); 
                     if(measures[m.index]) {
                         measures[m.index].notes = m.notes.map(n => ({
                             lane: n.lane,
@@ -489,7 +450,6 @@
             reader.readAsText(file);
         });
 
-        // 녹화 버튼
         recBtn.addEventListener('click', () => {
             isRecording = !isRecording;
             if(isRecording) {
@@ -505,12 +465,22 @@
         offsetInput.addEventListener('input', e => { offset = parseInt(e.target.value) || 0; if(!isEditPlaying && audio.currentTime > 0) updatePlayHeadPos(); });
         splitInput.addEventListener('input', drawGrid);
         zoomSlider.addEventListener('input', e => { measureHeight = parseInt(e.target.value); resizeEditor(); drawGrid(); if(!isEditPlaying && audio.currentTime > 0) updatePlayHeadPos(); });
-        speedSlider.addEventListener('input', e => { noteSpeed = parseFloat(e.target.value); speedVal.innerText = "x" + noteSpeed.toFixed(1); });
+        speedSlider.addEventListener('input', e => { baseNoteSpeed = parseFloat(e.target.value); speedVal.innerText = "x" + baseNoteSpeed.toFixed(1); });
 
         document.getElementById('btn-export').addEventListener('click', () => { 
+            // ★ [중요] 내보내기 시 변속 이벤트를 좌표 기반으로 재계산하여 저장
+            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+            const finalSpeedEvents = speedEvents.map(ev => ({
+                time: Math.round((ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure),
+                mult: ev.mult,
+                measureIdx: ev.measureIdx,
+                pos: ev.pos
+            }));
+
             const data = { 
                 title: "Custom Chart", 
                 bpm, offset, beat: beatNum, beatDenom: beatDenom, 
+                speedEvents: finalSpeedEvents,
                 measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES })) 
             }; 
             const a = document.createElement('a'); 
@@ -518,57 +488,58 @@
             a.download = 'chart.json'; a.click(); 
         });
 
-        // [수정] 마우스 클릭 좌표 계산 (스크롤 보정)
         gridCanvas.addEventListener('mousedown', e => {
             if(e.button !== 0) return;
             const rect = gridCanvas.getBoundingClientRect();
-    
-            // 클릭한 화면 좌표 (Canvas 기준)
             const clientY = e.clientY - rect.top;
-    
-            // ★ 실제 차트상의 좌표 = 화면 좌표 + 스크롤 된 만큼의 거리
             const absoluteY = clientY + editorContainer.scrollTop; 
-    
             const x = e.clientX - rect.left;
             const lane = Math.floor(x / LANE_WIDTH);
-    
-            // 계산된 절대 Y값으로 마디 인덱스 찾기
             const measureIdx = Math.floor(absoluteY / measureHeight);
-            if(measureIdx >= measures.length) return;
+            
+            if(measureIdx >= measures.length) {
+                for(let i=measures.length; i<=measureIdx + 5; i++) measures.push({index:i, notes:[]});
+                resizeEditor();
+            }
 
             const split = parseInt(splitInput.value) || 16;
-            const relativeY = (absoluteY % measureHeight) / measureHeight; // 마디 내 비율
-    
+            const relativeY = (absoluteY % measureHeight) / measureHeight;
             const snapIdx = Math.round(relativeY * split);
             const pos192 = Math.round(snapIdx * (BASE_RES / split));
             if (pos192 >= BASE_RES) return; 
+
+            if (isSpeedEditMode) {
+                // ★ [FIX] 정확한 삭제 판정 (오차 10)
+                const existIdx = speedEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
+                if(existIdx !== -1) {
+                    speedEvents.splice(existIdx, 1);
+                } else {
+                    const mult = parseFloat(speedMultInput.value);
+                    // 좌표만 저장하고, 시간은 startTestMode에서 계산
+                    speedEvents.push({ time: 0, mult: mult, measureIdx: measureIdx, pos: pos192 });
+                    speedEvents.sort((a,b) => (a.measureIdx - b.measureIdx) || (a.pos - b.pos)); 
+                }
+                drawGrid();
+                return;
+            }
 
             const m = measures[measureIdx];
             const existingIdx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 2);
 
             if(existingIdx === -1) {
                 const newNote = { lane, pos: pos192, len: 0 };
-                m.notes.push(newNote); 
-                dragNote = newNote; isDragging = true; 
-                // 드래그 시작점도 절대 좌표로 저장해야 함
-                startY = absoluteY; 
-                playSfx('hit'); 
+                m.notes.push(newNote); dragNote = newNote; isDragging = true; startY = absoluteY; playSfx('hit'); 
             } else {
                 dragNote = m.notes[existingIdx]; isDragging = true;
-                // 기존 노트의 절대 위치 계산
                 startY = (measureIdx * measureHeight) + (dragNote.pos / BASE_RES) * measureHeight;
             }
             drawGrid();
         });
 
-        // [수정] 마우스 이동 (롱노트 길이 조절)
         window.addEventListener('mousemove', e => {
             if(!isDragging || !dragNote) return;
             const rect = gridCanvas.getBoundingClientRect();
-    
-            // 현재 마우스의 절대 Y 위치
             const currentAbsY = (e.clientY - rect.top) + editorContainer.scrollTop;
-    
             const distPx = Math.max(0, currentAbsY - startY);
             dragNote.len = Math.round((distPx / measureHeight) * BASE_RES);
             drawGrid();
@@ -576,48 +547,40 @@
 
         window.addEventListener('mouseup', () => { isDragging = false; dragNote = null; });
 
-        // [수정] 우클릭 삭제
         gridCanvas.addEventListener('contextmenu', e => {
             e.preventDefault();
             const rect = gridCanvas.getBoundingClientRect();
             const clientY = e.clientY - rect.top;
-            const absoluteY = clientY + editorContainer.scrollTop; // 절대 좌표 변환
-
+            const absoluteY = clientY + editorContainer.scrollTop;
             const x = e.clientX - rect.left;
             const lane = Math.floor(x / LANE_WIDTH);
             const measureIdx = Math.floor(absoluteY / measureHeight);
-    
             if(measureIdx >= measures.length) return;
-    
+            
             const m = measures[measureIdx];
             const split = parseInt(splitInput.value) || 16;
             const relativeY = (absoluteY % measureHeight) / measureHeight;
             const pos192 = Math.round(Math.round(relativeY * split) * (BASE_RES / split));
-    
+            
             const idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5);
-    
-            if(idx !== -1) m.notes.splice(idx, 1);
+            if(idx !== -1) { m.notes.splice(idx, 1); drawGrid(); return; }
+            
+            if(isSpeedEditMode) {
+                // ★ [FIX] 우클릭 삭제도 정확하게
+                const evIdx = speedEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
+                if(evIdx !== -1) speedEvents.splice(evIdx, 1);
+            }
             drawGrid();
         });
 
-        // [수정] 에디터 크기 조정 함수
-        function resizeEditor() {
+        function resizeEditor() { 
             const totalHeight = measures.length * measureHeight;
             const layer = document.getElementById('canvas-layer');
-    
-            // 1. 스크롤 영역(Layer)은 전체 길이만큼 늘림 (스크롤바 생성용)
             layer.style.height = totalHeight + "px";
-    
-            // 2. 캔버스(그림판)는 화면 보이는 만큼만 크기 잡기 (메모리 절약)
-            // 여유분으로 화면 높이의 2배 정도 잡아주면 부드러움
             gridCanvas.height = window.innerHeight + measureHeight; 
             gridCanvas.width = 400;
         }
-
         function addMeasures(n) { const start = measures.length; for(let i=0; i<n; i++) measures.push({index: start+i, notes:[]}); resizeEditor(); drawGrid(); }
-
-        let isEditPlaying = false;
-        let editAnimId;
 
         document.getElementById('btn-play').addEventListener('click', toggleEditPlay);
         document.getElementById('btn-stop').addEventListener('click', stopEditPlay);
@@ -664,9 +627,7 @@
             editAnimId = requestAnimationFrame(editLoop);
         }
 
-        // [수정됨] 그리드 & 노트 그리기 함수 (롱노트 잘림 방지 적용)
         function drawGrid() {
-            // 1. 캔버스 초기화
             gridCtx.fillStyle = "#000"; 
             gridCtx.fillRect(0, 0, gridCanvas.width, gridCanvas.height);
 
@@ -674,15 +635,13 @@
             const cellH = measureHeight / split;
             const scrollY = editorContainer.scrollTop;
             
-            // 현재 화면에 보이는 마디 범위 계산
             const startMeasureIdx = Math.max(0, Math.floor(scrollY / measureHeight));
             const endMeasureIdx = Math.min(measures.length - 1, Math.ceil((scrollY + gridCanvas.height) / measureHeight));
 
-            // 2. 그리드 선 그리기 (최적화를 위해 화면에 보이는 것만 그림)
             for (let i = startMeasureIdx; i <= endMeasureIdx; i++) {
+                const m = measures[i];
                 const drawY = (i * measureHeight) - scrollY; 
-                
-                // 가로선
+
                 gridCtx.lineWidth = 1;
                 for(let j=0; j<split; j++) {
                     const ly = drawY + j*cellH;
@@ -690,22 +649,12 @@
                     gridCtx.beginPath(); gridCtx.moveTo(0, ly); gridCtx.lineTo(400, ly); gridCtx.stroke();
                 }
                 
-                // 마디 번호
-                gridCtx.fillStyle="#fff"; gridCtx.font="12px Arial"; 
-                gridCtx.fillText(i+1, 5, drawY+15);
-
-                // 세로선
+                gridCtx.fillStyle="#fff"; gridCtx.font="12px Arial"; gridCtx.fillText(i+1, 5, drawY+15);
                 gridCtx.strokeStyle="#444"; gridCtx.lineWidth=1;
-                for(let k=1; k<4; k++) { 
-                    gridCtx.beginPath(); gridCtx.moveTo(k*100, drawY); 
-                    gridCtx.lineTo(k*100, drawY + measureHeight); gridCtx.stroke(); 
-                }
+                for(let k=1; k<4; k++) { gridCtx.beginPath(); gridCtx.moveTo(k*100, drawY); gridCtx.lineTo(k*100, drawY + measureHeight); gridCtx.stroke(); }
             }
 
-            // 3. 노트 그리기 (★ 중요: 롱노트 때문에 더 이전 마디부터 검사함)
-            // 화면보다 20마디 전부터 검사해서, 꼬리가 화면에 걸치는 롱노트를 찾아냄
             const noteStartIdx = Math.max(0, startMeasureIdx - 20); 
-
             for (let i = noteStartIdx; i <= endMeasureIdx; i++) {
                 const m = measures[i];
                 const drawY = (i * measureHeight) - scrollY; 
@@ -714,73 +663,103 @@
                     const ny = drawY + (n.pos / BASE_RES) * measureHeight;
                     let tailY = ny;
                     const visualH = 10;
-                    
                     if(n.len > 0) tailY = ny + (n.len / BASE_RES) * measureHeight;
                     else tailY = ny + visualH;
 
-                    // ★ [화면 밖 노트 생략] 최적화 (Culling)
-                    // 꼬리가 화면 위로 넘어갔거나(tailY < 0), 머리가 화면 아래에 있거나(ny > height)
                     if (tailY < 0 || ny > gridCanvas.height) return;
 
-                    // 롱노트 그리기
                     if(n.len > 0) {
-                        gridCtx.fillStyle = COLORS[n.lane];
-                        gridCtx.globalAlpha = 0.5;
+                        gridCtx.fillStyle = COLORS[n.lane]; gridCtx.globalAlpha = 0.5;
                         gridCtx.fillRect(n.lane*100+10, ny + visualH/2, 80, tailY - ny);
                         gridCtx.globalAlpha = 1.0;
                     }
-                    // 노트 머리 그리기
                     gridCtx.fillStyle = COLORS[n.lane]; 
                     gridCtx.fillRect(n.lane*100+1, ny, 98, visualH);
                 });
             }
+
+            speedEvents.forEach(ev => {
+                let mIdx = ev.measureIdx;
+                let pos = ev.pos;
+                // 에디터 그리기에서는 저장된 좌표를 그대로 사용
+                if (mIdx >= startMeasureIdx && mIdx <= endMeasureIdx) {
+                    const y = (mIdx * measureHeight) + (pos / BASE_RES) * measureHeight - scrollY;
+                    gridCtx.strokeStyle = "#ffd700";
+                    gridCtx.lineWidth = 3;
+                    gridCtx.beginPath(); gridCtx.moveTo(0, y); gridCtx.lineTo(400, y); gridCtx.stroke();
+                    gridCtx.fillStyle = "#ffd700";
+                    gridCtx.font = "bold 14px Arial";
+                    gridCtx.fillText(`⚡ x${ev.mult}`, 10, y - 5);
+                }
+            });
         }
 
-        // ==========================================
-        // 4. 테스트 모드 진입 및 로직
-        // ==========================================
-        
         document.getElementById('btn-test').addEventListener('click', () => {
             const isAuto = document.getElementById('chk-auto').checked;
             startTestMode(isAuto);
         });
+
+        rateSlider.addEventListener('input', e => {
+            const val = parseFloat(e.target.value);
+            audio.playbackRate = val; 
+            rateVal.innerText = val.toFixed(2) + "x";
+        });
+
+        // ★ [핵심] 변속 맵 빌드
+        let speedMap = [];
+        function buildSpeedMap(events) {
+            speedMap = [];
+            const sortedEvents = [...events].sort((a,b) => a.time - b.time);
+            
+            speedMap.push({ time: -999999, vPos: 0, mult: 1.0 });
+
+            sortedEvents.forEach(ev => {
+                const prev = speedMap[speedMap.length-1];
+                const dist = (ev.time - prev.time) * prev.mult;
+                speedMap.push({
+                    time: ev.time,
+                    vPos: prev.vPos + dist,
+                    mult: ev.mult,
+                    warned: false 
+                });
+            });
+        }
+
+        function getVisualPos(time) {
+            let ev = speedMap[0];
+            for(let i=1; i<speedMap.length; i++) {
+                if (speedMap[i].time > time) break;
+                ev = speedMap[i];
+            }
+            return ev.vPos + (time - ev.time) * ev.mult;
+        }
         
         function startTestMode(auto) {
             if(!audio.src && !songParam) return alert("MP3 Missing!");
-            if(!songParam) offset = parseInt(offsetInput.value) || 0;
+            
+            // ★ [FIX] 오프셋 계산 (중첩 방지)
+            let playOffset = 0;
+            if(!songParam) {
+                playOffset = (parseInt(offsetInput.value) || 0) + parseInt(localStorage.getItem('wb_global_offset') || 0);
+            } else {
+                playOffset = offset + parseInt(localStorage.getItem('wb_global_offset') || 0);
+            }
             
             warmUpAudio(); 
 
             if(isNaN(bpm) || bpm <= 0) bpm = 130;
 
-            const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
-            offset += userGlobalOffset;
-
-            if (speedParam) noteSpeed = parseFloat(speedParam);
-            else noteSpeed = parseFloat(speedSlider.value);
+            if (speedParam) baseNoteSpeed = parseFloat(speedParam);
+            else baseNoteSpeed = parseFloat(speedSlider.value);
 
             isAutoMode = auto;
             if(autoIndicator) autoIndicator.style.display = isAutoMode ? 'block' : 'none';
 
-            // UI 초기화
             document.getElementById('test-controls').style.display = 'flex';
-            
-            // ★ [수정됨] 슬라이더 Max값 설정 (게임 시작 시 1회만 설정)
-            // 오디오 길이 vs (마지막 노트 + 10초) 중 큰 값
-            const playLimit = Math.max(audio.duration || 0, (lastNoteEndTime / 1000) + 10);
-            seekBar.max = playLimit;
-            seekBar.value = 0;
-
-            // ▼▼▼ [여기 추가하세요] 배속 초기화 ▼▼▼
             audio.playbackRate = 1.0;
             rateSlider.value = 1.0;
             rateVal.innerText = "1.00x";
-            // ▲▲▲ [여기까지 추가] ▲▲▲
 
-            isPaused = false;
-            pauseBtn.innerText = "⏸ PAUSE";
-
-            // 노트 생성
             gameNotes = [];
             totalMaxHits = 0; 
             lastNoteEndTime = 0;
@@ -791,7 +770,7 @@
                 m.notes.forEach(n => {
                     const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
                     const duration = (n.len / BASE_RES) * msPerMeasure;
-                    const noteTime = time + offset; 
+                    const noteTime = time + playOffset;
                     const noteEndTime = noteTime + duration;
                     if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
 
@@ -806,9 +785,22 @@
             gameNotes.sort((a,b) => a.time - b.time);
             scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
 
-            // 노트 재생성 후 슬라이더 길이 다시 확인 (lastNoteEndTime 갱신됨)
-            const finalLimit = Math.max(audio.duration || 0, (lastNoteEndTime / 1000) + 10);
-            seekBar.max = finalLimit;
+            // ★ [FIX] 변속 이벤트를 현재 BPM 기준으로 새로 계산하여 오프셋 적용
+            // (에디터에 저장된 예전 시간이 아니라, 현재 좌표 기준 시간으로 덮어씀)
+            const playSpeedEvents = speedEvents.map(ev => {
+                const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
+                return { ...ev, time: Math.round(calculatedTime + playOffset) };
+            });
+            buildSpeedMap(playSpeedEvents);
+
+            const playLimit = Math.max(audio.duration || 0, (lastNoteEndTime / 1000) + 10);
+            seekBar.max = playLimit;
+            seekBar.value = 0;
+            isPaused = false;
+            pauseBtn.innerText = "⏸ PAUSE";
+
+            warnLeft.className = 'side-warn-col';
+            warnRight.className = 'side-warn-col';
 
             stopEditPlay();
             gameView.style.display = 'flex'; 
@@ -847,20 +839,10 @@
             setTimeout(showResult, 500);
         }
 
-        // ==========================================
-        // 5. 이벤트 핸들러 (키보드, 시커바, 드래그)
-        // ==========================================
-        
-        // 시커바
         seekBar.addEventListener('input', (e) => {
             const time = parseFloat(e.target.value);
-            
-            // 오디오 범위 안이면 이동, 밖이면 끝에 둠
-            if (time <= audio.duration) {
-                audio.currentTime = time;
-            } else {
-                audio.currentTime = audio.duration; 
-            }
+            if (time <= audio.duration) audio.currentTime = time;
+            else audio.currentTime = audio.duration; 
             
             const msTime = time * 1000;
             resetNoteStates(msTime);
@@ -868,6 +850,8 @@
             activeNotes = gameNotes.filter(n => {
                 return (!n.finished || n.endTime > msTime) && (n.time - 2000 < msTime);
             });
+
+            speedMap.forEach(ev => { ev.warned = (ev.time < msTime); });
 
             const m = Math.floor(time / 60).toString().padStart(2,'0');
             const s = Math.floor(time % 60).toString().padStart(2,'0');
@@ -896,7 +880,6 @@
             isPaused = !isPaused;
             if(isPaused) { audio.pause(); pauseBtn.innerText = "▶ PLAY"; } 
             else { 
-                // 오디오 범위 안쪽이면 재생
                 if (audio.currentTime < audio.duration) audio.play(); 
                 pauseBtn.innerText = "⏸ PAUSE"; 
             }
@@ -906,6 +889,8 @@
             audio.currentTime = 0;
             resetNoteStates(0);
             activeNotes = []; 
+            currentNoteSpeed = baseNoteSpeed;
+            
             combo = 0; score = 0; updateGameHUD();
             if(isPaused) {
                 drawGameScreen(0);
@@ -914,7 +899,6 @@
             }
         }
 
-        // 키보드 입력
         const KEY_MAP = ['d', 'f', 'j', 'k'];
         window.addEventListener('keydown', e => {
             if(e.code === 'Space') { 
@@ -930,7 +914,6 @@
             
             const laneIdx = KEY_MAP.indexOf(e.key.toLowerCase());
 
-            // [게임 플레이] 입력 처리
             if(isGameTesting && !gameFinished && !isAutoMode && !isPaused) {
                 if(laneIdx !== -1 && !activeKeys[laneIdx]) { 
                     activeKeys[laneIdx] = true; 
@@ -938,7 +921,6 @@
                 }
             }
 
-            // [에디터 녹화] 입력 처리
             if (isEditPlaying && isRecording && laneIdx !== -1) {
                 const currentMs = audio.currentTime * 1000;
                 const chartMs = currentMs - offset;
@@ -946,6 +928,11 @@
                 const totalMeasurePos = chartMs / msPerMeasure;
                 let mIdx = Math.floor(totalMeasurePos); 
                 
+                if(!measures[mIdx]) {
+                    for(let i=measures.length; i<=mIdx + 5; i++) measures.push({index:i, notes:[]});
+                    resizeEditor();
+                }
+
                 const split = parseInt(splitInput.value) || 16;
                 const rawRatio = totalMeasurePos - mIdx; 
                 const snappedRatio = Math.round(rawRatio * split) / split;
@@ -970,7 +957,6 @@
             }
         });
 
-        // 팝업 드래그
         let isDraggingPopup = false;
         let dragOffsetX = 0, dragOffsetY = 0;
         const testPopup = document.getElementById('test-controls');
@@ -994,22 +980,28 @@
 
         window.addEventListener('mouseup', () => { isDraggingPopup = false; });
 
-        // ==========================================
-        // 6. 게임 루프 및 그리기
-        // ==========================================
         function drawGameScreen(currentTime) {
             gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 400, gameCanvas.height);
             drawLaneBeams();
             drawJudgmentLine();
 
-            const NOTE_SPEED_PX = 100 * noteSpeed; 
-            let visibleNotes = gameNotes.filter(n => !n.finished && n.time - 2000 < currentTime);
+            const currentVisualY = getVisualPos(currentTime);
+            const GLOBAL_SCALE = 0.1 * baseNoteSpeed; 
+
+            let visibleNotes = gameNotes.filter(n => !n.finished && n.endTime > currentTime - 1000 && n.time < currentTime + 5000);
 
             for(let i=0; i<visibleNotes.length; i++) {
                 let n = visibleNotes[i];
-                const headY = HIT_LINE_Y - ((n.time - currentTime) / 1000 * NOTE_SPEED_PX);
+                
+                const nPos = getVisualPos(n.time);
+                const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
+
+                const headY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
                 let tailY = headY;
-                if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
+                
+                if (n.len > 0) {
+                    tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
+                }
 
                 if (tailY > gameCanvas.height || headY < -100) continue;
 
@@ -1018,18 +1010,32 @@
                     const clippedHeadY = Math.min(gameCanvas.height, drawHeadY);
                     const clippedTailY = Math.max(-100, tailY);
                     const bodyH = clippedHeadY - clippedTailY;
-                    if (bodyH > 0 && clippedHeadY > -50) {
+                    if (bodyH > 0) {
                         gameCtx.fillStyle = "rgba(255, 255, 255, 0.5)";
                         gameCtx.fillRect(n.lane * 100 + 10, clippedTailY, 80, bodyH);
                     }
                 }
-                if ((!n.hit || isPaused) && headY > -50 && headY < gameCanvas.height) {
+                if ((!n.hit || isPaused) && headY > -50) {
                     gameCtx.fillStyle = COLORS[n.lane]; 
                     gameCtx.fillRect(n.lane * 100 + 5, headY - 12, 90, 24);
                     gameCtx.fillStyle = "rgba(255,255,255,0.7)"; 
                     gameCtx.fillRect(n.lane * 100 + 5, headY - 12, 90, 6);
                 }
             }
+
+            speedMap.forEach(ev => {
+                if(ev.time > currentTime && ev.time < currentTime + 5000) {
+                    const evY = HIT_LINE_Y - (ev.vPos - currentVisualY) * GLOBAL_SCALE;
+                    if(evY > 0 && evY < gameCanvas.height) {
+                        gridCtx.strokeStyle = "#ffd700";
+                        gridCtx.lineWidth = 3;
+                        gridCtx.beginPath(); gridCtx.moveTo(0, evY); gridCtx.lineTo(400, evY); gridCtx.stroke();
+                        gridCtx.fillStyle = "#ffd700";
+                        gridCtx.font = "bold 14px Arial";
+                        gridCtx.fillText(`x${ev.mult}`, 10, evY - 5);
+                    }
+                }
+            });
 
             if(!isPaused) {
                 drawParticles(); drawGameFX(); drawHitErrorBar();
@@ -1053,13 +1059,10 @@
                 }
             } else if (gameState === 'WAIT_AUDIO' || gameState === 'PLAYING') {
                 if (audio.currentTime > 0) gameState = 'PLAYING';
-                
-                // 오디오가 멈췄거나 끝났으면 시커바 값(가상 시간) 사용
                 if (audio.ended || audio.paused) {
                     currentTime = parseFloat(seekBar.value) * 1000;
                 } else {
                     currentTime = audio.currentTime * 1000;
-                    // ★ [수정] 오디오 재생 중엔 슬라이더 업데이트 (단, Max값은 건드리지 않음!)
                     if(!isDraggingPopup && !isPaused) {
                         seekBar.value = audio.currentTime;
                         const m = Math.floor(audio.currentTime / 60).toString().padStart(2,'0');
@@ -1069,12 +1072,24 @@
                 }
             }
 
-            // ★ 종료 조건: 오디오 끝남 + 시커바도 끝까지 감 (10초 여유까지 포함)
             if (currentTime > (lastNoteEndTime + 2000) && audio.ended && parseFloat(seekBar.value) >= seekBar.max) {
                  finishGame();
             }
 
-            // 노트 갱신 (싱크 보정)
+            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+            let nextEvent = speedMap.find(ev => ev.time > currentTime);
+            if (nextEvent && !nextEvent.warned) {
+                let currentMult = 1.0;
+                for(let i=0; i<speedMap.length; i++) {
+                    if(speedMap[i].time <= currentTime) currentMult = speedMap[i].mult;
+                    else break;
+                }
+                if (nextEvent.time - currentTime <= msPerMeasure) {
+                    nextEvent.warned = true;
+                    showSpeedWarning(nextEvent.mult, currentMult);
+                }
+            }
+
             let pendingNotes = gameNotes.filter(n => !n.finished && n.time - 2000 < currentTime && !activeNotes.includes(n));
             activeNotes = activeNotes.concat(pendingNotes);
 
@@ -1082,8 +1097,7 @@
                 activeNotes.forEach(n => {
                     if (!n.audioPlayed && currentTime >= n.time - 120) {
                         n.audioPlayed = true; 
-                        if(n.len > 0) playSfx('hold_start');
-                        else playSfx('hit');
+                        if(n.len > 0) playSfx('hold_start'); else playSfx('hit');
                     }
                     if (!n.hit && currentTime >= n.time) {
                         n.hit = true; n.holding = true;
@@ -1098,8 +1112,7 @@
                     if (n.hit && n.len > 0 && !n.finished) {
                         activeKeys[n.lane] = true;
                         if (currentTime >= n.endTime) {
-                            n.finished = true;
-                            activeKeys[n.lane] = false;
+                            n.finished = true; activeKeys[n.lane] = false;
                             totalHits++; score += scorePerHit; totalRateSum += 100;
                             combo++; judgeStats.perfect++;
                             createParticles(n.lane); updateGameHUD(); playSfx('hold_end');
@@ -1108,12 +1121,15 @@
                 });
             }
 
-            // MISS 처리
             for(let i=0; i<activeNotes.length; i++) {
                 let n = activeNotes[i];
-                const NOTE_SPEED_PX = 100 * noteSpeed; 
-                let tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
-                if (n.len === 0) tailY = HIT_LINE_Y - ((n.time - currentTime) / 1000 * NOTE_SPEED_PX);
+                const nPos = getVisualPos(n.time);
+                const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
+                const currentVisualY = getVisualPos(currentTime);
+                const GLOBAL_SCALE = 0.1 * baseNoteSpeed;
+                
+                let tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
+                if (n.len === 0) tailY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
 
                 if (tailY > gameCanvas.height) {
                     if (!n.finished) {
@@ -1148,9 +1164,34 @@
             drawGameScreen(currentTime);
         }
 
-        // ==========================================
-        // 7. 유틸리티 함수 (판정, HUD, 이펙트)
-        // ==========================================
+        function showSpeedWarning(targetMult, currentMult) {
+            const left = document.getElementById('warn-left');
+            const right = document.getElementById('warn-right');
+            
+            left.className = 'side-warn-col';
+            right.className = 'side-warn-col';
+
+            const isUp = targetMult > currentMult;
+            const cls = isUp ? 'warn-up' : 'warn-down';
+            const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
+
+            const leftLabel = left.querySelector('.warn-label');
+            const rightLabel = right.querySelector('.warn-label');
+            
+            if(leftLabel) leftLabel.innerHTML = label;
+            if(rightLabel) rightLabel.innerHTML = label;
+
+            requestAnimationFrame(() => {
+                left.classList.add(cls);
+                right.classList.add(cls);
+            });
+
+            setTimeout(() => {
+                left.className = 'side-warn-col';
+                right.className = 'side-warn-col';
+            }, 1500);
+        }
+
         function checkFinish() { }
 
         function checkHit(lane) {
@@ -1162,7 +1203,7 @@
             const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
             if (candidates.length === 0) return;
 
-            const n = candidates.reduce((prev, curr) => prev.time < curr.time ? prev : curr);
+            const n = candidates.reduce((prev, curr) => Math.abs(currentTime - curr.time) < Math.abs(currentTime - prev.time) ? curr : prev);
             const absDiff = Math.abs(currentTime - n.time);
 
             n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;

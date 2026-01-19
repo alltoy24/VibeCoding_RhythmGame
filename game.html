@@ -2,28 +2,65 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : PLAYER</title>
+    <title>WEB BEAT : PLAYER (V17)</title>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* [추가] 모바일 터치 대응 */
-        canvas.game { 
-            touch-action: none; /* 터치로 스크롤/확대 금지 */
-            -webkit-user-select: none; /* 텍스트 선택 금지 */
-            user-select: none;
-        }
-        
-        /* [추가] 모바일일 때 레인 너비 꽉 차게 쓰기 */
-        body.mobile-mode #game-canvas-container {
-            width: 100% !important;
-            border: none;
-        }
-
+        /* [기본 설정] */
         :root { --bg: #000; --accent: #00e5ff; --text: #fff; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; }
         
-        #game-view { position: relative; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        #game-canvas-container { position: relative; width: 450px; height: 100%; border-left: 2px solid #333; border-right: 2px solid #333; box-shadow: 0 0 50px rgba(0,0,0,0.8); background: #000; }
+        /* [모바일 터치 대응] */
+        canvas.game { touch-action: none; -webkit-user-select: none; user-select: none; }
+        body.mobile-mode #game-canvas-container { width: 100% !important; border: none; }
+
+        /* [레이아웃] 3단 구조 (경고 - 게임 - 경고) */
+        #game-view { 
+            position: relative; width: 100%; height: 100%; 
+            display: flex; flex-direction: row; 
+            align-items: stretch; justify-content: center; 
+        }
+
+        /* [경고창 사이드바] */
+        .side-warn-col {
+            flex: 1; /* 남은 공간 차지 */
+            display: flex; flex-direction: column; 
+            justify-content: center; align-items: center;
+            opacity: 0; transition: opacity 0.2s;
+            pointer-events: none; /* 클릭 통과 */
+        }
+        
+        .chevron {
+            width: 50px; height: 50px;
+            border-top: 10px solid currentColor;
+            border-right: 10px solid currentColor;
+            transform: rotate(-45deg);
+            margin: 15px 0;
+            animation: none;
+        }
+        /* UP Style */
+        .warn-up { opacity: 1; }
+        .warn-up .chevron { color: #ff0055; filter: drop-shadow(0 0 15px #ff0055); animation: chevUp 0.3s infinite; }
+        .warn-up .warn-label { color: #ff0055; text-shadow: 0 0 15px #ff0055; }
+        /* DOWN Style */
+        .warn-down { opacity: 1; }
+        .warn-down .chevron { color: #00e5ff; transform: rotate(135deg); filter: drop-shadow(0 0 15px #00e5ff); animation: chevDown 0.5s infinite; }
+        .warn-down .warn-label { color: #00e5ff; text-shadow: 0 0 15px #00e5ff; }
+        
+        .warn-label { font-family: 'Impact', sans-serif; font-size: 40px; margin: 30px 0; letter-spacing: 3px; text-align: center; line-height: 1.2; }
+
+        @keyframes chevUp { 0% { transform: translateY(30px) rotate(-45deg); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(-30px) rotate(-45deg); opacity:0; } }
+        @keyframes chevDown { 0% { transform: translateY(-30px) rotate(135deg); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(30px) rotate(135deg); opacity:0; } }
+
+        /* [게임 캔버스 영역] */
+        #game-canvas-container { 
+            position: relative; width: 450px; height: 100%; 
+            border-left: 2px solid #333; border-right: 2px solid #333; 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8); background: #000; 
+            flex-shrink: 0;
+        }
         canvas.game { display: block; width: 100%; height: 100%; }
         
+        /* HUD & Effects */
         #game-hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
         .hud-item { flex: 1; }
         .hud-text { font-family: 'Impact', sans-serif; font-size: 32px; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); letter-spacing: 1px; }
@@ -69,8 +106,8 @@
         .loading-text { font-family: 'Impact'; font-size: 40px; margin-bottom: 30px; animation: blink 1s infinite; }
         .btn-start-game { padding: 20px 60px; font-size: 30px; font-weight: bold; background: #ff0055; color: white; border: none; border-radius: 60px; cursor: pointer; display: none; box-shadow: 0 0 30px rgba(255, 0, 85, 0.5); transition: transform 0.2s; }
         .btn-start-game:hover { transform: scale(1.1); }
+        @keyframes blink { 50% { opacity: 0.3; } }
     </style>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div id="loading-screen">
@@ -79,6 +116,12 @@
     </div>
 
     <div id="game-view">
+        <div id="warn-left" class="side-warn-col">
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+            <div class="warn-label">SPEED<br>UP</div>
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+        </div>
+
         <div id="game-canvas-container">
             <canvas id="gameCanvas" class="game"></canvas>
             <div id="finish-effect"></div>
@@ -90,39 +133,37 @@
             <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
             <div id="result-overlay"></div>
         </div>
+
+        <div id="warn-right" class="side-warn-col">
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+            <div class="warn-label">SPEED<br>UP</div>
+            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+        </div>
     </div>
 
     <script>
         // ==========================================
-        // ★ 디버깅용 로그 함수
+        // SYSTEM INIT
         // ==========================================
+        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
+        let userProfile = null;
+
+        // 경고창 요소
+        const warnLeft = document.getElementById('warn-left');
+        const warnRight = document.getElementById('warn-right');
+
         function logStatus(msg) {
             console.log(msg);
             const el = document.getElementById('loading-msg');
             if(el) el.innerText = msg;
         }
 
-        // ==========================================
-        // ★ [중요] 서버 주소 & 모바일 감지 (최상단)
-        // ==========================================
-        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
-        
-        // ★ [FIX] isMobile을 가장 먼저 정의해야 에러가 안 납니다!
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-        // ==========================================
-        // ★ GOOGLE LOGIN SETUP
-        // ==========================================
-        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-        let userProfile = null;
-        
         try {
             const stored = localStorage.getItem('wb_auth_profile');
-            if (stored) {
-                userProfile = JSON.parse(stored);
-                console.log("자동 로그인 성공:", userProfile.name);
-            }
-        } catch(e) { console.error("Login Load Fail", e); }
+            if (stored) userProfile = JSON.parse(stored);
+        } catch(e) {}
 
         window.onload = function() {
             if (typeof google !== 'undefined' && google.accounts && !userProfile) {
@@ -150,7 +191,7 @@
         }
 
         // ==========================================
-        // ★ Web Audio API & Sound Load
+        // AUDIO INIT
         // ==========================================
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         const soundBuffers = {};
@@ -162,16 +203,15 @@
                 const arrayBuffer = await response.arrayBuffer();
                 const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
                 soundBuffers[name] = audioBuffer;
-            } catch (e) { console.warn(`Sound load failed: ${name}`, e); }
+            } catch (e) { console.warn(e); }
         }
 
         loadSound('hit', 'sfx/hit.mp3');
         loadSound('hold_start', 'sfx/hold_start.mp3');
         loadSound('hold_end', 'sfx/hold_end.mp3');
         loadSound('fc', 'sfx/full_combo.mp3');
-        // [수정] AP 소리를 두 개로 나눠서 로딩합니다
-        loadSound('ap_main', 'sfx/all_perfect.mp3');   // 1. 맑은 소리 (기존)
-        loadSound('ap_layer', 'sfx/glitch.mp3');       // 2. 글리치 소리 (새로 추가)
+        loadSound('ap_main', 'sfx/all_perfect.mp3');
+        loadSound('ap_layer', 'sfx/glitch.mp3');
 
         function playSfx(name) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -179,7 +219,6 @@
             const source = audioCtx.createBufferSource();
             source.buffer = soundBuffers[name];
             const gainNode = audioCtx.createGain();
-            // ★ [수정] localStorage에서 볼륨값 읽어오기 (기본값 0.7)
             const savedVol = parseFloat(localStorage.getItem('wb_sfx_volume') || "0.7");
             gainNode.gain.value = savedVol; 
             source.connect(gainNode);
@@ -188,10 +227,11 @@
         }
 
         // ==========================================
-        //            GAME VARIABLES
+        // GAME LOGIC
         // ==========================================
         let audio = new Audio(); 
         let bpm = 130, offset = 0;
+        let beatNum = 4, beatDenom = 4;
         const BASE_RES = 192; 
         
         const gameCanvas = document.getElementById('gameCanvas');
@@ -199,30 +239,23 @@
         const finishEffect = document.getElementById('finish-effect');
         const resultOverlay = document.getElementById('result-overlay');
         
-        // ★ 모바일 대응을 위한 변수 설정 (let 사용)
         let TRACK_X_OFFSET = 25; 
         let LANE_WIDTH = 100;
         let NOTE_WIDTH = 90;    
         let NOTE_X_PADDING = 5;  
         const HIT_LINE_Y = window.innerHeight * 0.85; 
 
-        // 캔버스 크기 초기화
         if (isMobile) {
-            console.log("모바일 모드 활성화");
             document.body.classList.add('mobile-mode');
             gameCanvas.width = window.innerWidth;
-            
-            // 모바일용 치수 계산
             LANE_WIDTH = window.innerWidth / 4;
             TRACK_X_OFFSET = 0;
             NOTE_WIDTH = LANE_WIDTH * 0.9;
             NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
-
-            // 시작 버튼 텍스트 변경
             const startBtn = document.getElementById('btn-start-auto');
             if(startBtn) startBtn.innerText = "TOUCH TO START";
         } else {
-            gameCanvas.width = 450; // PC는 고정
+            gameCanvas.width = 450;
         }
         gameCanvas.height = window.innerHeight;
 
@@ -232,9 +265,13 @@
         let finishTimer = null;
         let gameState = 'LOADING'; 
         let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
+        let speedEvents = []; // 변속 이벤트
+        let speedMap = [];    // 적분된 변속 맵
+        
         let activeKeys = [false, false, false, false];
         let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
-        let gameAnimId, noteSpeed = 5.0;
+        let gameAnimId;
+        let baseNoteSpeed = 5.0; // 기본 속도
         let scorePerHit = 0; 
         
         let startTimestamp = 0;
@@ -243,7 +280,6 @@
         let totalMaxHits = 0; 
         let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
 
-        // 리사이즈 대응
         window.addEventListener('resize', () => { 
             gameCanvas.height = window.innerHeight;
             if(isMobile) {
@@ -254,11 +290,8 @@
             }
         });
 
-        audio.onended = () => {
-            if (!gameFinished) finishGame();
-        };
+        audio.onended = () => { if (!gameFinished) finishGame(); };
 
-        // DOMContentLoaded 로직
         document.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const song = urlParams.get('song');
@@ -266,15 +299,14 @@
             const speed = urlParams.get('speed');
 
             if (!song || !diff) {
-                logStatus("ERROR: NO SONG DATA");
                 alert("잘못된 접근입니다. 곡을 선택해주세요.");
                 location.href = "index.html"; 
                 return;
             }
 
-            if(speed) noteSpeed = parseFloat(speed);
+            if(speed) baseNoteSpeed = parseFloat(speed);
             const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
-            offset += userGlobalOffset;
+            offset += userGlobalOffset; // 초기 로드 시 1회 적용
             
             loadGameData(song, diff);
         });
@@ -286,7 +318,7 @@
             try {
                 logStatus("LOADING CHART...");
                 const chartRes = await fetch(`Maps/${song}/${diff}.json`);
-                if(!chartRes.ok) throw new Error(`Chart File Not Found: ${song}/${diff}`);
+                if(!chartRes.ok) throw new Error(`Chart Not Found`);
                 const chartData = await chartRes.json();
                 parseChartData(chartData);
 
@@ -295,7 +327,6 @@
 
                 const checkAudioReady = () => {
                     if (audio.readyState >= 3) {
-                        console.log("Audio Loaded (Cached or Downloaded)");
                         logStatus("READY");
                         loadingMsg.style.display = 'none'; 
                         startBtn.style.display = 'block';
@@ -306,24 +337,14 @@
 
                 audio.oncanplaythrough = checkAudioReady;
                 audio.onloadeddata = checkAudioReady; 
-                
-                audio.onerror = (e) => {
-                    logStatus("AUDIO ERROR");
-                    alert("오디오 파일을 찾을 수 없습니다: " + audioPath);
-                };
-
                 audio.src = audioPath;
                 audio.load();
 
                 const forceCheck = setInterval(() => {
-                    if (checkAudioReady()) {
-                        clearInterval(forceCheck); 
-                    }
+                    if (checkAudioReady()) clearInterval(forceCheck); 
                 }, 100);
 
             } catch (err) { 
-                console.error(err);
-                logStatus("ERROR: " + err.message);
                 alert(`오류 발생: ${err.message}`); 
                 window.location.href = "index.html"; 
             }
@@ -331,11 +352,20 @@
 
         function parseChartData(data) {
             if(data.bpm) bpm = data.bpm;
-            if(data.offset) offset += (data.offset || 0); 
+            if(data.offset) offset += (data.offset || 0);
+            if(data.beat) beatNum = data.beat; // 박자 로드
+            if(data.beatDenom) beatDenom = data.beatDenom; // 박자 로드
+            
             gameNotes = []; totalMaxHits = 0;
             
+            // 변속 이벤트 로드
+            if(data.speedEvents) speedEvents = data.speedEvents;
+            else speedEvents = [];
+
             if(data.measures) {
-                const msPerMeasure = (60000 / bpm) * 4;
+                // ★ [FIX] 박자 정보 반영하여 시간 계산
+                const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+                
                 data.measures.forEach(m => {
                     const ratio = BASE_RES / (m.split || 32); 
                     m.notes.forEach(n => {
@@ -353,20 +383,72 @@
                         if(n.len > 0) totalMaxHits++; 
                     });
                 });
+
+                // ★ [FIX] 변속 이벤트 시간 재계산 (동기화)
+                // JSON에 저장된 시간은 무시하고, measureIdx/pos 기준으로 다시 계산하여 오차 제거
+                if(speedEvents.length > 0) {
+                    speedEvents = speedEvents.map(ev => {
+                        // 좌표 정보가 있으면 재계산
+                        if(ev.measureIdx !== undefined) {
+                            const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
+                            return { ...ev, time: calculatedTime + offset };
+                        }
+                        // 없으면 오프셋만 적용
+                        return { ...ev, time: ev.time + offset };
+                    });
+                }
             }
             gameNotes.sort((a,b) => a.time - b.time);
             scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
         }
 
+        // ★ [핵심 1] 변속 맵 빌드 (적분)
+        function buildSpeedMap() {
+            speedMap = [];
+            const sortedEvents = [...speedEvents].sort((a,b) => a.time - b.time);
+
+            // 시작점
+            speedMap.push({ time: -999999, vPos: 0, mult: 1.0 });
+
+            sortedEvents.forEach(ev => {
+                const prev = speedMap[speedMap.length-1];
+                const dist = (ev.time - prev.time) * prev.mult;
+                speedMap.push({
+                    time: ev.time,
+                    vPos: prev.vPos + dist,
+                    mult: ev.mult,
+                    warned: false
+                });
+            });
+        }
+
+        // ★ [핵심 2] 시각적 위치 계산
+        function getVisualPos(time) {
+            let ev = speedMap[0];
+            for(let i=1; i<speedMap.length; i++) {
+                if (speedMap[i].time > time) break;
+                ev = speedMap[i];
+            }
+            return ev.vPos + (time - ev.time) * ev.mult;
+        }
+
         function startGame() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
             document.getElementById('loading-screen').style.display = 'none';
+            
+            // 변속 맵 생성 (여기서 딱 한 번만 실행)
+            buildSpeedMap();
+
             combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; totalOffsetDiff = 0; score = 0;
             judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
             activeNotes = []; particles = []; recentHits = []; judgments = [];
             finishEffect.innerHTML = "";
             updateGameHUD();
             
+            // 경고창 초기화
+            warnLeft.className = 'side-warn-col';
+            warnRight.className = 'side-warn-col';
+
             gameState = 'COUNTDOWN';
             startTimestamp = Date.now(); 
             audio.currentTime = 0;
@@ -379,9 +461,32 @@
         function finishGame() {
             if (gameFinished) return;
             gameFinished = true;
-            console.log("Game Finished!");
             audio.pause();
             showResult();
+        }
+
+        function showSpeedWarning(targetMult, currentMult) {
+            const isUp = targetMult > currentMult;
+            const cls = isUp ? 'warn-up' : 'warn-down';
+            const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
+
+            warnLeft.querySelector('.warn-label').innerHTML = label;
+            warnRight.querySelector('.warn-label').innerHTML = label;
+
+            // 애니메이션 클래스 재적용
+            warnLeft.classList.remove('warn-up', 'warn-down');
+            warnRight.classList.remove('warn-up', 'warn-down');
+            
+            // 리플로우 강제 (애니메이션 리셋)
+            void warnLeft.offsetWidth; 
+
+            warnLeft.classList.add(cls);
+            warnRight.classList.add(cls);
+
+            setTimeout(() => {
+                warnLeft.classList.remove(cls);
+                warnRight.classList.remove(cls);
+            }, 1500);
         }
 
         function gameLoop() {
@@ -398,10 +503,7 @@
                     gameState = 'WAIT_AUDIO';
                     const playPromise = audio.play();
                     if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log("Audio Play Failed:", error);
-                            gameState = 'PLAYING_NO_AUDIO'; 
-                        });
+                        playPromise.catch(error => { gameState = 'PLAYING_NO_AUDIO'; });
                     }
                 }
             } else if (gameState === 'WAIT_AUDIO') {
@@ -414,8 +516,24 @@
             }
 
             if (!gameFinished && totalHits >= totalMaxHits) {
-                if (!finishTimer) {
-                    finishTimer = setTimeout(finishGame, 1000); 
+                if (!finishTimer) finishTimer = setTimeout(finishGame, 1000); 
+            }
+
+            // [변속 경고 체크]
+            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+            // 현재 시간보다 미래에 있는 이벤트 찾기
+            let nextEvent = speedMap.find(ev => ev.time > currentTime);
+            if (nextEvent && !nextEvent.warned) {
+                // 현재 배속 구하기
+                let currentMult = 1.0;
+                for(let i=0; i<speedMap.length; i++) {
+                    if(speedMap[i].time <= currentTime) currentMult = speedMap[i].mult;
+                    else break;
+                }
+                // 1마디 전 발동
+                if (nextEvent.time - currentTime <= msPerMeasure) {
+                    nextEvent.warned = true;
+                    showSpeedWarning(nextEvent.mult, currentMult);
                 }
             }
 
@@ -423,16 +541,27 @@
             drawLaneBeams();
             drawJudgmentLine();
 
-            const NOTE_SPEED_PX = 100 * noteSpeed; 
+            // ★ [핵심] 현재 시점의 가상 위치 (Visual Y)
+            const currentVisualY = getVisualPos(currentTime);
+            // 줌(Zoom) 배율: 노트 속도 설정값에 비례
+            const GLOBAL_SCALE = 0.1 * baseNoteSpeed; 
+
+            // 노트 큐 관리
             while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
 
             for(let i=0; i<activeNotes.length; i++) {
                 let n = activeNotes[i];
-                const timeDiff = n.time - currentTime;
-                const headY = HIT_LINE_Y - (timeDiff / 1000 * NOTE_SPEED_PX);
-                let tailY = headY;
-                if (n.len > 0) tailY = HIT_LINE_Y - ((n.endTime - currentTime) / 1000 * NOTE_SPEED_PX);
+                
+                // ★ [적분 적용] 시간 차이가 아닌 '위치 차이'로 그리기 & 판정
+                const nPos = getVisualPos(n.time);
+                const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
 
+                // 화면 Y좌표 = 판정선 - (노트위치 - 현재위치) * 줌
+                const headY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
+                let tailY = headY;
+                if (n.len > 0) tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
+
+                // 1. 화면 밖 처리 (Miss)
                 if (tailY > gameCanvas.height) {
                     if (!n.finished) {
                         n.finished = true;
@@ -446,14 +575,20 @@
                     continue; 
                 }
 
-                if(!n.hit && !n.finished && currentTime > n.time + 250) { 
-                    n.hit = true; n.finished = true; 
-                    combo = 0; totalHits++; judgeStats.miss++; 
-                    if(n.len > 0) totalHits++; 
-                    updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
-                    checkFinish();
+                // 2. 시간 초과 Miss 처리 (단, 화면에 보일 때는 Miss 안 뜨게 보정)
+                // 적분 좌표계에서는 '화면 밖' 체크가 더 정확하므로, 시간 체크는 보조 수단
+                if(!n.hit && !n.finished && currentTime > n.time + 200) { 
+                    // 단, 롱노트가 아니고, 화면 상에서도 판정선을 한참 지났을 때만
+                    if(headY > HIT_LINE_Y + 50) {
+                        n.hit = true; n.finished = true; 
+                        combo = 0; totalHits++; judgeStats.miss++; 
+                        if(n.len > 0) totalHits++; 
+                        updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
+                        checkFinish();
+                    }
                 }
 
+                // 3. 롱노트 떼기 판정
                 if (n.hit && n.len > 0 && !n.finished) {
                     if (activeKeys[n.lane]) {
                         if (currentTime >= n.endTime) {
@@ -464,9 +599,11 @@
                     }
                 }
 
+                // 4. 그리기
                 if (!n.finished) {
                     const laneX = TRACK_X_OFFSET + (n.lane * LANE_WIDTH);
                     if (n.len > 0) {
+                        // 롱노트: 머리가 이미 쳐졌으면 판정선에 고정
                         const drawHeadY = n.hit ? HIT_LINE_Y : headY;
                         const bodyH = drawHeadY - tailY;
                         if (drawHeadY > -50 && tailY < gameCanvas.height) {
@@ -474,6 +611,7 @@
                             gameCtx.fillRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
                         }
                     }
+                    // 일반 노트 / 롱노트 머리
                     if (!n.hit && headY > -50 && headY < gameCanvas.height) {
                         gameCtx.fillStyle = COLORS[n.lane]; 
                         gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 30);
@@ -487,11 +625,10 @@
         }
 
         // ==========================================
-        // ★ 입력 처리 (키보드 + 모바일 터치)
+        // INPUT & UTILS
         // ==========================================
         const KEY_MAP = ['d', 'f', 'j', 'k'];
         
-        // 키보드
         window.addEventListener('keydown', e => {
             if(gameFinished) return;
             const lane = KEY_MAP.indexOf(e.key.toLowerCase());
@@ -503,7 +640,6 @@
             if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
         });
 
-        // 모바일 터치 (isMobile 변수가 위에서 정의되어 문제 없음)
         if (isMobile) {
             gameCanvas.addEventListener('touchstart', handleTouch, {passive: false});
             gameCanvas.addEventListener('touchend', handleTouch, {passive: false});
@@ -516,7 +652,6 @@
             const touches = e.changedTouches;
             for (let i = 0; i < touches.length; i++) {
                 const touch = touches[i];
-                // 화면 4등분 계산
                 const lane = Math.floor(touch.clientX / (window.innerWidth / 4));
                 if (lane >= 0 && lane < 4) {
                     if (e.type === 'touchstart') {
@@ -646,7 +781,6 @@
         async function showResult() {
             try {
                 const SERVER_BASE = SERVER_URL.replace('/api/score', '');
-
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
@@ -677,7 +811,6 @@
                 if (songParam && diffParam) {
                     const scoreKey = `wb_score_${songParam}_${diffParam}`;
                     const badgeKey = `wb_badge_${songParam}_${diffParam}`;
-                    
                     const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
                     const currentScore = Math.round(score);
                     if (currentScore > savedScore) localStorage.setItem(scoreKey, currentScore.toString().padStart(6, '0'));
@@ -691,30 +824,14 @@
                 if (songParam && diffParam && userProfile) { 
                     try {
                         await fetch(`${SERVER_BASE}/api/score`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                userId: userProfile.sub,
-                                userName: userProfile.name,
-                                song: songParam,
-                                diff: diffParam,
-                                score: Math.round(score),
-                                level: currentLv
-                            })
+                            method: "POST", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: userProfile.sub, userName: userProfile.name, song: songParam, diff: diffParam, score: Math.round(score), level: currentLv })
                         });
-
                         await fetch(`${SERVER_BASE}/api/user/update`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                userId: userProfile.sub,
-                                level: currentLv,
-                                xp: currentXp
-                            })
+                            method: "POST", headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: userProfile.sub, level: currentLv, xp: currentXp })
                         });
-                    } catch (err) {
-                        console.error("서버 전송 중 에러:", err);
-                    }
+                    } catch (err) { console.error("서버 전송 중 에러:", err); }
                 }
 
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
@@ -723,30 +840,19 @@
                     const rankData = await res.json();
                     
                     if(rankData.length > 0) {
-                        rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);">
-                            <div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
-                        
+                        rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);"><div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
                         rankData.slice(0, 5).forEach((r, idx) => {
                             const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
                             const isMe = userProfile && r.userId === userProfile.sub ? "color:#ffd700;" : "color:#fff;";
-                            rankingHtml += `
-                                <div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}">
-                                    <span>${medal} ${r.userName}</span>
-                                    <span>${r.score}</span>
-                                </div>`;
+                            rankingHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}"><span>${medal} ${r.userName}</span><span>${r.score}</span></div>`;
                         });
                         rankingHtml += `</div>`;
-                    } else {
-                        rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>";
-                    }
+                    } else { rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>"; }
                 } catch(e) { console.warn("Ranking Load Fail", e); }
 
-
                 let badgeHtml = "";
-                if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) 
-                    badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
-                else if (combo === totalMaxHits && totalMaxHits > 0) 
-                    badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
+                if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
+                else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
 
                 resultOverlay.innerHTML = `
                     <div style="text-align:center; margin-bottom:10px;">
@@ -759,7 +865,6 @@
                         <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
                         <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
                     </div>
-
                     <div class="res-detail" style="margin-bottom:20px;">
                         <div class="detail-item"><div class="detail-label" style="color:#00e5ff">PERFECT</div><div class="detail-val">${judgeStats.perfect}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#00ff00">GREAT</div><div class="detail-val">${judgeStats.great}</div></div>
@@ -767,11 +872,8 @@
                         <div class="detail-item"><div class="detail-label" style="color:#ff5555">OH...</div><div class="detail-val">${judgeStats.oh}</div></div>
                         <div class="detail-item"><div class="detail-label" style="color:#888">No..</div><div class="detail-val">${judgeStats.miss}</div></div>
                     </div>
-                    
                     ${rankingHtml}
-
                     <div id="google-login-btn-result" style="margin-top: 15px; display: flex; justify-content: center; min-height:40px;"></div>
-
                     <button class="btn-close" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
                 `;
                 
@@ -783,12 +885,15 @@
                         { theme: "filled_black", size: "large", shape: "pill" }
                     );
                 }
-
             } catch(e) {
                 alert("Result Error: " + e.message);
                 location.href='index.html';
             }
         }
+
+        function closeResult() { stopTestMode(); if(songParam) window.location.href="index.html"; }
+        const ac = new (window.AudioContext||window.webkitAudioContext)();
+        function playTick() { if(ac.state==='suspended') ac.resume(); const o = ac.createOscillator(); const g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 1200; g.gain.value = 0.1; o.start(); o.stop(ac.currentTime+0.05); }
     </script>
 </body>
 </html>
