@@ -1089,27 +1089,33 @@
         async function showResult() {
             try {
                 // ============================================================
-                // 🛡️ [보안 1단계] 플레이 시간 검증 (Time Integrity Check)
+                // 🛡️ [보안 1단계] 플레이 시간 검증 (기준 대폭 완화)
                 // ============================================================
                 const currentTime = Date.now();
-                const playDuration = currentTime - gameStartTimeLocal; // 실제 플레이 시간
+                const playDuration = currentTime - gameStartTimeLocal; // 유저가 실제로 게임 켜놓은 시간 (ms)
                 
-                // 곡 길이 (audio.duration이 로드 안됐을 경우 대비 최소 10초)
-                const songDurationMs = (audio.duration && audio.duration > 0) ? audio.duration * 1000 : 10000;
+                // 오디오 길이가 로드되지 않았으면 기본 60초로 가정 (에러 방지)
+                const songDurationMs = (audio.duration && audio.duration > 0) ? audio.duration * 1000 : 60000;
                 
-                // 곡 길이의 80% 미만으로 플레이했다면 (배속/스킵 핵 의심)
-                // 단, 오토플레이 봇은 시간을 조작해서 보내므로 이것만으론 부족하지만 1차 방어막
-                if (playDuration < (songDurationMs * 0.8) && !isFever) { 
-                    console.warn(`🚨 Security Alert: Play time too short. (${playDuration}ms / ${songDurationMs}ms)`);
-                    alert("비정상적인 플레이가 감지되었습니다. (Time Mismatch)");
+                // ★ [수정] 기준을 80% -> 30%로 대폭 낮춤
+                // 해커의 '순간 클리어'만 막으면 됩니다. 정상 플레이어는 절대 건드리지 않게 설정.
+                const minRequiredTime = songDurationMs * 0.3; 
+
+                // 디버깅용 로그 (F12 콘솔에서 확인 가능)
+                console.log(`🛡️ [보안 점검] 실제 플레이: ${Math.round(playDuration/1000)}초 / 최소 요구: ${Math.round(minRequiredTime/1000)}초`);
+
+                // 10초 미만으로 끝났거나(초고속), 곡 길이의 30%도 안 했는데 끝났다면? -> 차단
+                if (playDuration < 10000 || playDuration < minRequiredTime) { 
+                    // 단, 개발자 테스트 중일 수 있으니 '피버 모드' 등 특정 상황은 예외 처리 가능 (지금은 생략)
+                    console.warn(`🚨 Security Alert: Too fast!`);
+                    alert(`비정상적인 플레이가 감지되었습니다.\n(플레이 시간이 너무 짧습니다: ${Math.round(playDuration/1000)}초)`);
                     location.href = 'index.html';
                     return;
                 }
 
                 // ============================================================
-                // 🛡️ [보안 2단계] 점수 무결성 검증 (Score Math Check)
+                // 🛡️ [보안 2단계] 점수 무결성 검증
                 // ============================================================
-                // 메모리상의 'score' 변수만 조작했는지 확인하기 위해 역산
                 const calcScore = Math.round(
                     (judgeStats.perfect * scorePerHit * 1.0) +
                     (judgeStats.great * scorePerHit * 0.9) +
@@ -1117,25 +1123,21 @@
                     (judgeStats.oh * scorePerHit * 0.1)
                 );
 
-                // 실제 점수와 계산된 점수 차이가 크면 조작 (부동소수점 오차 감안 200점 여유)
                 if (Math.abs(score - calcScore) > 200) {
-                    console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, Var: ${score}`);
-                    alert("데이터 오류가 발생했습니다. (Score Mismatch)");
+                    console.warn(`🚨 Security Alert: Score mismatch.`);
+                    alert("데이터 오류가 발생했습니다. (점수 검증 실패)");
                     location.href = 'index.html'; 
                     return;
                 }
 
                 // ============================================================
-                // 🛡️ [보안 3단계] 데이터 서명 (Signature) - 핵심!
+                // 🛡️ [보안 3단계] 데이터 서명 (Signature)
                 // ============================================================
-                // 서버의 .env에 설정한 SECRET_SALT와 똑같은 값이어야 함!
                 const SECRET_SALT = "WebBeatSecureSalt"; 
-                
-                // 해커가 이 조합 순서를 모르면 유효한 토큰을 못 만듦
                 const rawSignature = Math.round(score) + SECRET_SALT + (userProfile ? userProfile.sub : "");
-                const signatureToken = btoa(rawSignature); // Base64 인코딩
+                const signatureToken = btoa(rawSignature); 
 
-                // --- [기존 로직 시작] ---
+                // --- [UI 및 데이터 전송] ---
                 const SERVER_BASE = SERVER_URL.replace('/api/score', '');
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
@@ -1172,7 +1174,6 @@
                     }
                 }
                 
-                // ★ 서버 전송 (보안 토큰 포함)
                 if (songParam && diffParam && userProfile) { 
                     try {
                         await fetch(`${SERVER_BASE}/api/score`, {
@@ -1184,7 +1185,6 @@
                                 diff: diffParam, 
                                 score: Math.round(score), 
                                 level: currentLv,
-                                // [보안] 서명과 플레이 시간 전송
                                 signature: signatureToken,
                                 playTime: playDuration
                             })
