@@ -479,7 +479,16 @@
             if(data.beatDenom) beatDenom = data.beatDenom; 
             
             gameNotes = []; totalMaxHits = 0;
-            if(data.speedEvents) speedEvents = data.speedEvents; else speedEvents = [];
+            // ★ [수정] SpeedEvents 초기화 안전장치
+            if(data.speedEvents) {
+                speedEvents = data.speedEvents;
+                // 0ms 이벤트가 없으면 기본 1.0배속을 강제로 넣어서 계산 오류 방지
+                if (!speedEvents.some(e => e.time === 0)) {
+                    peedEvents.push({ time: 0, mult: 1.0 }); 
+                }
+            } else {
+                speedEvents = [{ time: 0, mult: 1.0 }];
+            }
 
             if(data.measures) {
                 const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
@@ -818,20 +827,23 @@
 
         function drawGameScreen(currentTime) {
             gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-            
+    
             drawFeverGearEffect();
-
             drawLaneBeams();
             drawJudgmentLine();
 
             const currentVisualY = getVisualPos(currentTime);
             const GLOBAL_SCALE = 0.1 * baseNoteSpeed; 
 
-            while(gameNotes.length > 0 && gameNotes[0].time - 2000 < currentTime) activeNotes.push(gameNotes.shift());
+            // ★ [수정] 2000 -> 10000 (10초 미리 로딩)
+            // 속도가 느려져도 노트가 미리 로딩되어 자연스럽게 내려옵니다.
+            while(gameNotes.length > 0 && gameNotes[0].time - 10000 < currentTime) {
+                activeNotes.push(gameNotes.shift());
+            }
 
             for(let i=0; i<activeNotes.length; i++) {
                 let n = activeNotes[i];
-                
+        
                 const nPos = getVisualPos(n.time);
                 const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
 
@@ -839,6 +851,7 @@
                 let tailY = headY;
                 if (n.len > 0) tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
 
+                // 화면 밖으로 나간 노트 처리
                 if (tailY > gameCanvas.height) {
                     if (!n.finished) {
                         n.finished = true;
@@ -853,6 +866,11 @@
                     continue; 
                 }
 
+                // [중요] 화면 위쪽(음수 좌표)에 있는 노트는 그리지 않음 (성능 최적화)
+                // 미리 로딩은 하되, 그리지는 않아서 렉을 방지합니다.
+                if (headY < -50 && !n.hit && n.len === 0) continue; 
+
+                // 판정선 통과 체크
                 if(!n.hit && !n.finished && currentTime > n.time + 200) { 
                     if(headY > HIT_LINE_Y + 50) {
                         n.hit = true; n.finished = true; 
@@ -864,21 +882,26 @@
                     }
                 }
 
+                // 롱노트 홀딩 중 처리
                 if (n.hit && n.len > 0 && !n.finished) {
                     if (activeKeys[n.lane]) {
                         if (currentTime >= n.endTime) {
                             n.finished = true; totalHits++; score += scorePerHit; 
                             totalRateSum += 100; combo++; judgeStats.perfect++; 
                             updateGameHUD(); createParticles(n.lane); playSfx('hold_end'); checkFinish();
+                            // ★ 롱노트 완료 시 피버 체크 추가
+                            checkFeverState(combo);
                         }
                     }
                 }
 
+                // 노트 그리기
                 if (!n.finished) {
                     const laneX = TRACK_X_OFFSET + (n.lane * LANE_WIDTH);
                     if (n.len > 0) {
                         const drawHeadY = n.hit ? HIT_LINE_Y : headY;
                         const bodyH = drawHeadY - tailY;
+                        // 화면에 보일 때만 그림
                         if (drawHeadY > -50 && tailY < gameCanvas.height) {
                             gameCtx.fillStyle = "rgba(255, 255, 255, 0.5)";
                             gameCtx.fillRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
@@ -892,7 +915,9 @@
                     }
                 }
             }
+            // 화면 밖으로 완전히 벗어난 노트 제거
             activeNotes = activeNotes.filter(n => !n.finished);
+    
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
@@ -986,22 +1011,25 @@
                 else currentTime = (Date.now() - startTimestamp) - START_DELAY;
                 const remaining = n.endTime - currentTime; 
                 const totalDuration = n.endTime - n.time;
-                const safeZone = Math.max(300, totalDuration * 0.5); 
-                
+                const safeZone = Math.max(300, totalDuration * 0.25); 
+        
                 if (remaining > safeZone) { 
+                    // 너무 빨리 뗌 (Miss)
                     n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No..", lane, "#555");
                     resetFever();
                 } else {
+                    // 성공 (Perfect)
                     n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; combo++; judgeStats.perfect++; 
                     createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff"); playSfx('hold_end');
-                    if(combo >= FEVER_LV1) checkFeverState(combo);
+            
+                    // ★ [추가] 롱노트 성공 시 피버 상태 체크
+                    checkFeverState(combo);
                 }
-                
+        
                 checkFinish();
                 if(totalHits === totalMaxHits && !finishTimer) finishTimer = setTimeout(finishGame, 1500);
             }
         }
-
         function updateGameHUD() {
             document.getElementById('g-combo').innerText = combo;
             document.getElementById('g-score').innerText = Math.round(score).toString().padStart(6, '0');
