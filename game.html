@@ -347,6 +347,10 @@
         // ★ [보안] 2. 게임 시작 시간 기록 (플레이 타임 검증용)
         let gameStartTimeLocal = 0; 
 
+        // ★ [수정 1] 일시정지 시간 계산용 변수 추가
+        let totalPausedTime = 0;      // 총 멈춰있던 시간 누적
+        let pauseStartTimestamp = 0;  // 일시정지 누른 순간의 시간
+
         const FEVER_LV1 = 50;  
         const FEVER_LV2 = 100;
         const FEVER_LV3 = 250; 
@@ -569,9 +573,11 @@
             gameState = 'COUNTDOWN';
             startTimestamp = Date.now(); 
             audio.currentTime = 0;
-            
-            // ★ [보안] 게임 시작 시간 기록
+
+            // ★ 변수 초기화 (반드시 추가!)
             gameStartTimeLocal = Date.now(); 
+            totalPausedTime = 0; 
+            pauseStartTimestamp = 0;
 
             gameLoop();
         }
@@ -588,6 +594,7 @@
         function togglePause() {
             if (gameFinished) return;
             if (isResuming) {
+                // 카운트다운 중 다시 일시정지 누름 -> 그냥 메뉴 유지
                 clearInterval(countdownTimer);
                 isResuming = false;
                 countdownEl.style.display = 'none';
@@ -597,13 +604,21 @@
             }
 
             if (!isPaused) {
+                // ★ [PAUSE 진입] 멈춘 시간 기록 시작
                 isPaused = true;
                 pauseTime = audio.currentTime;
+                pauseStartTimestamp = Date.now(); // 현재 시간 도장 쾅!
+                
                 audio.pause();
                 if(useVideoBga) bgaVideo.pause();
                 playSfx('menu_open'); 
                 pauseMenu.style.display = 'flex';
             } else {
+                // ★ [RESUME] 다시 시작할 때, 지금까지 멈춰있던 시간을 누적
+                if (pauseStartTimestamp > 0) {
+                    totalPausedTime += (Date.now() - pauseStartTimestamp);
+                    pauseStartTimestamp = 0; // 초기화
+                }
                 startResumeCountdown();
             }
         }
@@ -1089,33 +1104,36 @@
         async function showResult() {
             try {
                 // ============================================================
-                // 🛡️ [보안 1단계] 플레이 시간 검증 (기준 대폭 완화)
+                // 🛡️ [보안 1단계] 순수 플레이 시간 검증 (Net Play Time Check)
                 // ============================================================
                 const currentTime = Date.now();
-                const playDuration = currentTime - gameStartTimeLocal; // 유저가 실제로 게임 켜놓은 시간 (ms)
                 
-                // 오디오 길이가 로드되지 않았으면 기본 60초로 가정 (에러 방지)
-                const songDurationMs = (audio.duration && audio.duration > 0) ? audio.duration * 1000 : 60000;
+                // 전체 경과 시간에서 '일시정지했던 시간(totalPausedTime)'을 뺍니다.
+                const netPlayTime = (currentTime - gameStartTimeLocal) - totalPausedTime;
                 
-                // ★ [수정] 기준을 80% -> 30%로 대폭 낮춤
-                // 해커의 '순간 클리어'만 막으면 됩니다. 정상 플레이어는 절대 건드리지 않게 설정.
-                const minRequiredTime = songDurationMs * 0.3; 
+                // 오디오 길이 가져오기 (로드 실패나 버그 대비 기본값 60초 설정)
+                let songDurationMs = (audio.duration && Number.isFinite(audio.duration) && audio.duration > 0) 
+                                     ? audio.duration * 1000 : 60000;
+                
+                // 검증 기준: 곡 길이의 30% 이상은 실제로 플레이해야 인정
+                // (일시정지로 시간을 아무리 끌어도 netPlayTime은 늘어나지 않음)
+                const minRequiredTime = songDurationMs * 0.3;
 
-                // 디버깅용 로그 (F12 콘솔에서 확인 가능)
-                console.log(`🛡️ [보안 점검] 실제 플레이: ${Math.round(playDuration/1000)}초 / 최소 요구: ${Math.round(minRequiredTime/1000)}초`);
+                // 디버깅용 로그 출력 (F12 콘솔에서 확인 가능)
+                console.log(`🛡️ [보안 점검] 순수 플레이: ${Math.round(netPlayTime/1000)}초 / 최소 요구: ${Math.round(minRequiredTime/1000)}초 / 누적 일시정지: ${Math.round(totalPausedTime/1000)}초`);
 
-                // 10초 미만으로 끝났거나(초고속), 곡 길이의 30%도 안 했는데 끝났다면? -> 차단
-                if (playDuration < 10000 || playDuration < minRequiredTime) { 
-                    // 단, 개발자 테스트 중일 수 있으니 '피버 모드' 등 특정 상황은 예외 처리 가능 (지금은 생략)
-                    console.warn(`🚨 Security Alert: Too fast!`);
-                    alert(`비정상적인 플레이가 감지되었습니다.\n(플레이 시간이 너무 짧습니다: ${Math.round(playDuration/1000)}초)`);
+                // 10초 미만 초고속 클리어거나, 기준치 미달이면 차단 (피버 모드 테스트 중일 땐 예외 처리 가능)
+                if (netPlayTime < 10000 || (netPlayTime < minRequiredTime && !isFever)) { 
+                    console.warn(`🚨 Security Alert: Play time too short!`);
+                    alert(`비정상적인 플레이가 감지되었습니다.\n(순수 플레이 시간 부족)`);
                     location.href = 'index.html';
                     return;
                 }
 
                 // ============================================================
-                // 🛡️ [보안 2단계] 점수 무결성 검증
+                // 🛡️ [보안 2단계] 점수 무결성 검증 (Score Math Check)
                 // ============================================================
+                // 메모리상의 'score' 변수만 조작했는지 확인하기 위해 판정 개수로 재계산
                 const calcScore = Math.round(
                     (judgeStats.perfect * scorePerHit * 1.0) +
                     (judgeStats.great * scorePerHit * 0.9) +
@@ -1123,9 +1141,10 @@
                     (judgeStats.oh * scorePerHit * 0.1)
                 );
 
+                // 오차 범위(200점)를 넘어가면 조작으로 간주
                 if (Math.abs(score - calcScore) > 200) {
-                    console.warn(`🚨 Security Alert: Score mismatch.`);
-                    alert("데이터 오류가 발생했습니다. (점수 검증 실패)");
+                    console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, Var: ${score}`);
+                    alert("데이터 무결성 오류가 발생했습니다. (Score Mismatch)");
                     location.href = 'index.html'; 
                     return;
                 }
@@ -1133,18 +1152,27 @@
                 // ============================================================
                 // 🛡️ [보안 3단계] 데이터 서명 (Signature)
                 // ============================================================
+                // 서버의 .env 파일에 있는 SECRET_SALT와 반드시 일치해야 합니다!
                 const SECRET_SALT = "WebBeatSecureSalt"; 
+                
+                // 서명 생성: (점수 + 비밀키 + 유저ID)를 섞어서 암호 문자열 생성
                 const rawSignature = Math.round(score) + SECRET_SALT + (userProfile ? userProfile.sub : "");
-                const signatureToken = btoa(rawSignature); 
+                const signatureToken = btoa(rawSignature); // Base64 인코딩
 
-                // --- [UI 및 데이터 전송] ---
+                // ------------------------------------------------------------
+                // [기존 로직] 결과 화면 표시 및 데이터 전송
+                // ------------------------------------------------------------
                 const SERVER_BASE = SERVER_URL.replace('/api/score', '');
                 finishEffect.innerHTML = "";
-                let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
+                
+                let finalRate = 0; 
+                if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
+                // XP 계산
                 let gainedXp = Math.floor(score / 5000); 
                 if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
 
+                // 레벨업 처리
                 let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
                 let currentXp = parseInt(localStorage.getItem('wb_user_xp') || "0");
 
@@ -1154,13 +1182,20 @@
                 localStorage.setItem('wb_user_lv', currentLv);
                 localStorage.setItem('wb_user_xp', currentXp);
 
-                let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
+                // 랭크 계산
+                let rank = "F"; 
+                if(finalRate >= 95) rank = "S"; 
+                else if(finalRate >= 90) rank = "A"; 
+                else if(finalRate >= 80) rank = "B"; 
+                else if(finalRate >= 70) rank = "C";
+                
                 const finalScore = Math.round(score).toString().padStart(6, '0');
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 const songParam = urlParams.get('song');
                 const diffParam = urlParams.get('diff');
 
+                // 로컬 스토리지에 최고 기록 저장
                 if (songParam && diffParam) {
                     const scoreKey = `wb_score_${songParam}_${diffParam}`;
                     const badgeKey = `wb_badge_${songParam}_${diffParam}`;
@@ -1174,6 +1209,7 @@
                     }
                 }
                 
+                // ★ 서버로 점수 전송 (보안 토큰 포함)
                 if (songParam && diffParam && userProfile) { 
                     try {
                         await fetch(`${SERVER_BASE}/api/score`, {
@@ -1185,10 +1221,12 @@
                                 diff: diffParam, 
                                 score: Math.round(score), 
                                 level: currentLv,
+                                // [보안 데이터 전송]
                                 signature: signatureToken,
-                                playTime: playDuration
+                                playTime: netPlayTime // 순수 플레이 시간 전송
                             })
                         });
+                        // 유저 정보 업데이트
                         await fetch(`${SERVER_BASE}/api/user/update`, {
                             method: "POST", headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ userId: userProfile.sub, level: currentLv, xp: currentXp })
@@ -1196,6 +1234,7 @@
                     } catch (err) { console.error("서버 전송 중 에러:", err); }
                 }
 
+                // 랭킹 로딩
                 let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
                 try {
                     const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
@@ -1212,6 +1251,7 @@
                     } else { rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>"; }
                 } catch(e) { console.warn("Ranking Load Fail", e); }
 
+                // 배지 HTML 생성
                 let badgeHtml = "";
                 if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
                 else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
@@ -1219,6 +1259,7 @@
                 const songName = decodeURIComponent(songParam);
                 const diffName = diffParam.toUpperCase();
 
+                // 결과 화면 렌더링
                 resultOverlay.innerHTML = `
                     <div style="text-align:center; margin-bottom:20px;">
                         <div class="res-song-title">${songName}</div>
