@@ -484,7 +484,7 @@
                 speedEvents = data.speedEvents;
                 // 0ms 이벤트가 없으면 기본 1.0배속을 강제로 넣어서 계산 오류 방지
                 if (!speedEvents.some(e => e.time === 0)) {
-                    peedEvents.push({ time: 0, mult: 1.0 }); 
+                    speedEvents.push({ time: 0, mult: 1.0 }); 
                 }
             } else {
                 speedEvents = [{ time: 0, mult: 1.0 }];
