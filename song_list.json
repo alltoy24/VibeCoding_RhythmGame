@@ -22,5 +22,11 @@
     "title": "Sudden Acceleration Of Empty",
     "artist": "Alltoy24",
     "charts": ["hard_14.json", "troll_17.json"]
+  },
+  {
+    "folder": "BreakGlassDayDream",
+    "title": "Break Glass Daydream",
+    "artist": "Alltoy24",
+    "charts": ["troll_15.json"]
   }
 ]
