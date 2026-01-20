@@ -15,7 +15,7 @@
     "folder": "SystemOverload",
     "title": "System Overload",
     "artist": "Alltoy24",
-    "charts": ["troll_16.json"]
+    "charts": ["normal_5.json", "troll_16.json"]
   },
   {
     "folder": "SuddenAccelerationOfEmpty",
