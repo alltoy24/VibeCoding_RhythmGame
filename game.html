@@ -896,7 +896,9 @@
             drawParticles(); drawGameFX(); drawHitErrorBar();
         }
 
-        const KEY_MAP = ['d', 'f', 'j', 'k'];
+        // 저장된 키가 있으면 쓰고, 없으면 기본값 사용
+        let KEY_MAP = JSON.parse(localStorage.getItem('wb_key_layout')) || ['d', 'f', 'j', 'k'];
+        KEY_MAP = KEY_MAP.map(k => k.toLowerCase()); // 소문자로 통일
         
         window.addEventListener('keydown', e => {
             if(gameFinished) return;
