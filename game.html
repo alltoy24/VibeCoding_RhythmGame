@@ -173,19 +173,24 @@
         <div id="game-canvas-container">
             <canvas id="gameCanvas" class="game"></canvas>
             <div id="finish-effect"></div>
-            <div id="game-canvas-container">
-                <canvas id="gameCanvas" class="game"></canvas>
-                <div id="finish-effect"></div>
-                
-                <div id="guide-message"></div>
+            <div id="guide-message"></div>
 
-                <div id="game-hud">
             <div id="game-hud">
-                <div class="hud-item" style="text-align:left"><span class="hud-sub">RATE</span><br><span id="g-rate" class="hud-text">100.00%</span></div>
-                <div class="hud-item" style="text-align:center"><span class="hud-sub">SCORE</span><br><span id="g-score" class="hud-text">000000</span></div>
-                <div class="hud-item" style="text-align:right"><span class="hud-sub">COMBO</span><br><span id="g-combo" class="hud-text">0</span></div>
+                <div class="hud-item" style="text-align:left">
+                    <span class="hud-sub">RATE</span><br>
+                    <span id="g-rate" class="hud-text">100.00%</span>
+                </div>
+                <div class="hud-item" style="text-align:center">
+                    <span class="hud-sub">SCORE</span><br>
+                    <span id="g-score" class="hud-text">000000</span>
+                </div>
+                <div class="hud-item" style="text-align:right">
+                    <span class="hud-sub">COMBO</span><br>
+                    <span id="g-combo" class="hud-text">0</span>
+                </div>
             </div>
             <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
+            <div id="auto-indicator"></div> <div id="result-overlay" class="overlay-screen"></div>
         </div>
 
         <div id="warn-right" class="side-warn-col">
@@ -1168,21 +1173,21 @@
         async function showResult() {
             try {
                 // ============================================================
-                // 🛡️ [보안 1단계] 플레이 시간 검증 (Time Integrity Check)
+                // 🛡️ [보안 1단계] 플레이 시간 검증 (수정됨)
                 // ============================================================
                 const currentTime = Date.now();
-                const playDuration = currentTime - gameStartTimeLocal; // 실제 플레이한 시간 (ms)
+                // 순수 플레이 시간 계산 (일시정지 시간 고려해야 정확하지만, 약식으로는 아래가 안전)
+                const playDuration = currentTime - gameStartTimeLocal; 
                 
-                // 곡의 실제 길이 (초 단위) -> ms 변환
-                // audio.duration이 로드되지 않았을 경우를 대비해 최소 10초로 설정
-                const songDurationMs = (audio.duration && audio.duration > 0) ? audio.duration * 1000 : 10000;
-                
-                // "최소 플레이 시간" 기준: 곡 길이의 80% 이상은 플레이해야 인정 (스킵/배속 고려)
-                // 만약 곡이 3분인데 5초 만에 끝났다? -> 해킹
-                if (playDuration < (songDurationMs * 0.8) && !isFever) { 
-                    // (피버 모드 변수 등은 예시이며, 실제로는 단순 시간 비교가 가장 확실함)
-                    console.warn(`🚨 Security Alert: Play time too short. (${playDuration}ms / ${songDurationMs}ms)`);
-                    alert("비정상적인 플레이가 감지되었습니다. (플레이 시간 미달)");
+                // [수정] 오디오 전체 길이 대신 '마지막 노트 시간'을 기준으로 검사
+                // (노트가 없는 뒷부분 여백 때문에 오해하는 것을 방지)
+                // START_DELAY(2000ms)가 포함되어 있으므로 여유 있게 0.5(50%) 이상이면 인정
+                // 즉, 스피드핵으로 2배속 이상 돌리지 않는 한 안전함.
+                const minPlayTime = lastNoteEndTime * 0.5; 
+
+                if (playDuration < minPlayTime && !isFever) { 
+                    console.warn(`🚨 Security Alert: Play time too short. (${playDuration}ms / Ref: ${minPlayTime}ms)`);
+                    alert("비정상적인 플레이가 감지되었습니다. (Time Logic)");
                     location.href = 'index.html';
                     return;
                 }
