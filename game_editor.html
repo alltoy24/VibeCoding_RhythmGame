@@ -2,10 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Ultimate V17)</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <title>WEB BEAT : EDITOR (Ultimate V19 - Sync Fix)</title>
     <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; }
+        :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; --msg-color: #d084ff; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
         
         #sidebar { 
@@ -36,7 +35,7 @@
         #editor-view { flex: 1; display: flex; flex-direction: column; position: relative; }
         #editor-container { flex: 1; overflow-y: scroll; background: #0a0a0a; display: flex; justify-content: center; position: relative; }
         #canvas-layer { position: relative; width: 400px; background: transparent; }
-        #gridCanvas { position: sticky; top: 0; display: block; background: #000; box-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        #gridCanvas { position: sticky; top: 0; display: block; background: #000; box-shadow: 0 0 30px rgba(0,0,0,0.5); cursor: crosshair; }
         #play-head { position: absolute; left: 0; width: 100%; height: 2px; background: #ff0055; z-index: 5; display: none; pointer-events: none; box-shadow: 0 0 10px #ff0055; will-change: transform; }
         .lane-header { display: flex; width: 400px; margin: 0 auto; background: #222; font-weight: bold; font-size: 12px; text-align: center; border-bottom: 2px solid #444; }
         .lane-header div { flex: 1; padding: 8px 0; border-right: 1px solid #333; color: #888; }
@@ -54,6 +53,16 @@
         #auto-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Impact'; font-size: 80px; color: rgba(123, 31, 162, 0.3); pointer-events: none; display: none; z-index: 55; }
         #finish-effect { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; pointer-events: none; z-index: 80; }
 
+        #guide-message {
+            position: absolute; top: 35%; left: 50%; transform: translateX(-50%);
+            width: 100%; text-align: center; pointer-events: none; z-index: 70;
+            font-family: 'Impact', sans-serif; font-size: 48px; color: #fff;
+            text-shadow: 0 0 20px var(--msg-color), 0 0 40px var(--msg-color);
+            opacity: 0; transition: opacity 0.2s, transform 0.2s;
+            white-space: nowrap;
+        }
+        .msg-active { opacity: 1 !important; transform: translateX(-50%) scale(1.1) !important; }
+
         .side-warn-col { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; background: transparent; }
         .chevron { width: 60px; height: 60px; border-top: 12px solid currentColor; border-right: 12px solid currentColor; transform: rotate(-45deg); margin: 20px 0; }
         .warn-up { opacity: 1; } .warn-up .chevron { color: #ff0055; filter: drop-shadow(0 0 20px #ff0055); animation: chevUp 0.3s infinite; } .warn-up .warn-label { color: #ff0055; text-shadow: 0 0 20px #ff0055; }
@@ -64,7 +73,6 @@
 
         #test-controls { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 400px; padding: 0; background: rgba(20, 20, 20, 0.95); border: 1px solid #444; border-radius: 8px; z-index: 200; display: none; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.8); overflow: hidden; }
         #drag-handle { width: 100%; height: 25px; background: linear-gradient(90deg, #333, #444); cursor: grab; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid #555; }
-        #drag-handle span { width: 40px; height: 4px; background: #888; border-radius: 2px; }
         .ctrl-body { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
         #test-controls input[type=range] { width: 100%; height: 5px; accent-color: #00e5ff; cursor: pointer; }
         .ctrl-row { display: flex; justify-content: space-between; align-items: center; }
@@ -81,6 +89,8 @@
         #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
         .loading-text { font-family: 'Impact'; font-size: 40px; margin-bottom: 20px; animation: blink 1s infinite; }
         .btn-start-game { padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ff0055; color: white; border: none; border-radius: 50px; cursor: pointer; display: none; }
+        
+        .mode-active { border: 2px solid #fff !important; filter: brightness(1.2); }
     </style>
 </head>
 <body>
@@ -93,7 +103,7 @@
     <div id="sidebar">
         <button onclick="location.href='index.html'" style="width:100%; background:#333; margin-bottom:10px; color:#aaa; font-size:11px;">🏠 GO TO SELECT</button>
 
-        <h2>🎹 EDITOR v17.0</h2>
+        <h2>🎹 EDITOR v19.0</h2>
         <div class="control-group">
             <div class="group-title">1. Files</div>
             <label class="file-label" for="audioFile">🎵 Load Audio (MP3)</label>
@@ -101,6 +111,7 @@
             <label class="file-label" for="mapJsonFile" style="margin-top:5px;">📂 Load Map (JSON)</label>
             <input type="file" id="mapJsonFile" accept=".json">
         </div>
+        
         <div class="control-group">
             <div class="group-title">2. Map Settings</div>
             <div class="row">
@@ -120,6 +131,7 @@
                 <input type="number" id="offset" value="0" placeholder="Offset (ms)">
             </div>
         </div>
+
         <div class="control-group">
             <div class="group-title">3. Edit View</div>
             <div class="row"><span>Zoom:</span><input type="range" id="zoom" min="200" max="1000" step="50" value="400"></div>
@@ -127,17 +139,33 @@
             <button onclick="addMeasures(4)" style="width:100%; margin-top:5px;">+ Add 4 Bars</button>
         </div>
 
-        <div class="control-group" style="border-color: #ffd700;">
-            <div class="group-title" style="color:#ffd700;">⚡ Speed Trick</div>
-            <div class="row">
-                <span>Mult:</span>
-                <input type="number" id="speed-mult-input" value="2.0" step="0.1" style="width:60px; text-align:center;">
-                <span style="font-size:10px;">x</span>
-            </div>
-            <button id="btn-toggle-speed" onclick="toggleSpeedEditMode()" style="width:100%; margin-top:5px; background:#444; border:1px solid #ffd700; color:#ffd700;">
-                OFF : NOTE MODE
+        <div class="control-group">
+            <div class="group-title">4. Edit Modes</div>
+            
+            <button id="btn-mode-note" class="mode-active" onclick="setEditMode('NOTE')" style="width:100%; margin-bottom:5px; background:#444; color:#fff;">
+                🎹 NOTE MODE
             </button>
-            <div style="font-size:10px; color:#888; margin-top:3px;">* Click Grid to Set Speed</div>
+
+            <div style="border:1px solid #ffd700; padding:5px; border-radius:4px; margin-bottom:5px;">
+                <div class="row" style="margin-bottom:3px;">
+                    <span style="color:#ffd700; font-size:11px; font-weight:bold;">⚡ SPEED</span>
+                    <input type="number" id="speed-mult-input" value="2.0" step="0.1" style="width:50px; text-align:center;">
+                </div>
+                <button id="btn-mode-speed" onclick="setEditMode('SPEED')" style="width:100%; background:#444; color:#ffd700;">
+                    SET SPEED TRICK
+                </button>
+            </div>
+
+            <div style="border:1px solid #d084ff; padding:5px; border-radius:4px;">
+                <div class="row" style="margin-bottom:3px;">
+                    <span style="color:#d084ff; font-size:11px; font-weight:bold;">💬 MSG</span>
+                    <input type="text" id="msg-text-input" value="WATCH OUT!" style="width:100%;" placeholder="Message text...">
+                </div>
+                <button id="btn-mode-msg" onclick="setEditMode('MSG')" style="width:100%; background:#444; color:#d084ff;">
+                    SET GUIDE MESSAGE
+                </button>
+            </div>
+            <div style="font-size:10px; color:#888; margin-top:5px; text-align:center;">* Click Grid to Place / Drag for Duration</div>
         </div>
 
         <hr style="width:100%; border-color:#333; margin: 5px 0;">
@@ -147,7 +175,7 @@
             <button id="btn-stop">⏹ STOP</button>
         </div>
         <div class="control-group">
-            <div class="group-title">4. Test Play</div>
+            <div class="group-title">5. Test Play</div>
             <div class="row"><span>Speed:</span><input type="range" id="test-speed" min="1" max="20" step="0.5" value="5.0"><span id="speed-val" class="val-label">x5.0</span></div>
             
             <label class="checkbox-label" style="margin-top:5px;">
@@ -181,6 +209,9 @@
         <div id="game-canvas-container">
             <canvas id="gameCanvas" class="game"></canvas>
             <div id="finish-effect"></div>
+            
+            <div id="guide-message"></div>
+
             <div id="game-hud">
                 <div class="hud-item" style="text-align:left"><span class="hud-sub">RATE</span><br><span id="g-rate" class="hud-text">100%</span></div>
                 <div class="hud-item" style="text-align:center"><span class="hud-sub">SCORE</span><br><span id="g-score" class="hud-text">000000</span></div>
@@ -265,6 +296,7 @@
         let beatNum = 4, beatDenom = 4;
         let measures = []; 
         let speedEvents = []; 
+        let msgEvents = []; 
         let measureHeight = 400; 
         
         const BASE_RES = 192; 
@@ -281,9 +313,13 @@
         const offsetInput = document.getElementById('offset');
         const bpmInput = document.getElementById('bpm');
 
-        let isSpeedEditMode = false;
+        let editMode = 'NOTE'; 
         const speedMultInput = document.getElementById('speed-mult-input');
-        const btnToggleSpeed = document.getElementById('btn-toggle-speed');
+        const msgTextInput = document.getElementById('msg-text-input');
+        
+        const btnModeNote = document.getElementById('btn-mode-note');
+        const btnModeSpeed = document.getElementById('btn-mode-speed');
+        const btnModeMsg = document.getElementById('btn-mode-msg');
 
         for(let i=0; i<50; i++) measures.push({index: i, notes: []});
         resizeEditor(); drawGrid();
@@ -299,6 +335,7 @@
         const autoIndicator = document.getElementById('auto-indicator'); 
         const recBtn = document.getElementById('btn-record');
         const finishEffect = document.getElementById('finish-effect');
+        const guideMsgEl = document.getElementById('guide-message');
         
         const warnLeft = document.getElementById('warn-left');
         const warnRight = document.getElementById('warn-right');
@@ -343,17 +380,14 @@
             loadGameData(songParam, diffParam);
         }
 
-        function toggleSpeedEditMode() {
-            isSpeedEditMode = !isSpeedEditMode;
-            if(isSpeedEditMode) {
-                btnToggleSpeed.innerText = "ON : SPEED MODE ⚡";
-                btnToggleSpeed.style.background = "#ffd700";
-                btnToggleSpeed.style.color = "#000";
-            } else {
-                btnToggleSpeed.innerText = "OFF : NOTE MODE";
-                btnToggleSpeed.style.background = "#444";
-                btnToggleSpeed.style.color = "#ffd700";
-            }
+        function setEditMode(mode) {
+            editMode = mode;
+            btnModeNote.classList.remove('mode-active');
+            btnModeSpeed.classList.remove('mode-active');
+            btnModeMsg.classList.remove('mode-active');
+            if(mode === 'NOTE') btnModeNote.classList.add('mode-active');
+            if(mode === 'SPEED') btnModeSpeed.classList.add('mode-active');
+            if(mode === 'MSG') btnModeMsg.classList.add('mode-active');
         }
 
         async function loadGameData(song, diff) {
@@ -389,10 +423,8 @@
             if(data.beat) { beatNum = data.beat; document.getElementById('beat-num').value = beatNum; }
             if(data.beatDenom) { beatDenom = data.beatDenom; document.getElementById('beat-denom').value = beatDenom; } 
             
-            // ★ [FIX] 정확한 박자 계산
             const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
 
-            // ★ [FIX] 불러온 파일의 변속 이벤트에 좌표가 없으면 역산
             if(data.speedEvents) {
                 speedEvents = data.speedEvents.map(ev => {
                     if (ev.measureIdx === undefined) {
@@ -403,6 +435,17 @@
                     return ev;
                 });
             } else speedEvents = [];
+
+            if(data.msgEvents) {
+                msgEvents = data.msgEvents.map(ev => {
+                    if (ev.measureIdx === undefined) {
+                        const mIdx = Math.floor(ev.time / msPerMeasure);
+                        const p = ((ev.time % msPerMeasure) / msPerMeasure) * BASE_RES;
+                        return { ...ev, measureIdx: mIdx, pos: Math.round(p) };
+                    }
+                    return ev;
+                });
+            } else msgEvents = [];
 
             measures = []; 
             if(data.measures) {
@@ -427,7 +470,7 @@
             startTestMode(false); 
         }
 
-        let dragNote = null;
+        let dragTarget = null; 
         let isDragging = false;
         let startY = 0;
 
@@ -468,19 +511,23 @@
         speedSlider.addEventListener('input', e => { baseNoteSpeed = parseFloat(e.target.value); speedVal.innerText = "x" + baseNoteSpeed.toFixed(1); });
 
         document.getElementById('btn-export').addEventListener('click', () => { 
-            // ★ [중요] 내보내기 시 변속 이벤트를 좌표 기반으로 재계산하여 저장
             const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+            
             const finalSpeedEvents = speedEvents.map(ev => ({
                 time: Math.round((ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure),
-                mult: ev.mult,
-                measureIdx: ev.measureIdx,
-                pos: ev.pos
+                mult: ev.mult, measureIdx: ev.measureIdx, pos: ev.pos
+            }));
+
+            const finalMsgEvents = msgEvents.map(ev => ({
+                time: Math.round((ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure),
+                len: ev.len, text: ev.text, measureIdx: ev.measureIdx, pos: ev.pos
             }));
 
             const data = { 
                 title: "Custom Chart", 
                 bpm, offset, beat: beatNum, beatDenom: beatDenom, 
                 speedEvents: finalSpeedEvents,
+                msgEvents: finalMsgEvents,
                 measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES })) 
             }; 
             const a = document.createElement('a'); 
@@ -508,16 +555,33 @@
             const pos192 = Math.round(snapIdx * (BASE_RES / split));
             if (pos192 >= BASE_RES) return; 
 
-            if (isSpeedEditMode) {
-                // ★ [FIX] 정확한 삭제 판정 (오차 10)
+            if (editMode === 'SPEED') {
                 const existIdx = speedEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
                 if(existIdx !== -1) {
                     speedEvents.splice(existIdx, 1);
                 } else {
                     const mult = parseFloat(speedMultInput.value);
-                    // 좌표만 저장하고, 시간은 startTestMode에서 계산
                     speedEvents.push({ time: 0, mult: mult, measureIdx: measureIdx, pos: pos192 });
                     speedEvents.sort((a,b) => (a.measureIdx - b.measureIdx) || (a.pos - b.pos)); 
+                }
+                drawGrid();
+                return;
+            }
+
+            if (editMode === 'MSG') {
+                const existIdx = msgEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
+                if (existIdx !== -1) {
+                    dragTarget = msgEvents[existIdx];
+                    isDragging = true;
+                    startY = (measureIdx * measureHeight) + (dragTarget.pos / BASE_RES) * measureHeight;
+                } else {
+                    const text = msgTextInput.value || "MESSAGE";
+                    const newMsg = { time: 0, measureIdx: measureIdx, pos: pos192, len: 0, text: text };
+                    msgEvents.push(newMsg);
+                    msgEvents.sort((a,b) => (a.measureIdx - b.measureIdx) || (a.pos - b.pos));
+                    dragTarget = newMsg;
+                    isDragging = true;
+                    startY = absoluteY;
                 }
                 drawGrid();
                 return;
@@ -528,24 +592,24 @@
 
             if(existingIdx === -1) {
                 const newNote = { lane, pos: pos192, len: 0 };
-                m.notes.push(newNote); dragNote = newNote; isDragging = true; startY = absoluteY; playSfx('hit'); 
+                m.notes.push(newNote); dragTarget = newNote; isDragging = true; startY = absoluteY; playSfx('hit'); 
             } else {
-                dragNote = m.notes[existingIdx]; isDragging = true;
-                startY = (measureIdx * measureHeight) + (dragNote.pos / BASE_RES) * measureHeight;
+                dragTarget = m.notes[existingIdx]; isDragging = true;
+                startY = (measureIdx * measureHeight) + (dragTarget.pos / BASE_RES) * measureHeight;
             }
             drawGrid();
         });
 
         window.addEventListener('mousemove', e => {
-            if(!isDragging || !dragNote) return;
+            if(!isDragging || !dragTarget) return;
             const rect = gridCanvas.getBoundingClientRect();
             const currentAbsY = (e.clientY - rect.top) + editorContainer.scrollTop;
             const distPx = Math.max(0, currentAbsY - startY);
-            dragNote.len = Math.round((distPx / measureHeight) * BASE_RES);
+            dragTarget.len = Math.round((distPx / measureHeight) * BASE_RES);
             drawGrid();
         });
 
-        window.addEventListener('mouseup', () => { isDragging = false; dragNote = null; });
+        window.addEventListener('mouseup', () => { isDragging = false; dragTarget = null; });
 
         gridCanvas.addEventListener('contextmenu', e => {
             e.preventDefault();
@@ -557,18 +621,22 @@
             const measureIdx = Math.floor(absoluteY / measureHeight);
             if(measureIdx >= measures.length) return;
             
-            const m = measures[measureIdx];
             const split = parseInt(splitInput.value) || 16;
             const relativeY = (absoluteY % measureHeight) / measureHeight;
             const pos192 = Math.round(Math.round(relativeY * split) * (BASE_RES / split));
             
-            const idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5);
-            if(idx !== -1) { m.notes.splice(idx, 1); drawGrid(); return; }
-            
-            if(isSpeedEditMode) {
-                // ★ [FIX] 우클릭 삭제도 정확하게
+            if(editMode === 'SPEED') {
                 const evIdx = speedEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
                 if(evIdx !== -1) speedEvents.splice(evIdx, 1);
+            } 
+            else if(editMode === 'MSG') {
+                const msgIdx = msgEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
+                if(msgIdx !== -1) msgEvents.splice(msgIdx, 1);
+            }
+            else { 
+                const m = measures[measureIdx];
+                const idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5);
+                if(idx !== -1) m.notes.splice(idx, 1);
             }
             drawGrid();
         });
@@ -678,10 +746,32 @@
                 });
             }
 
+            msgEvents.forEach(ev => {
+                let mIdx = ev.measureIdx;
+                let pos = ev.pos;
+                if (mIdx >= startMeasureIdx && mIdx <= endMeasureIdx) {
+                    const y = (mIdx * measureHeight) + (pos / BASE_RES) * measureHeight - scrollY;
+                    let h = 5;
+                    if(ev.len > 0) h = (ev.len / BASE_RES) * measureHeight;
+
+                    if(ev.len > 0) {
+                        gridCtx.fillStyle = "rgba(208, 132, 255, 0.3)";
+                        gridCtx.fillRect(0, y, 400, h);
+                    }
+
+                    gridCtx.strokeStyle = "#d084ff";
+                    gridCtx.lineWidth = 3;
+                    gridCtx.beginPath(); gridCtx.moveTo(0, y); gridCtx.lineTo(400, y); gridCtx.stroke();
+                    
+                    gridCtx.fillStyle = "#d084ff";
+                    gridCtx.font = "bold 14px Arial";
+                    gridCtx.fillText(`💬 ${ev.text}`, 30, y - 5);
+                }
+            });
+
             speedEvents.forEach(ev => {
                 let mIdx = ev.measureIdx;
                 let pos = ev.pos;
-                // 에디터 그리기에서는 저장된 좌표를 그대로 사용
                 if (mIdx >= startMeasureIdx && mIdx <= endMeasureIdx) {
                     const y = (mIdx * measureHeight) + (pos / BASE_RES) * measureHeight - scrollY;
                     gridCtx.strokeStyle = "#ffd700";
@@ -705,7 +795,6 @@
             rateVal.innerText = val.toFixed(2) + "x";
         });
 
-        // ★ [핵심] 변속 맵 빌드
         let speedMap = [];
         function buildSpeedMap(events) {
             speedMap = [];
@@ -737,12 +826,12 @@
         function startTestMode(auto) {
             if(!audio.src && !songParam) return alert("MP3 Missing!");
             
-            // ★ [FIX] 오프셋 계산 (중첩 방지)
-            let playOffset = 0;
-            if(!songParam) {
-                playOffset = (parseInt(offsetInput.value) || 0) + parseInt(localStorage.getItem('wb_global_offset') || 0);
-            } else {
-                playOffset = offset + parseInt(localStorage.getItem('wb_global_offset') || 0);
+            // ★ [FIX] 노트 오프셋 계산: (맵 오프셋)만 적용
+            let mapOffset = parseInt(offsetInput.value) || 0;
+            if(songParam) {
+                // 게임 플레이 시에는 저장된 글로벌 오프셋도 적용할 수 있으나, 
+                // 에디터에서는 맵 오프셋만 적용하여 순수하게 파일 상태를 확인합니다.
+                mapOffset = offset;
             }
             
             warmUpAudio(); 
@@ -770,7 +859,11 @@
                 m.notes.forEach(n => {
                     const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
                     const duration = (n.len / BASE_RES) * msPerMeasure;
-                    const noteTime = time + playOffset;
+                    
+                    // ★ [핵심] 노트 시간 = (원래 시간 + 맵 오프셋)
+                    // START_DELAY는 여기서 더하지 않습니다. gameLoop에서 기준 시간을 2000ms 뺍니다.
+                    const noteTime = time + mapOffset;
+                    
                     const noteEndTime = noteTime + duration;
                     if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
 
@@ -785,13 +878,18 @@
             gameNotes.sort((a,b) => a.time - b.time);
             scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
 
-            // ★ [FIX] 변속 이벤트를 현재 BPM 기준으로 새로 계산하여 오프셋 적용
-            // (에디터에 저장된 예전 시간이 아니라, 현재 좌표 기준 시간으로 덮어씀)
             const playSpeedEvents = speedEvents.map(ev => {
                 const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
-                return { ...ev, time: Math.round(calculatedTime + playOffset) };
+                return { ...ev, time: Math.round(calculatedTime + mapOffset) };
             });
             buildSpeedMap(playSpeedEvents);
+
+            const playMsgEvents = msgEvents.map(ev => {
+                const startTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure + mapOffset;
+                const duration = (ev.len / BASE_RES) * msPerMeasure;
+                return { ...ev, time: Math.round(startTime), endTime: Math.round(startTime + duration), text: ev.text };
+            });
+            window.activeMsgEvents = playMsgEvents; 
 
             const playLimit = Math.max(audio.duration || 0, (lastNoteEndTime / 1000) + 10);
             seekBar.max = playLimit;
@@ -801,6 +899,7 @@
 
             warnLeft.className = 'side-warn-col';
             warnRight.className = 'side-warn-col';
+            guideMsgEl.className = ''; guideMsgEl.innerText = '';
 
             stopEditPlay();
             gameView.style.display = 'flex'; 
@@ -873,6 +972,7 @@
                 }
             });
             particles = []; judgments = []; activeKeys = [false, false, false, false];
+            guideMsgEl.className = ''; guideMsgEl.innerText = '';
         }
 
         function togglePauseTest() {
@@ -901,11 +1001,15 @@
 
         const KEY_MAP = ['d', 'f', 'j', 'k'];
         window.addEventListener('keydown', e => {
+            // ★ [FIX] 입력창(input)을 쓰고 있을 땐 단축키 무시 (띄어쓰기 허용)
+            if (e.target.tagName === 'INPUT') return;
+
             if(e.code === 'Space') { 
                 e.preventDefault(); 
                 if (isGameTesting) togglePauseTest();
                 else if (!songParam) toggleEditPlay(); 
             }
+            
             if(e.code === 'Enter' && !isGameTesting && !songParam) {
                 const isAuto = document.getElementById('chk-auto').checked;
                 startTestMode(isAuto);
@@ -922,6 +1026,7 @@
             }
 
             if (isEditPlaying && isRecording && laneIdx !== -1) {
+                // ... (레코딩 로직 유지) ...
                 const currentMs = audio.currentTime * 1000;
                 const chartMs = currentMs - offset;
                 const msPerMeasure = (60 / bpm) * (4 / beatDenom) * beatNum * 1000;
@@ -988,23 +1093,16 @@
             const currentVisualY = getVisualPos(currentTime);
             const GLOBAL_SCALE = 0.1 * baseNoteSpeed; 
 
+            // 노트 그리기 (기존 로직)
             let visibleNotes = gameNotes.filter(n => !n.finished && n.endTime > currentTime - 1000 && n.time < currentTime + 5000);
-
             for(let i=0; i<visibleNotes.length; i++) {
                 let n = visibleNotes[i];
-                
                 const nPos = getVisualPos(n.time);
                 const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
-
                 const headY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
                 let tailY = headY;
-                
-                if (n.len > 0) {
-                    tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
-                }
-
+                if (n.len > 0) tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
                 if (tailY > gameCanvas.height || headY < -100) continue;
-
                 if (n.len > 0) {
                     const drawHeadY = (n.hit && !isPaused) ? HIT_LINE_Y : headY; 
                     const clippedHeadY = Math.min(gameCanvas.height, drawHeadY);
@@ -1023,6 +1121,7 @@
                 }
             }
 
+            // 변속 라인 그리기
             speedMap.forEach(ev => {
                 if(ev.time > currentTime && ev.time < currentTime + 5000) {
                     const evY = HIT_LINE_Y - (ev.vPos - currentVisualY) * GLOBAL_SCALE;
@@ -1051,7 +1150,9 @@
             const now = Date.now();
             let currentTime = -9999;
 
+            // ★ [동기화 로직]
             if (gameState === 'COUNTDOWN') {
+                // START_DELAY(2000ms) 동안은 currentTime이 음수(-2000 ~ 0)
                 currentTime = (now - startTimestamp) - START_DELAY; 
                 if (now - startTimestamp >= START_DELAY) {
                     gameState = 'WAIT_AUDIO';
@@ -1062,6 +1163,7 @@
                 if (audio.ended || audio.paused) {
                     currentTime = parseFloat(seekBar.value) * 1000;
                 } else {
+                    // ★ 음악 재생 중일 때는 오디오 시간 기준 (0초부터 시작)
                     currentTime = audio.currentTime * 1000;
                     if(!isDraggingPopup && !isPaused) {
                         seekBar.value = audio.currentTime;
@@ -1076,6 +1178,23 @@
                  finishGame();
             }
 
+            // 안내 메시지 체크
+            if(window.activeMsgEvents) {
+                const activeMsg = window.activeMsgEvents.find(ev => 
+                    currentTime >= ev.time && currentTime <= (ev.len > 0 ? ev.endTime : ev.time + 1000)
+                );
+
+                if(activeMsg) {
+                    if(guideMsgEl.innerText !== activeMsg.text) {
+                        guideMsgEl.innerText = activeMsg.text;
+                        guideMsgEl.classList.add('msg-active');
+                    }
+                } else {
+                    guideMsgEl.classList.remove('msg-active');
+                }
+            }
+
+            // 변속 경고
             const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
             let nextEvent = speedMap.find(ev => ev.time > currentTime);
             if (nextEvent && !nextEvent.warned) {
@@ -1167,25 +1286,19 @@
         function showSpeedWarning(targetMult, currentMult) {
             const left = document.getElementById('warn-left');
             const right = document.getElementById('warn-right');
-            
             left.className = 'side-warn-col';
             right.className = 'side-warn-col';
-
             const isUp = targetMult > currentMult;
             const cls = isUp ? 'warn-up' : 'warn-down';
             const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
-
             const leftLabel = left.querySelector('.warn-label');
             const rightLabel = right.querySelector('.warn-label');
-            
             if(leftLabel) leftLabel.innerHTML = label;
             if(rightLabel) rightLabel.innerHTML = label;
-
             requestAnimationFrame(() => {
                 left.classList.add(cls);
                 right.classList.add(cls);
             });
-
             setTimeout(() => {
                 left.className = 'side-warn-col';
                 right.className = 'side-warn-col';
