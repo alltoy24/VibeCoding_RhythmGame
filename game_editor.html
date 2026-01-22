@@ -273,12 +273,12 @@
             } catch (e) { console.warn(`Sound error: ${url}`); }
         }
         
-        loadSound('hit', 'sfx/hit.mp3');
-        loadSound('hold_start', 'sfx/hold_start.mp3');
-        loadSound('hold_end', 'sfx/hold_end.mp3');
-        loadSound('fc', 'sfx/full_combo.mp3');
-        loadSound('ap', 'sfx/all_perfect.mp3');
-        loadSound('glitch', 'sfx/glitch.mp3');
+        loadSound('hit', 'sfx/hit.wav');
+        loadSound('hold_start', 'sfx/hold_start.wav');
+        loadSound('hold_end', 'sfx/hold_end.wav');
+        loadSound('fc', 'sfx/full_combo.wav');
+        loadSound('ap', 'sfx/all_perfect.wav');
+        loadSound('glitch', 'sfx/glitch.wav');
 
         function playSfx(name, time = 0) {
             if (!soundBuffers[name]) return;
