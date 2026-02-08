@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>WEB BEAT : ARENA</title>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600&display=swap');
+        
+        :root {
+            --bg: #050505;
+            --accent: #ff0055;
+            --accent-glow: rgba(255, 0, 85, 0.8);
+            --glass: rgba(20, 20, 25, 0.9);
+            --text: #ffffff;
+        }
+
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; color: #fff; font-family: 'Exo 2', sans-serif; overflow: hidden; user-select: none; }
+
+        /* 배경 */
+        #bg-container { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle at center, #2e0b16 0%, #000 90%); z-index: -1; }
+        .star { position: absolute; background: #fff; border-radius: 50%; opacity: 0.3; animation: blink 3s infinite; }
+        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+
+        /* === ★ TIER STYLES (티어별 색상 정의) ★ === */
+        .tier-unranked { border-color: #888 !important; color: #888 !important; box-shadow: none !important; }
+        .tier-bronze { border-color: #cd7f32 !important; color: #cd7f32 !important; box-shadow: 0 0 10px #cd7f32 !important; }
+        .tier-silver { border-color: #e0e0e0 !important; color: #e0e0e0 !important; text-shadow: 0 0 10px #fff; box-shadow: 0 0 15px #a0c0ff !important; }
+        .tier-gold { border-color: #ffd700 !important; color: #ffd700 !important; text-shadow: 0 0 10px #ffaa00; box-shadow: 0 0 20px #ffaa00 !important; }
+        .tier-platinum { border-color: #00e5ff !important; color: #00e5ff !important; text-shadow: 0 0 10px #00e5ff; box-shadow: 0 0 25px #0099cc !important; }
+        .tier-diamond { border-color: #b388ff !important; color: #b388ff !important; text-shadow: 0 0 10px #6200ea; box-shadow: 0 0 30px #6200ea !important; }
+        .tier-master { border-color: #ff0055 !important; color: #ff0055 !important; text-shadow: 0 0 20px #ff0000; box-shadow: 0 0 40px #ff0000 !important; animation: pulse-red 2s infinite; }
+        .tier-legend {
+            border-color: #fff !important; 
+            box-shadow: 0 0 30px rgba(255,255,255,0.8) !important;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
+            background-size: 400%; -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            animation: rainbow 3s linear infinite;
+        }
+
+        @keyframes pulse-red { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+        @keyframes rainbow { 0% { background-position: 0%; } 100% { background-position: 400%; } }
+
+        /* 헤더 */
+        header { display: flex; justify-content: space-between; align-items: center; padding: 0 40px; height: 80px; border-bottom: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.6); backdrop-filter: blur(10px); }
+        .back-btn { background: transparent; border: 1px solid rgba(255,255,255,0.3); color: #fff; padding: 10px 24px; border-radius: 30px; font-family: 'Orbitron'; font-size: 14px; cursor: pointer; transition: 0.3s; }
+        .back-btn:hover { border-color: var(--accent); color: var(--accent); }
+        .page-title { font-family: 'Orbitron'; font-size: 32px; font-weight: 900; font-style: italic; }
+        .live-badge { font-size: 12px; background: var(--accent); color: #000; padding: 2px 8px; border-radius: 4px; animation: pulse 1s infinite; font-style: normal; }
+
+        /* 컨테이너 */
+        .container { display: flex; width: 100%; height: calc(100vh - 80px); padding: 40px; gap: 40px; }
+        .left-panel { flex: 1; max-width: 400px; display: flex; flex-direction: column; gap: 20px; }
+        .right-panel { flex: 2; display: flex; flex-direction: column; background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; overflow: hidden; backdrop-filter: blur(15px); }
+
+        /* 내 정보 카드 */
+        .stat-card { background: var(--glass); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 30px; text-align: center; }
+        .tier-icon { width: 120px; height: 120px; margin: 0 auto 15px; border-radius: 50%; border: 4px solid #444; display: flex; align-items: center; justify-content: center; font-family: 'Orbitron'; font-size: 50px; background: #111; transition: 0.3s; }
+        .tier-text { font-family: 'Orbitron'; font-weight: bold; font-size: 24px; margin-bottom: 5px; }
+
+        .btn-match { width: 100%; height: 120px; background: linear-gradient(135deg, #ff0055 0%, #80002a 100%); border: 1px solid var(--accent); border-radius: 16px; color: #fff; font-family: 'Orbitron'; font-size: 32px; font-weight: 900; cursor: pointer; transition: 0.3s; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .btn-match:hover { transform: translateY(-5px); box-shadow: 0 0 40px var(--accent-glow); }
+        .btn-create { background: rgba(255,255,255,0.05); border: 1px solid #444; color: #ccc; padding: 20px; border-radius: 12px; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; }
+
+        /* 리스트 */
+        .list-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; }
+        .room-list { padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .room-item { background: rgba(255,255,255,0.05); padding: 15px 20px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; border-left: 3px solid transparent; }
+        .room-item:hover { border-left-color: var(--accent); background: rgba(255,255,255,0.1); }
+        .room-item.disabled { opacity: 0.5; pointer-events: none; cursor: not-allowed; border-left-color: #555 !important; }
+        .room-status.status-play { color: #ff5555; border: 1px solid #ff5555; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+        .room-status.status-wait { color: #00e5ff; border: 1px solid #00e5ff; padding: 2px 8px; border-radius: 4px; font-size: 12px; }
+
+        /* 대기실 오버레이 */
+        #waiting-room-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, #1a050a 0%, #000 90%); z-index: 2000; flex-direction: column; align-items: center; justify-content: center; }
+        
+        .arena-container { display: flex; align-items: center; justify-content: center; gap: 80px; width: 100%; margin-bottom: 30px; }
+        .player-slot { width: 300px; height: 420px; background: rgba(0,0,0,0.6); border: 1px solid #333; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: 0.3s; position: relative; backdrop-filter: blur(10px); }
+        .player-slot.active { border-color: var(--accent); box-shadow: 0 0 40px rgba(255,0,85,0.3); }
+
+        .p-avatar { width: 140px; height: 140px; border-radius: 50%; background: #111; border: 4px solid #444; display: flex; align-items: center; justify-content: center; font-size: 60px; margin-bottom: 15px; color: #555; box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+        .p-name { font-family: 'Orbitron'; font-size: 26px; font-weight: bold; color: #fff; margin-bottom: 5px; }
+        /* ★ [추가] RP 및 티어 정보 표시 */
+        .p-detail { font-family: 'Exo 2'; font-size: 14px; color: #aaa; margin-bottom: 20px; letter-spacing: 1px; font-weight: 600; }
+        .p-status { padding: 5px 20px; border-radius: 20px; background: #333; color: #888; font-family: 'Orbitron'; font-size: 14px; font-weight: bold; }
+        .active .p-status { background: var(--accent); color: #000; }
+
+        .vs-text { font-family: 'Orbitron'; font-size: 80px; font-weight: 900; font-style: italic; color: #333; }
+        .vs-active { color: #fff; text-shadow: 0 0 30px var(--accent); animation: pulse 1s infinite; }
+
+        #song-info-panel { margin-top: 20px; text-align: center; opacity: 0; transform: translateY(30px); transition: 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #song-info-panel.visible { opacity: 1; transform: translateY(0); }
+        .song-card-inner { background: linear-gradient(135deg, #222, #111); border: 2px solid var(--accent); border-radius: 12px; padding: 20px 40px; display: inline-block; min-width: 450px; box-shadow: 0 0 40px var(--accent-glow); }
+        .song-label { font-family: 'Orbitron'; color: var(--accent); font-size: 12px; letter-spacing: 3px; margin-bottom: 5px; }
+        .song-title { font-family: 'Exo 2'; font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 5px; }
+        .song-artist { font-family: 'Exo 2'; font-size: 16px; color: #aaa; margin-bottom: 15px; }
+        
+        .diff-badge { display: inline-block; padding: 6px 18px; border-radius: 20px; font-family: 'Orbitron'; font-weight: 900; font-size: 16px; color: #fff; text-shadow: 0 2px 5px rgba(0,0,0,0.5); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .diff-normal { background: linear-gradient(90deg, #00b4db, #0083b0); }
+        .diff-hard { background: linear-gradient(90deg, #ff0055, #80002a); }
+        .diff-troll { background: linear-gradient(90deg, #00e676, #1b5e20); }
+
+        #countdown-text { font-family: 'Orbitron'; font-size: 20px; color: #666; margin-top: 30px; }
+        .countdown-active { font-size: 50px !important; color: var(--accent) !important; text-shadow: 0 0 20px var(--accent); font-weight: 900; }
+
+        #match-fx-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; align-items: center; justify-content: center; z-index: 3000; background: rgba(255, 0, 85, 0.1); opacity: 0; transition: 0.3s; }
+        .match-word { font-family: 'Orbitron'; font-size: 120px; font-weight: 900; font-style: italic; color: #fff; text-shadow: 0 0 50px var(--accent); opacity: 0; transform: scale(2); }
+        .match-anim { animation: strike 0.4s forwards; opacity: 1; }
+
+        @keyframes strike { 0% { transform: scale(3); opacity: 0; } 70% { transform: scale(0.9); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+        @keyframes pulse { 0% { opacity: 0.8; } 50% { opacity: 1; } 100% { opacity: 0.8; } }
+    </style>
+</head>
+<body>
+
+    <div id="bg-container"></div>
+
+    <header>
+        <button class="back-btn" onclick="leaveLobby()">◀ MAIN MENU</button>
+        <div class="page-title"><span class="live-badge">LIVE</span> RANKED ARENA</div>
+        <div style="width: 120px;"></div>
+    </header>
+
+    <div class="container">
+        <div class="left-panel">
+            <div class="stat-card">
+                <div class="tier-icon" id="my-tier-icon">?</div>
+                <div id="my-tier-name" class="tier-text">UNRANKED</div>
+                <div id="my-rp" style="color:#888; font-family:'Orbitron';">0 / 10000 RP</div>
+            </div>
+            <button class="btn-match" onclick="findMatch()">QUICK MATCH<span>AUTO MATCHMAKING</span></button>
+            <button class="btn-create" onclick="createRoom()">+ CREATE ROOM</button>
+        </div>
+        <div class="right-panel">
+            <div class="list-header">
+                <div class="list-title">LOBBY (<span id="room-count">0</span>)</div>
+                <button class="back-btn" onclick="requestRoomList()" style="padding: 5px 10px;">↻</button>
+            </div>
+            <div class="room-list" id="room-list-container">
+                <div style="text-align:center; padding:40px; color:#666;">CONNECTING...</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="waiting-room-overlay">
+        <div style="position:absolute; top:40px; text-align:center;">
+            <div id="room-title-disp" style="font-family:'Orbitron'; font-size:24px; color:#aaa; letter-spacing: 2px;">ROOM</div>
+            <div id="room-id-disp" style="color:#666; font-family:'Orbitron'; font-size:12px;">ID: 0000</div>
+        </div>
+
+        <div class="arena-container">
+            <div class="player-slot active" id="p1-slot">
+                <div class="p-status">HOST</div>
+                <div class="p-avatar" id="p1-avatar">?</div>
+                <div class="p-name" id="p1-name">PLAYER 1</div>
+                <div class="p-detail" id="p1-detail">LOADING...</div> </div>
+
+            <div class="vs-text" id="vs-badge">VS</div>
+
+            <div class="player-slot" id="p2-slot">
+                <div class="p-status" id="p2-status">WAITING</div>
+                <div class="p-avatar" id="p2-avatar">?</div>
+                <div class="p-name" id="p2-name">SEARCHING...</div>
+                <div class="p-detail" id="p2-detail">...</div> </div>
+        </div>
+
+        <div id="song-info-panel">
+            <div class="song-card-inner">
+                <div class="song-label">NEXT TRACK</div>
+                <div class="song-title" id="track-title">???</div>
+                <div class="song-artist" id="track-artist">???</div>
+                <div id="diff-badge" class="diff-badge" style="display:none;">NORMAL Lv.1</div>
+            </div>
+        </div>
+
+        <div id="countdown-text">WAITING FOR OPPONENT...</div>
+
+        <div style="position:absolute; bottom:40px;">
+            <button class="back-btn" onclick="leaveRoom()" style="border-color:#444; color:#888;">LEAVE ROOM</button>
+        </div>
+    </div>
+
+    <div id="match-fx-overlay">
+        <div class="match-word">MATCH FOUND!</div>
+    </div>
+    <audio id="sfx-match" src="sfx/match.mp3"></audio>
+
+    <script>
+        const socket = io("https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app", { transports: ['websocket'] });
+        const sfxMatch = document.getElementById('sfx-match');
+
+        const lobbyBgm = new Audio('BGM/lobby.mp3');
+        lobbyBgm.loop = true;
+        lobbyBgm.volume = 0.5;
+
+        window.addEventListener('load', () => {
+            lobbyBgm.play().catch(() => {
+                document.body.addEventListener('click', () => { lobbyBgm.play(); }, { once: true });
+            });
+        });
+        
+        let currentRoomId = null;
+        let myNickname = localStorage.getItem('wb_nickname') || "Guest";
+        let countdownInterval;
+
+        // 배경 별 생성
+        const bg = document.getElementById('bg-container');
+        for(let i=0; i<80; i++){
+            let d = document.createElement('div'); d.className='star';
+            d.style.width = Math.random()*3+'px'; d.style.height = d.style.width;
+            d.style.left=Math.random()*100+'%'; d.style.top=Math.random()*100+'%';
+            d.style.animationDelay=Math.random()*3+'s'; bg.appendChild(d);
+        }
+
+        window.onload = async function() {
+            updateMyProfile(); // 내 왼쪽 패널 업데이트
+            socket.on('connect', () => { requestRoomList(); });
+        };
+
+        function leaveLobby() { location.href = 'index.html'; }
+
+        // ★ [핵심] RP를 받아서 티어 정보(이름, 클래스, 아이콘)를 반환하는 공통 함수
+        function getTierInfo(rp) {
+            if (rp === undefined || rp === null) rp = 1000; // 기본값
+            
+            const tiers = [
+                { name: "LEGEND",   min: 9900, max: 10001, range: 0,    class: "tier-legend",   icon: "👑" },
+                { name: "MASTER",   min: 9000, max: 9900,  range: 900,  class: "tier-master",   icon: "👹" },
+                { name: "DIAMOND",  min: 8000, max: 9000,  range: 1000, class: "tier-diamond",  icon: "💎" },
+                { name: "PLATINUM", min: 7000, max: 8000,  range: 1000, class: "tier-platinum", icon: "💠" },
+                { name: "GOLD",     min: 5000, max: 7000,  range: 2000, class: "tier-gold",     icon: "🏆" },
+                { name: "SILVER",   min: 3000, max: 5000,  range: 2000, class: "tier-silver",   icon: "⚔️" },
+                { name: "BRONZE",   min: 1000, max: 3000,  range: 2000, class: "tier-bronze",   icon: "🛡️" },
+                { name: "UNRANKED", min: 0,    max: 1000,  range: 0,    class: "tier-unranked", icon: "❔" }
+            ];
+
+            const tier = tiers.find(t => rp >= t.min);
+            let fullName = tier.name;
+            
+            // 세부 티어 계산 (LEGEND, UNRANKED 제외)
+            if (tier.name !== "LEGEND" && tier.name !== "UNRANKED") {
+                const step = tier.range / 4;
+                const progress = rp - tier.min;
+                const divIndex = Math.floor(progress / step);
+                const romans = ["IV", "III", "II", "I"];
+                const safeIndex = Math.max(0, Math.min(3, divIndex));
+                fullName += " " + romans[safeIndex];
+            }
+
+            return { name: fullName, class: tier.class, icon: tier.icon };
+        }
+
+        function updateMyProfile() {
+            let rp = parseInt(localStorage.getItem('wb_multi_rp') || '1000'); 
+            if (rp > 10000) rp = 10000;
+            if (rp < 0) rp = 0;
+            localStorage.setItem('wb_multi_rp', rp);
+
+            const t = getTierInfo(rp);
+
+            const iconEl = document.getElementById('my-tier-icon');
+            const nameEl = document.getElementById('my-tier-name');
+            const rpEl = document.getElementById('my-rp');
+
+            iconEl.innerText = t.icon;
+            iconEl.className = "tier-icon " + t.class; 
+            nameEl.innerText = t.name; 
+            nameEl.className = "tier-text " + t.class; 
+            rpEl.innerText = `${rp} / 10000 RP`;
+        }
+
+        function requestRoomList() { socket.emit("request_room_list"); }
+
+        socket.on("update_room_list", (list) => {
+            const c = document.getElementById('room-list-container');
+            c.innerHTML = "";
+            document.getElementById('room-count').innerText = list.length;
+            
+            if(list.length === 0) { 
+                c.innerHTML = "<div style='text-align:center; color:#666; margin-top:30px; font-family:Orbitron;'>NO ACTIVE ROOMS</div>"; 
+                return; 
+            }
+
+            list.forEach(r => {
+                let d = document.createElement('div'); 
+                d.className = 'room-item';
+                let isPlaying = r.status === 'PLAYING';
+                let stClass = isPlaying ? 'status-play' : 'status-wait';
+                if (isPlaying) d.classList.add('disabled');
+
+                d.innerHTML = `
+                    <div style='display:flex; flex-direction:column;'>
+                        <div class='room-name'>${r.title}</div>
+                        <div class='room-detail'>HOST: ${r.host} (${r.pCount}/2)</div>
+                    </div>
+                    <div class='room-status ${stClass}'>${r.status}</div>
+                `;
+
+                if (!isPlaying) {
+                    d.onclick = () => {
+                        // ★ [수정] 내 현재 RP를 같이 보냄
+                        let myRP = parseInt(localStorage.getItem('wb_multi_rp') || '1000');
+                        socket.emit("join_room", { roomId: r.id, nickname: myNickname, rp: myRP });
+                    };
+                }
+                c.appendChild(d);
+            });
+        });
+
+        function findMatch() {
+            const btn = document.querySelector('.btn-match');
+            btn.innerHTML = "SEARCHING...<span style='font-size:12px;'>PLEASE WAIT</span>";
+            btn.style.background = "#222"; btn.disabled = true;
+            
+            // ★ [수정] 내 현재 RP를 같이 보냄
+            let myRP = parseInt(localStorage.getItem('wb_multi_rp') || '1000');
+            socket.emit("quick_match", { nickname: myNickname, rp: myRP });
+        }
+
+        socket.on("quick_match_found", (roomId) => {
+            socket.emit("join_room", { roomId: roomId, nickname: myNickname });
+        });
+
+        function createRoom() {
+            let t = prompt("ROOM TITLE:", myNickname + "'s Arena");
+            if(t) {
+                // ★ [수정] 내 현재 RP를 같이 보냄
+                let myRP = parseInt(localStorage.getItem('wb_multi_rp') || '1000');
+                socket.emit("create_room", { title: t, nickname: myNickname, rp: myRP });
+            }
+        }
+
+        socket.on("room_joined", (data) => {
+            currentRoomId = data.roomId;
+            updateLobbyUI(data.roomData);
+        });
+
+        socket.on("player_entered", (data) => {
+            // 새 플레이어가 들어오면 UI 갱신 (서버가 보내준 정보에 rating이 없다면 기본값 처리)
+            const p2Slot = document.getElementById('p2-slot');
+            p2Slot.classList.add('active');
+            
+            document.getElementById('p2-name').innerText = data.nickname;
+            document.getElementById('p2-status').innerText = "READY";
+            
+            // ★ [수정] 들어온 사람의 RP 정보가 data에 없으면 임시값, 있으면 표시
+            // (서버 수정이 안 된 상태라면 1000으로 가정)
+            const p2RP = data.rating || 1000; 
+            const t = getTierInfo(p2RP);
+
+            const p2Avatar = document.getElementById('p2-avatar');
+            p2Avatar.innerText = t.icon;
+            p2Avatar.className = `p-avatar ${t.class}`; // 테두리 색상 적용
+
+            document.getElementById('p2-detail').innerText = `${t.name} (${p2RP} RP)`;
+
+            playMatchEffect();
+        });
+
+        // ★ [핵심] 대기실 UI 업데이트 (P1, P2 정보 표시)
+        function updateLobbyUI(roomData) {
+            document.getElementById('waiting-room-overlay').style.display = 'flex';
+            document.getElementById('room-title-disp').innerText = roomData.title;
+            document.getElementById('room-id-disp').innerText = "ID: " + roomData.id;
+
+            // Player 1 (Host)
+            const p1 = roomData.players[0];
+            if(p1) {
+                const t1 = getTierInfo(p1.rating || 1000); // rating 없으면 1000
+                const p1Avatar = document.getElementById('p1-avatar');
+                
+                document.getElementById('p1-name').innerText = p1.nickname;
+                p1Avatar.innerText = t1.icon; // 아이콘으로 변경
+                p1Avatar.className = `p-avatar ${t1.class}`; // 클래스 추가 (색상)
+                document.getElementById('p1-detail').innerText = `${t1.name} (${p1.rating || 1000} RP)`;
+            }
+
+            // Player 2 (Guest)
+            const p2 = roomData.players[1];
+            const p2Slot = document.getElementById('p2-slot');
+            if(p2) {
+                const t2 = getTierInfo(p2.rating || 1000);
+                const p2Avatar = document.getElementById('p2-avatar');
+
+                p2Slot.classList.add('active');
+                document.getElementById('p2-name').innerText = p2.nickname;
+                document.getElementById('p2-status').innerText = "READY";
+                
+                p2Avatar.innerText = t2.icon;
+                p2Avatar.className = `p-avatar ${t2.class}`;
+                document.getElementById('p2-detail').innerText = `${t2.name} (${p2.rating || 1000} RP)`;
+                
+                if(roomData.players.length === 2) playMatchEffect();
+            } else {
+                // P2 Empty State
+                p2Slot.classList.remove('active');
+                document.getElementById('p2-name').innerText = "SEARCHING...";
+                document.getElementById('p2-status').innerText = "WAITING";
+                
+                const p2Avatar = document.getElementById('p2-avatar');
+                p2Avatar.innerText = "❔";
+                p2Avatar.className = "p-avatar"; // 기본 스타일로 초기화
+                document.getElementById('p2-detail').innerText = "...";
+                
+                document.getElementById('vs-badge').classList.remove('vs-active');
+                document.getElementById('song-info-panel').classList.remove('visible');
+                document.getElementById('countdown-text').innerText = "WAITING FOR OPPONENT...";
+                document.getElementById('countdown-text').classList.remove('countdown-active');
+            }
+        }
+
+        function playMatchEffect() {
+            sfxMatch.volume = 0.7; sfxMatch.currentTime = 0; sfxMatch.play().catch(()=>{});
+            const fx = document.getElementById('match-fx-overlay');
+            const word = fx.querySelector('.match-word');
+            fx.style.opacity = '1'; word.classList.add('match-anim');
+            document.getElementById('vs-badge').classList.add('vs-active');
+            setTimeout(() => { fx.style.opacity = '0'; word.classList.remove('match-anim'); }, 2000);
+        }
+
+        socket.on("game_start", (data) => {
+            clearInterval(countdownInterval);
+            
+            // 상대방 RP 정보 (서버에서 받음, 없으면 기본값)
+            let oppRpVal = data.opponentRP || 1000;
+
+            setTimeout(() => {
+                document.getElementById('track-title').innerText = data.songTitle;
+                document.getElementById('track-artist').innerText = data.songArtist;
+                
+                const parts = data.diffKey.split('_'); 
+                const type = parts[0].toUpperCase();
+                const lv = parts[1];
+                
+                const badge = document.getElementById('diff-badge');
+                badge.innerText = `${type} Lv.${lv}`;
+                badge.className = `diff-badge diff-${parts[0].toLowerCase()}`; 
+                badge.style.display = 'inline-block';
+
+                document.getElementById('song-info-panel').classList.add('visible'); 
+
+                let timeLeft = 5;
+                const countEl = document.getElementById('countdown-text');
+                countEl.classList.add('countdown-active');
+                
+                countdownInterval = setInterval(() => {
+                    countEl.innerText = `STARTING IN ${timeLeft}`;
+                    timeLeft--;
+                    if (timeLeft < 0) {
+                        clearInterval(countdownInterval);
+                        const params = new URLSearchParams();
+                        params.append('song', data.songFolder);
+                        params.append('diff', data.diffKey);
+                        params.append('room', currentRoomId);
+                        params.append('mode', 'multi');
+                        // ★ [중요] 상대방 RP 전달
+                        params.append('opp_rp', oppRpVal);
+                        
+                        location.href = `game_multi.html?${params.toString()}`;
+                    }
+                }, 1000);
+            }, 2500);
+        });
+
+        function leaveRoom() {
+            socket.emit("leave_room");
+            document.getElementById('waiting-room-overlay').style.display = 'none';
+            clearInterval(countdownInterval);
+            currentRoomId = null;
+            requestRoomList();
+            
+            const btn = document.querySelector('.btn-match');
+            btn.innerHTML = "QUICK MATCH<span>AUTO MATCHMAKING</span>";
+            btn.style.background = "linear-gradient(135deg, #ff0055 0%, #80002a 100%)";
+            btn.disabled = false;
+        }
+
+        socket.on("opponent_left", () => {
+            alert("OPPONENT LEFT THE GAME.");
+            const p2Slot = document.getElementById('p2-slot');
+            p2Slot.classList.remove('active');
+            
+            document.getElementById('p2-name').innerText = "SEARCHING...";
+            document.getElementById('p2-status').innerText = "WAITING";
+            document.getElementById('p2-avatar').innerText = "❔";
+            document.getElementById('p2-avatar').className = "p-avatar"; // 리셋
+            document.getElementById('p2-detail').innerText = "...";
+            
+            document.getElementById('vs-badge').classList.remove('vs-active');
+            document.getElementById('song-info-panel').classList.remove('visible');
+            document.getElementById('countdown-text').innerText = "WAITING FOR OPPONENT...";
+            document.getElementById('countdown-text').classList.remove('countdown-active');
+            clearInterval(countdownInterval);
+        });
+
+        socket.on("error_msg", (m) => { alert(m); leaveRoom(); });
+    </script>
+</body>
+</html>
