@@ -203,6 +203,7 @@
         let currentRoomId = null;
         let myNickname = localStorage.getItem('wb_nickname') || "Guest";
         let countdownInterval;
+        let isGameStarting = false;
 
         // 배경 별 생성
         const bg = document.getElementById('bg-container');
@@ -420,6 +421,7 @@
         }
 
         socket.on("game_start", (data) => {
+            isGameStarting = true; // ★ [중요] 게임 시작 중이라고 표시 (이탈 알림 무시용)
             clearInterval(countdownInterval);
             
             // 상대방 RP 정보 (서버에서 받음, 없으면 기본값)
@@ -477,6 +479,9 @@
         }
 
         socket.on("opponent_left", () => {
+            // ★ [중요] 게임이 시작돼서 페이지 넘어가는 중이면 무시!
+            if (isGameStarting) return; 
+
             alert("OPPONENT LEFT THE GAME.");
             const p2Slot = document.getElementById('p2-slot');
             p2Slot.classList.remove('active');
