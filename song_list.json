@@ -34,5 +34,11 @@
     "title": "Cataclysm",
     "artist": "Alltoy24",
     "charts": ["troll_18.json"]
+  },
+  {
+    "folder": "Checkpoint1",
+    "title": "Checkpoint:1",
+    "artist": "Alltoy24",
+    "charts": ["hard_6.json"]
   }
 ]
