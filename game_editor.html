@@ -1163,7 +1163,7 @@
                 if (audio.ended || audio.paused) {
                     currentTime = parseFloat(seekBar.value) * 1000;
                 } else {
-                    // ★ 음악 재생 중일 때는 오디오 시간 기준 (0초부터 시작)
+                    // ★ 음악 재생 중일 때 오디오 시간 기준 (0초부터 시작)
                     currentTime = audio.currentTime * 1000;
                     if(!isDraggingPopup && !isPaused) {
                         seekBar.value = audio.currentTime;
