@@ -46,5 +46,11 @@
     "title": "Puzzle VIP",
     "artist": "RetroVision",
     "charts": ["troll_15.json"]
+  },
+  {
+    "folder": "SATELLITE",
+    "title": "SATELLITE",
+    "artist": "NOMA",
+    "charts": ["normal_10.json"]
   }
 ]
