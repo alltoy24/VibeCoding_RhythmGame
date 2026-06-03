@@ -51,6 +51,6 @@
     "folder": "SATELLITE",
     "title": "SATELLITE",
     "artist": "NOMA",
-    "charts": ["normal_10.json"]
+    "charts": ["hard_10.json"]
   }
 ]
