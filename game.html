@@ -1059,7 +1059,7 @@
             else if(absDiff <= 64) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
             else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
 
-            if(rate > 10) { 
+            if(rate >= 10) { 
                 combo++; 
                 if(combo > maxCombo) maxCombo = combo; 
                 score += (rate / 100) * scorePerHit; 
@@ -1068,6 +1068,11 @@
             } else { 
                 combo = 0; 
                 resetFever(); 
+            }
+
+            if(rate == 10) {
+                combo = 0;
+                resetFever();
             }
             
             totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); 
