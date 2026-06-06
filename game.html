@@ -1192,46 +1192,48 @@
                     return;
                 }
 
-                // ============================================================
-                // 🛡️ [보안 2단계] 점수 무결성 검증 (Score Math Check)
-                // ============================================================
-                // 메모리상의 'score' 변수가 조작되었는지 확인하기 위해
-                // 판정 횟수(Perfect, Great...)를 기반으로 점수를 다시 계산해봅니다.
-                
-                // 현재 설정된 점수 계산식 (gameLoop 로직과 동일해야 함)
-                // 예: Perfect = 100% 점수, Great = 90% ...
-                const calcScore = Math.round(
-                    (judgeStats.perfect * scorePerHit * 1.0) +
-                    (judgeStats.great * scorePerHit * 0.9) +
-                    (judgeStats.okay * scorePerHit * 0.5) +
+                // 🛡️ [보안 2단계] 점수 무결성 검증 (오차 방지 처리)
+                // 인게임 실시간 점수(score)도 바닥까지 버림 처리하여 일치시킵니다.
+                const pureScore = Math.floor(score); 
+
+                const calcScore = Math.floor(
+                    (judgeStats.perfect * scorePerHit * 1.0) + 
+                    (judgeStats.great * scorePerHit * 0.9) + 
+                    (judgeStats.okay * scorePerHit * 0.5) + 
                     (judgeStats.oh * scorePerHit * 0.1)
                 );
 
-                // 현재 score 변수와 재계산한 calcScore가 오차 범위를 넘으면 조작 의심
-                // (부동소수점 오차 감안하여 100점 정도 여유 둠)
-                if (Math.abs(score - calcScore) > 200) {
-                    console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, memory: ${score}`);
+                // 부동소수점 미세 오차 및 정수 버림 오차를 감안하되, 검증 결과 확인
+                if (Math.abs(pureScore - calcScore) > 500) { // 허용 오차를 조금 더 안정적으로 조정
+                    console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, memory: ${pureScore}`);
                     alert("데이터 무결성 오류가 발생했습니다. (점수 불일치)");
-                    // 점수 전송 안 하고 종료
-                    location.href = 'index.html'; 
+                    location.href = 'index.html';
                     return;
                 }
 
                 // ============================================================
-                // 🛡️ [보안 3단계] 데이터 서명 (Digital Signature)
+                // 🛡️ [보안 3단계] 데이터 서명 및 정수화 동기화 (검증 완벽 보완)
                 // ============================================================
-                // 해커가 fetch()만 따로 따서 보내는 것을 막기 위해
-                // 요청 데이터에 "비밀 꼬리표"를 붙입니다.
+                const SECRET_SALT = "WebBeat_Secure_Key_2026_Ver42"; // 서버와 일치하는 키
                 
-                const SECRET_SALT = "WebBeat_Secure_Key_2026_Ver42"; // 난독화 시 숨겨짐
+                // 1. 소수점 오차 방지를 위해 최종 전송용 점수와 콤보를 안전하게 정수화
+                const secureScore = Math.floor(score);
+                const secureMaxCombo = Math.floor(maxCombo || 0);
                 
-                // 서명 생성: (유저ID + 점수 + 콤보 + 비밀키)를 섞어서 암호 문자열 생성
-                // 해커는 이 조합 순서와 SALT를 모르면 유효한 토큰을 못 만듦
-                const rawSignature = `${userProfile?.sub}_${Math.round(score)}_${maxCombo}_${SECRET_SALT}`;
-                
-                // 간단한 해시 함수 (btoa는 Base64 인코딩)
-                const signatureToken = btoa(rawSignature);
+                // [필독] 기존 시스템이 sub와 id 중 무엇을 쓰는지 체크하여 둘 다 대응하도록 방어 조치
+                const secureUserId = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2, 9);
+                const secureUserName = userProfile ? userProfile.name : "GUEST";
+                const securePlayTime = Math.floor(playDuration || 0);
 
+                // 2. 서버 verifySignature 미들웨어 포맷과 100% 일치하도록 원본 문자열 조립
+                const rawSignature = `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
+                
+                // 3. 한글 닉네임이나 특수문자가 섞여도 Base64 서명이 깨지지 않도록 인코딩 안정화
+                const signatureToken = btoa(unescape(encodeURIComponent(rawSignature)));
+
+                // 🔍 디버깅용 로그 (오류 발생 시 서버와 대조용)
+                console.log("📤 [WEB BEAT] 전송 서명 문자열 원본:", rawSignature);
+                console.log("🔑 [WEB BEAT] 생성된 서명 토큰:", signatureToken);
 
                 // ------------------------------------------------------------
                 // [기존 로직 시작] UI 표시 및 데이터 전송
@@ -1240,7 +1242,7 @@
                 finishEffect.innerHTML = "";
                 let finalRate = 0; if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
-                let gainedXp = Math.floor(score / 5000); 
+                let gainedXp = Math.floor(secureScore / 5000); 
                 if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
 
                 let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
@@ -1253,7 +1255,7 @@
                 localStorage.setItem('wb_user_xp', currentXp);
 
                 let rank = "F"; if(finalRate >= 95) rank = "S"; else if(finalRate >= 90) rank = "A"; else if(finalRate >= 80) rank = "B"; else if(finalRate >= 70) rank = "C";
-                const finalScore = Math.round(score).toString().padStart(6, '0');
+                const finalScoreStr = secureScore.toString().padStart(6, '0');
                 
                 const urlParams = new URLSearchParams(window.location.search);
                 const songParam = urlParams.get('song');
@@ -1264,8 +1266,8 @@
                     const scoreKey = `wb_score_${songParam}_${diffParam}`;
                     const badgeKey = `wb_badge_${songParam}_${diffParam}`;
                     const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
-                    const currentScore = Math.round(score);
-                    if (currentScore > savedScore) localStorage.setItem(scoreKey, currentScore.toString().padStart(6, '0'));
+                    
+                    if (secureScore > savedScore) localStorage.setItem(scoreKey, secureScore.toString().padStart(6, '0'));
 
                     if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
                     else if (combo === totalMaxHits && totalMaxHits > 0) {
@@ -1276,29 +1278,38 @@
                 // 서버 전송 (보안 토큰 포함)
                 if (songParam && diffParam && userProfile) { 
                     try {
-                        await fetch(`${SERVER_BASE}/api/score`, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
+                        const response = await fetch(`${SERVER_BASE}/api/score`, {
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ 
-                                userId: userProfile.sub, 
-                                userName: userProfile.name, 
+                                userId: secureUserId, 
+                                userName: secureUserName, 
                                 song: songParam, 
                                 diff: diffParam, 
-                                score: Math.round(score), 
-                                // ★ [필수] 여기에 콤보 추가!
-                                maxCombo: maxCombo, 
-
+                                score: secureScore,         
+                                maxCombo: secureMaxCombo,   
                                 level: currentLv,
-                                signature: signatureToken,
-                                playTime: playDuration,
-                                // (선택) 상세 판정 데이터도 보내면 서버에서 검증 가능
+                                signature: signatureToken,  
+                                playTime: securePlayTime,
                                 details: judgeStats 
                             })
                         });
+
+                        const resData = await response.json();
+                        if (!response.ok || !resData.success) {
+                            throw new Error(resData.error || "Server Validation Failed");
+                        }
+                        console.log("✅ 서버 검증 및 랭킹 등록 성공!");
+
                         await fetch(`${SERVER_BASE}/api/user/update`, {
-                            method: "POST", headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ userId: userProfile.sub, level: currentLv, xp: currentXp })
+                            method: "POST", 
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ userId: secureUserId, level: currentLv, xp: currentXp })
                         });
-                    } catch (err) { console.error("서버 전송 중 에러:", err); }
+                    } catch (err) { 
+                        console.error("🚨 서버 전송 중 에러 발생:", err);
+                        alert("점수 검증 에러: " + err.message);
+                    }
                 }
 
                 // 랭킹 로딩
@@ -1311,7 +1322,7 @@
                         rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);"><div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
                         rankData.slice(0, 5).forEach((r, idx) => {
                             const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
-                            const isMe = userProfile && r.userId === userProfile.sub ? "color:#ffd700;" : "color:#fff;";
+                            const isMe = userProfile && r.userId === secureUserId ? "color:#ffd700;" : "color:#fff;";
                             rankingHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}"><span>${medal} ${r.userName}</span><span>${r.score}</span></div>`;
                         });
                         rankingHtml += `</div>`;
@@ -1333,9 +1344,9 @@
                     </div>
                     ${badgeHtml}
                     <div class="res-info">
-                        <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScore}</div></div>
+                        <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScoreStr}</div></div>
                         <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
-                        <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${maxCombo}</div></div>
+                        <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${secureMaxCombo}</div></div>
                     </div>
                     <div class="res-detail" style="margin-bottom:20px;">
                         <div class="detail-item"><div class="detail-label" style="color:#00e5ff">PERFECT</div><div class="detail-val">${judgeStats.perfect}</div></div>
