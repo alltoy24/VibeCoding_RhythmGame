@@ -23,17 +23,36 @@
             overflow: hidden; user-select: none;
         }
 
-        /* --- 우주 배경 효과 --- */
         #bg-container {
-            position: absolute; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #1b0b2e 0%, #000 100%);
+            position: absolute;
+            width: 100%; height: 100%;
+            background: radial-gradient(circle at center, #0d021a 0%, #000 100%); /* 조금 더 어둡고 깊은 보라색 */
             z-index: -1;
+            perspective: 800px;
+            overflow: hidden;
         }
+
+        /* 별들이 앞으로 쏟아지는 듯한 애니메이션 */
         .star {
-            position: absolute; background: #fff; border-radius: 50%;
-            opacity: 0.3; animation: blink 3s infinite;
+            position: absolute;
+            background: #fff; 
+            border-radius: 50%;
+            opacity: 0;
+            animation: moveStar 4s linear infinite;
         }
-        @keyframes blink { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+
+        @keyframes moveStar {
+            0% {
+                transform: translateZ(-500px) scale(0);
+                opacity: 0;
+            }
+            10% { opacity: 0.8; }
+            90% { opacity: 1; }
+            100% {
+                transform: translateZ(500px) scale(3);
+                opacity: 0;
+            }
+        }
 
         /* --- 진입 오버레이 --- */
         #entry-overlay {
