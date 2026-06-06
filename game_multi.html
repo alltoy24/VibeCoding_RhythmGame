@@ -803,9 +803,9 @@
                         }
                     } else {
                         // 중간에 뗌 -> MISS 처리
-                        // (약간의 여유 시간 300ms 주는 로직은 유지)
+                        // (약간의 여유 시간 50ms 주는 로직은 유지)
                         const remaining = n.endTime - currentTime;
-                        if (remaining > 300) { 
+                        if (remaining > 50) { 
                              n.finished = true; combo=0; totalHits++; judgeStats.miss++;
                              updateHUD(); showJudge("No..", n.lane, "#555"); resetFever(); sendScoreUpdate(n.lane, "MISS");
                         } else {
@@ -1016,9 +1016,9 @@
                 const diff = Math.abs(currentTime - n.time);
                 
                 let rate=100, judge="PERFECT", col="#00e5ff";
-                if(diff > 48) { rate=90; judge="GREAT"; col="#00ff00"; }
-                else if(diff > 72) { rate=50; judge="OKAY"; col="#ffff00"; }
-                else if(diff > 108) { rate=10; judge="OH..."; col="#ff5555"; }
+                if(diff > 32) { rate=90; judge="GREAT"; col="#00ff00"; }
+                else if(diff > 48) { rate=50; judge="OKAY"; col="#ffff00"; }
+                else if(diff > 64) { rate=10; judge="OH..."; col="#ff5555"; }
                 
                 combo++; if(combo>maxCombo) maxCombo=combo;
                 score += (rate/100) * scorePerHit;
