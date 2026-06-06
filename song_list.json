@@ -69,6 +69,6 @@
     "artist": "NOMA",
     "pack": "Reference1",
     "previewStart": 85,
-    "charts": ["normal_10.json"]
+    "charts": ["hard_10.json"]
   }
 ]
