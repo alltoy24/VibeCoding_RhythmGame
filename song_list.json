@@ -3,54 +3,72 @@
     "folder": "NewEra",
     "title": "New Era",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 12,
     "charts": ["normal_4.json", "hard_8.json","troll_11.json"]
   },
   {
     "folder": "세계수의정원",
     "title": "세계수의 정원",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 40,
     "charts": ["normal_1.json", "hard_6.json", "troll_13.json"]
   },
   {
     "folder": "SystemOverload",
     "title": "System Overload",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 25,
     "charts": ["normal_5.json", "troll_16.json"]
   },
   {
     "folder": "SuddenAccelerationOfEmpty",
     "title": "Sudden Acceleration Of Empty",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 58,
     "charts": ["hard_14.json", "troll_17.json"]
   },
   {
     "folder": "BreakGlassDayDream",
     "title": "Break Glass Daydream",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 43,
     "charts": ["troll_15.json"]
   },
   {
     "folder": "Cataclysm",
     "title": "Cataclysm",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 10,
     "charts": ["troll_18.json"]
   },
   {
     "folder": "Checkpoint1",
     "title": "Checkpoint:1",
     "artist": "Alltoy24",
+    "pack": "Core1",
+    "previewStart": 53,
     "charts": ["hard_6.json"]
   },
   {
     "folder": "PuzzleVIP",
     "title": "Puzzle VIP",
     "artist": "RetroVision",
+    "pack": "Reference1",
+    "previewStart": 46.5,
     "charts": ["troll_15.json"]
   },
   {
     "folder": "SATELLITE",
     "title": "SATELLITE",
     "artist": "NOMA",
-    "charts": ["hard_10.json"]
+    "pack": "Reference1",
+    "previewStart": 85,
+    "charts": ["normal_10.json"]
   }
 ]
