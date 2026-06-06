@@ -805,7 +805,7 @@
                         // 중간에 뗌 -> MISS 처리
                         // (약간의 여유 시간 50ms 주는 로직은 유지)
                         const remaining = n.endTime - currentTime;
-                        if (remaining > 50) { 
+                        if (remaining > 100) { 
                              n.finished = true; combo=0; totalHits++; judgeStats.miss++;
                              updateHUD(); showJudge("No..", n.lane, "#555"); resetFever(); sendScoreUpdate(n.lane, "MISS");
                         } else {

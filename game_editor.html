@@ -1344,7 +1344,7 @@
                 else currentTime = (Date.now() - startTimestamp) - START_DELAY;
 
                 const remaining = n.endTime - currentTime; 
-                const safeZone = Math.max(50, (n.endTime - n.time) * 0.1); 
+                const safeZone = Math.max(100, (n.endTime - n.time) * 0.2); 
                 
                 if (remaining > safeZone) { 
                     n.finished = true; combo = 0; totalHits++; judgeStats.miss++; 

@@ -1085,7 +1085,7 @@
                 else currentTime = (Date.now() - startTimestamp) - START_DELAY;
                 const remaining = n.endTime - currentTime; 
                 const totalDuration = n.endTime - n.time;
-                const safeZone = Math.max(50, totalDuration * 0.1); 
+                const safeZone = Math.max(100, totalDuration * 0.2); 
                 
                 if (remaining > safeZone) { 
                     n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No..", lane, "#555");
