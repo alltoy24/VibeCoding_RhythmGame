@@ -5,7 +5,6 @@
     <title>WEB BEAT : SECURE</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        /* [기본 설정 & 폰트] */
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
         :root { 
             --bg: #050505; 
@@ -15,20 +14,19 @@
             --fever-gold: #ffd700; 
             --fever-max: #00ff00; 
         }
+        * { box-sizing: border-box; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; }
         
         canvas.game { touch-action: none; -webkit-user-select: none; user-select: none; }
         body.mobile-mode #game-canvas-container { width: 100% !important; border: none; }
 
-        /* [BGA 레이어] */
+        /* BGA Layer */
         #bga-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; background: #000; }
         #bga-video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; display: none; }
         #bga-fallback { width: 100%; height: 100%; background: radial-gradient(circle at center, #1a0b2e 0%, #000000 80%); display: none; perspective: 1000px; overflow: hidden; }
         #bga-grid { position: absolute; bottom: -50%; left: -50%; width: 200%; height: 100%; background-image: linear-gradient(transparent 95%, rgba(0, 229, 255, 0.3) 95%), linear-gradient(90deg, transparent 95%, rgba(123, 31, 162, 0.3) 95%); background-size: 60px 60px; transform: rotateX(60deg); animation: grid-scroll 2s linear infinite; mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%); }
         #bga-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.1; }
-        
         #bgCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-
         @keyframes grid-scroll { 0% { background-position: 0 0; } 100% { background-position: 0 60px; } }
         .bga-pulse #bga-grid { filter: brightness(2.0) drop-shadow(0 0 10px var(--accent)); transition: 0.1s; }
         #bga-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: overlay; z-index: 3; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 20%, transparent 80%, rgba(0,0,0,0.8)); }
@@ -38,7 +36,7 @@
         @keyframes glitch-anim { 0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } }
         @keyframes flash-anim { 0% { background-color: rgba(255,255,255,0.5); } 100% { background-color: transparent; } }
 
-        /* [게임 뷰] */
+        /* Game View */
         #game-view { position: relative; width: 100%; height: 100%; display: flex; flex-direction: row; align-items: stretch; justify-content: center; z-index: 10; gap: 15px; }
         .side-warn-col { width: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.1s; pointer-events: none; text-shadow: 0 0 10px currentColor; }
         .chevron { width: 50px; height: 50px; border-top: 10px solid currentColor; border-right: 10px solid currentColor; transform: rotate(-45deg); margin: 10px 0; opacity: 0.5; }
@@ -55,25 +53,16 @@
             box-shadow: 0 0 80px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); flex-shrink: 0; backdrop-filter: blur(3px);
             transition: border-color 0.5s, box-shadow 0.5s;
         }
-        
-        #game-canvas-container.fever-mode {
-            border-color: rgba(255, 215, 0, 0.6);
-            box-shadow: 0 0 80px rgba(255, 215, 0, 0.4), inset 0 0 40px rgba(255, 215, 0, 0.1);
-        }
-        #game-canvas-container.fever-max-mode {
-            border-color: rgba(0, 255, 0, 0.8);
-            box-shadow: 0 0 100px rgba(0, 255, 0, 0.6), inset 0 0 50px rgba(0, 255, 0, 0.2);
-        }
+        #game-canvas-container.fever-mode { border-color: rgba(255, 215, 0, 0.6); box-shadow: 0 0 80px rgba(255, 215, 0, 0.4), inset 0 0 40px rgba(255, 215, 0, 0.1); }
+        #game-canvas-container.fever-max-mode { border-color: rgba(0, 255, 0, 0.8); box-shadow: 0 0 100px rgba(0, 255, 0, 0.6), inset 0 0 50px rgba(0, 255, 0, 0.2); }
 
         canvas.game { display: block; width: 100%; height: 100%; }
         
         #game-hud { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
         .hud-item { flex: 1; }
         .hud-text { font-family: 'Orbitron', sans-serif; font-weight:700; font-size: 28px; color: #fff; text-shadow: 0 0 10px var(--accent); transition: color 0.3s; }
-        
         .fever-text { color: var(--fever-gold) !important; text-shadow: 0 0 20px var(--fever-gold) !important; transform: scale(1.1); }
         .fever-max-text { color: var(--fever-max) !important; text-shadow: 0 0 30px var(--fever-max) !important; transform: scale(1.2); animation: shake 0.2s infinite; }
-
         .hud-sub { font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #aaa; font-weight: 600; letter-spacing: 1px; }
         #g-avg-box { position: absolute; bottom: 15%; width: 100%; text-align: center; pointer-events: none; }
         #g-avg { font-family: 'Consolas', monospace; font-size: 12px; font-weight: bold; color: #666; }
@@ -90,13 +79,14 @@
         .res-badge { margin: 10px 0 30px 0; font-size: 40px; font-family: 'Orbitron', sans-serif; letter-spacing: 2px; }
         .badge-fc { color: #00e5ff; text-shadow: 0 0 15px #00e5ff; animation: pulse 1s infinite; }
         .badge-ap { color: #ff0055; text-shadow: 2px 2px 0 #fff, 0 0 20px #ff0055; animation: shake 0.5s infinite; }
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         .overlay-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(5px); }
         .res-rank { font-family: 'Orbitron', sans-serif; font-weight:900; font-size: 140px; color: #fff; text-shadow: 0 0 40px currentColor; margin-bottom: 10px; line-height: 1; }
-        .res-rank.S { color: #00e5ff; } .res-rank.A { color: #00ff00; } .res-rank.B { color: #ffff00; } .res-rank.C { color: #ff8800; } .res-rank.F { color: #ff0000; }
         .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; width: 80%; max-width: 600px; margin-bottom: 30px; }
         .res-box { text-align: center; }
-        .res-label { color: #888; font-size: 12px; margin-bottom: 5px; font-weight:bold; letter-spacing:1px; } .res-val { color: #fff; font-size: 24px; font-family: 'Orbitron', sans-serif; }
+        .res-label { color: #888; font-size: 12px; margin-bottom: 5px; font-weight:bold; letter-spacing:1px; } 
+        .res-val { color: #fff; font-size: 24px; font-family: 'Orbitron', sans-serif; }
         .res-detail { display: flex; justify-content: space-between; width: 90%; max-width: 500px; background: rgba(255,255,255,0.03); padding: 20px; border-radius: 15px; border: 1px solid #333; }
         .detail-item { text-align: center; }
         .detail-label { font-size: 11px; font-weight: bold; margin-bottom: 5px; opacity:0.7; }
@@ -105,17 +95,38 @@
         .btn-common { margin-top: 20px; padding: 15px 50px; font-size: 18px; background: transparent; color: #fff; border: 2px solid var(--accent); border-radius: 50px; cursor: pointer; font-weight: 900; font-family: 'Orbitron'; letter-spacing: 2px; transition: 0.2s; box-shadow: 0 0 15px rgba(0,229,255,0.2); text-shadow: 0 0 5px var(--accent); }
         .btn-common:hover { background: var(--accent); color: #000; box-shadow: 0 0 40px var(--accent); transform: scale(1.05); }
         .btn-secondary { border-color: #666; color: #aaa; box-shadow: none; text-shadow: none; }
-        .btn-secondary:hover { background: #333; color: #fff; }
+        .btn-secondary:hover { background: #333; color: #fff; box-shadow: none; }
         .res-song-title { font-family: 'Orbitron'; font-size: 40px; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--accent); margin-bottom: 5px; text-align:center; }
         .res-diff-name { font-family: 'Segoe UI'; font-size: 18px; color: #aaa; letter-spacing: 5px; margin-bottom: 30px; text-transform: uppercase; font-weight: 600; }
 
+        /* Loading */
         .loading-text { font-family: 'Orbitron'; font-size: 30px; margin-bottom: 30px; animation: blink 1s infinite; letter-spacing: 3px; color: var(--accent); }
         @keyframes blink { 50% { opacity: 0.3; } }
 
+        /* Pause Menu - keyboard nav */
         #pause-menu { z-index: 400; }
         .pause-title { font-family: 'Orbitron'; font-size: 60px; font-weight: 900; color: #fff; letter-spacing: 10px; margin-bottom: 50px; text-shadow: 0 0 20px rgba(255,255,255,0.5); }
-        .pause-options { display: flex; flex-direction: column; gap: 20px; width: 300px; }
-        
+        .pause-options { display: flex; flex-direction: column; gap: 20px; width: 320px; }
+        .pause-btn {
+            padding: 18px 50px; font-size: 18px; background: transparent; color: #aaa;
+            border: 2px solid #444; border-radius: 50px; cursor: pointer; font-weight: 900;
+            font-family: 'Orbitron'; letter-spacing: 2px; transition: 0.15s; text-align: center;
+            position: relative;
+        }
+        .pause-btn.selected {
+            color: #fff; border-color: var(--accent);
+            box-shadow: 0 0 30px rgba(0,229,255,0.5), inset 0 0 15px rgba(0,229,255,0.1);
+            text-shadow: 0 0 10px var(--accent);
+            transform: scale(1.04);
+        }
+        .pause-btn.selected::before {
+            content: '▶';
+            position: absolute; left: 20px; top: 50%; transform: translateY(-50%);
+            color: var(--accent); font-size: 14px;
+            animation: cursor-blink 0.6s infinite;
+        }
+        @keyframes cursor-blink { 0%,100% { opacity: 1; } 50% { opacity: 0; } }
+
         #resume-countdown {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 450; display: none; justify-content: center; align-items: center;
@@ -123,31 +134,68 @@
             text-shadow: 0 0 50px var(--accent); pointer-events: none;
         }
 
-        /* ★ [추가] 가이드 메시지 스타일 */
+        /* Guide Message */
         #guide-message {
             position: absolute; top: 35%; left: 50%; transform: translateX(-50%);
             width: 100%; text-align: center; pointer-events: none; z-index: 70;
             font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 48px; color: #fff;
-            text-shadow: 0 0 20px #d084ff, 0 0 40px #d084ff; /* 보라색 네온 */
+            text-shadow: 0 0 20px #d084ff, 0 0 40px #d084ff;
             opacity: 0; transition: opacity 0.2s, transform 0.2s;
             white-space: nowrap; letter-spacing: 2px;
         }
         .msg-active { opacity: 1 !important; transform: translateX(-50%) scale(1.1) !important; }
+
+        /* ★ 판정 팝업 오버레이 (canvas 위에 CSS로 표시) */
+        #judge-display {
+            position: absolute;
+            left: 50%; transform: translateX(-50%);
+            bottom: calc(100% - 85%);
+            pointer-events: none; z-index: 60;
+            text-align: center;
+            width: 300px;
+        }
+        .judge-popup {
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: 32px;
+            letter-spacing: 2px;
+            animation: judgeAnim 0.5s forwards;
+            display: inline-block;
+            white-space: nowrap;
+        }
+        @keyframes judgeAnim {
+            0%   { opacity: 1; transform: scale(1.3) translateY(0); }
+            60%  { opacity: 1; transform: scale(1.0) translateY(-15px); }
+            100% { opacity: 0; transform: scale(0.9) translateY(-30px); }
+        }
+        /* Perfect! 레인보우 */
+        .judge-perfect-ex {
+            background: linear-gradient(90deg, #ff0080, #ff8c00, #ffe000, #00ff88, #00e5ff, #7b2fff, #ff0080);
+            background-size: 300% 100%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: judgeAnim 0.5s forwards, rainbow-shift 0.8s linear infinite;
+            filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 6px #ff0080);
+            font-size: 38px;
+        }
+        @keyframes rainbow-shift { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
     </style>
 </head>
 <body>
     <div id="loading-screen" class="overlay-screen" style="display:flex;">
         <div class="loading-text" id="loading-msg">SYSTEM INITIALIZING...</div>
-        <button id="btn-start-auto" class="btn-common" onclick="startGame()">GAME START</button>
+        <button id="btn-start-auto" class="btn-common" style="display:none;" onclick="startGame()">GAME START</button>
     </div>
 
     <div id="pause-menu" class="overlay-screen">
         <div class="pause-title">PAUSED</div>
-        <div class="pause-options">
-            <button class="btn-common" onclick="togglePause()">RESUME</button>
-            <button class="btn-common btn-secondary" onclick="location.reload()">RESTART</button>
-            <button class="btn-common btn-secondary" onclick="location.href='index.html'">QUIT</button>
+        <div class="pause-options" id="pause-options">
+            <div class="pause-btn selected" data-action="resume">RESUME</div>
+            <div class="pause-btn" data-action="restart">RESTART</div>
+            <div class="pause-btn" data-action="quit">QUIT</div>
         </div>
+        <div style="margin-top: 30px; color: #555; font-size: 12px; font-family: 'Orbitron'; letter-spacing: 2px;">↑↓ NAVIGATE &nbsp;·&nbsp; ENTER SELECT &nbsp;·&nbsp; ESC RESUME</div>
     </div>
 
     <div id="resume-countdown">3</div>
@@ -174,6 +222,7 @@
             <canvas id="gameCanvas" class="game"></canvas>
             <div id="finish-effect"></div>
             <div id="guide-message"></div>
+            <div id="judge-display"></div>
 
             <div id="game-hud">
                 <div class="hud-item" style="text-align:left">
@@ -190,7 +239,6 @@
                 </div>
             </div>
             <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
-            <div id="auto-indicator"></div> <div id="result-overlay" class="overlay-screen"></div>
         </div>
 
         <div id="warn-right" class="side-warn-col">
@@ -201,1235 +249,1533 @@
     </div>
 
     <script>
-        // ★ [보안] 1. 즉시 실행 함수로 변수 보호
-        (function() {
-        
-        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-        let userProfile = null;
+    (function() {
 
-        const GRADE_THRESHOLDS = [
-            { min: 1000000, grade: 'TB',     label: 'TROLL BEAT', hex: '#ffffff' },
-            { min: 950000,  grade: 'S+',     label: 'S+',         hex: '#00ffff' },
-            { min: 900000,  grade: 'S',      label: 'S',          hex: '#00e5ff' },
-            { min: 850000,  grade: 'A+',     label: 'A+',         hex: '#00ff88' },
-            { min: 800000,  grade: 'A',      label: 'A',          hex: '#00cc66' },
-            { min: 700000,  grade: 'B',      label: 'B',          hex: '#3b9eff' },
-            { min: 600000,  grade: 'C',      label: 'C',          hex: '#ffc832' },
-            { min: 0,       grade: 'FAILED', label: 'FAILED',     hex: '#ff4455' } 
-        ];
+    // ============================================================
+    // ★ 판정 시스템 정의 (8단계)
+    // ============================================================
+    const JUDGE_TABLE = [
+        {
+            name: 'Perfect!',
+            window: 20,
+            rate: 100,
+            scoreRate: 1.0,
+            key: 'perfectEx',
+            cssClass: 'judge-perfect-ex',
+            color: '#ffffff',           // 무지개라 캔버스용으로 흰색 base
+            glowColor: '#ff0080',
+            particleColors: ['#ff0080','#ff8c00','#ffe000','#00ff88','#00e5ff','#7b2fff'],
+            comboBreak: false,
+        },
+        {
+            name: 'Perfect',
+            window: 32,
+            rate: 96,
+            scoreRate: 0.96,
+            key: 'perfect',
+            cssClass: 'judge-perfect',
+            color: '#FFE000',
+            glowColor: '#FFE000',
+            particleColors: ['#FFE000','#fff48c','#ffe55c'],
+            comboBreak: false,
+        },
+        {
+            name: 'Great',
+            window: 44,
+            rate: 88,
+            scoreRate: 0.88,
+            key: 'great',
+            cssClass: 'judge-great',
+            color: '#00F2FF',
+            glowColor: '#00F2FF',
+            particleColors: ['#00F2FF','#80f9ff','#00aacc'],
+            comboBreak: false,
+        },
+        {
+            name: 'Good',
+            window: 56,
+            rate: 70,
+            scoreRate: 0.70,
+            key: 'good',
+            cssClass: 'judge-good',
+            color: '#88FF00',
+            glowColor: '#88FF00',
+            particleColors: ['#88FF00','#ccff66','#55cc00'],
+            comboBreak: false,
+        },
+        {
+            name: 'Not Bad',
+            window: 72,
+            rate: 45,
+            scoreRate: 0.45,
+            key: 'notBad',
+            cssClass: 'judge-notbad',
+            color: '#FFB300',
+            glowColor: '#FFB300',
+            particleColors: ['#FFB300','#ffd060','#cc8800'],
+            comboBreak: false,
+        },
+        {
+            name: 'Save',
+            window: 90,
+            rate: 20,
+            scoreRate: 0.20,
+            key: 'save',
+            cssClass: 'judge-save',
+            color: '#FF7733',
+            glowColor: '#FF7733',
+            particleColors: ['#FF7733','#ffaa66','#cc4400'],
+            comboBreak: false,
+        },
+        {
+            name: 'Oh...',
+            window: 110,
+            rate: 5,
+            scoreRate: 0.05,
+            key: 'oh',
+            cssClass: 'judge-oh',
+            color: '#FF2D78',
+            glowColor: '#FF2D78',
+            particleColors: ['#FF2D78','#ff80aa'],
+            comboBreak: true,
+        },
+        {
+            name: 'No...',
+            window: Infinity,
+            rate: 0,
+            scoreRate: 0,
+            key: 'miss',
+            cssClass: 'judge-no',
+            color: '#555566',
+            glowColor: '#555566',
+            particleColors: ['#555566'],
+            comboBreak: true,
+        },
+    ];
 
-        function getGradeFromScore(score) {
-            return GRADE_THRESHOLDS.find(t => score >= t.min) || GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
+    // 판정 CSS 스타일 동적 삽입
+    const judgeStyles = `
+        .judge-perfect { color: #FFE000; text-shadow: 0 0 20px #FFE000, 0 0 40px #ffe000aa; }
+        .judge-great   { color: #00F2FF; text-shadow: 0 0 20px #00F2FF, 0 0 40px #00f2ffaa; }
+        .judge-good    { color: #88FF00; text-shadow: 0 0 20px #88FF00, 0 0 40px #88ff0088; }
+        .judge-notbad  { color: #FFB300; text-shadow: 0 0 16px #FFB300, 0 0 30px #ffb30066; }
+        .judge-save    { color: #FF7733; text-shadow: 0 0 14px #FF7733, 0 0 28px #ff773366; }
+        .judge-oh      { color: #FF2D78; text-shadow: 0 0 18px #FF2D78, 0 0 35px #ff2d7888; }
+        .judge-no      { color: #555566; opacity: 0.6; font-size: 24px !important; }
+    `;
+    const styleEl = document.createElement('style');
+    styleEl.textContent = judgeStyles;
+    document.head.appendChild(styleEl);
+
+    // ============================================================
+    // 기존 변수 / 초기화
+    // ============================================================
+    const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
+    let userProfile = null;
+
+    const GRADE_THRESHOLDS = [
+        { min: 1000000, grade: 'TB',     label: 'TROLL BEAT', hex: '#ffffff' },
+        { min: 950000,  grade: 'S+',     label: 'S+',         hex: '#00ffff' },
+        { min: 900000,  grade: 'S',      label: 'S',          hex: '#00e5ff' },
+        { min: 850000,  grade: 'A+',     label: 'A+',         hex: '#00ff88' },
+        { min: 800000,  grade: 'A',      label: 'A',          hex: '#00cc66' },
+        { min: 700000,  grade: 'B',      label: 'B',          hex: '#3b9eff' },
+        { min: 600000,  grade: 'C',      label: 'C',          hex: '#ffc832' },
+        { min: 0,       grade: 'FAILED', label: 'FAILED',     hex: '#ff4455' } 
+    ];
+
+    function getGradeFromScore(score) {
+        return GRADE_THRESHOLDS.find(t => score >= t.min) || GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
+    }
+
+    const bgaVideo    = document.getElementById('bga-video');
+    const bgaFallback = document.getElementById('bga-fallback');
+    const bgaOverlay  = document.getElementById('bga-overlay');
+    const bgCanvas    = document.getElementById('bgCanvas');
+    const bgCtx       = bgCanvas.getContext('2d');
+    let useVideoBga   = false;
+
+    const warnLeft  = document.getElementById('warn-left');
+    const warnRight = document.getElementById('warn-right');
+    const pauseMenu = document.getElementById('pause-menu');
+    const countdownEl = document.getElementById('resume-countdown');
+    const judgeDisplayEl = document.getElementById('judge-display');
+
+    // ★ 일시정지 메뉴 키보드 네비게이션
+    const pauseActions = ['resume', 'restart', 'quit'];
+    let pauseSelectedIdx = 0;
+
+    function updatePauseSelection() {
+        document.querySelectorAll('.pause-btn').forEach((btn, i) => {
+            btn.classList.toggle('selected', i === pauseSelectedIdx);
+        });
+    }
+
+    function executePauseAction(action) {
+        switch(action) {
+            case 'resume':  togglePause(); break;
+            case 'restart': location.reload(); break;
+            case 'quit':    location.href = 'index.html'; break;
         }
+    }
 
-        const bgaVideo = document.getElementById('bga-video');
-        const bgaFallback = document.getElementById('bga-fallback');
-        const bgaOverlay = document.getElementById('bga-overlay');
-        const bgaGrid = document.getElementById('bga-grid');
-        
-        const bgCanvas = document.getElementById('bgCanvas');
-        const bgCtx = bgCanvas.getContext('2d');
-        
-        let useVideoBga = false;
+    // 버튼 클릭도 동작하게
+    document.querySelectorAll('.pause-btn').forEach((btn, i) => {
+        btn.addEventListener('click', () => {
+            pauseSelectedIdx = i;
+            updatePauseSelection();
+            executePauseAction(btn.dataset.action);
+        });
+    });
 
-        const warnLeft = document.getElementById('warn-left');
-        const warnRight = document.getElementById('warn-right');
-        const pauseMenu = document.getElementById('pause-menu');
-        const countdownEl = document.getElementById('resume-countdown');
+    function logStatus(msg) {
+        console.log(msg);
+        const el = document.getElementById('loading-msg');
+        if(el) el.innerText = msg;
+    }
 
-        function logStatus(msg) {
-            console.log(msg);
-            const el = document.getElementById('loading-msg');
-            if(el) el.innerText = msg;
+    try {
+        const stored = localStorage.getItem('wb_auth_profile');
+        if (stored) userProfile = JSON.parse(stored);
+    } catch(e) {}
+
+    window.onload = function() {
+        if (typeof google !== 'undefined' && google.accounts && !userProfile) {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleCredentialResponse
+            });
         }
+    };
 
+    function handleCredentialResponse(response) {
+        const responsePayload = parseJwt(response.credential);
+        userProfile = responsePayload;
+        localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
+        if(gameFinished) showResult();
+    }
+
+    function parseJwt(token) {
+        var base64Url = token.split('.')[1];
+        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        return JSON.parse(jsonPayload);
+    }
+
+    // ============================================================
+    // 오디오
+    // ============================================================
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const soundBuffers = {};
+
+    async function loadSound(name, url) {
         try {
-            const stored = localStorage.getItem('wb_auth_profile');
-            if (stored) userProfile = JSON.parse(stored);
-        } catch(e) {}
+            const response = await fetch(url);
+            if(!response.ok) throw new Error(`SFX 404: ${url}`);
+            const arrayBuffer = await response.arrayBuffer();
+            const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+            soundBuffers[name] = audioBuffer;
+        } catch (e) { console.warn(e); }
+    }
 
-        window.onload = function() {
-            if (typeof google !== 'undefined' && google.accounts && !userProfile) {
-                google.accounts.id.initialize({
-                    client_id: GOOGLE_CLIENT_ID,
-                    callback: handleCredentialResponse
-                });
-            }
-        };
+    loadSound('hit', 'sfx/hit.mp3');
+    loadSound('hold_start', 'sfx/hold_start.mp3');
+    loadSound('hold_end', 'sfx/hold_end.mp3');
+    loadSound('fc', 'sfx/full_combo.wav');
+    loadSound('ap_main', 'sfx/all_perfect.wav');
+    loadSound('ap_layer', 'sfx/glitch.wav');
+    loadSound('menu_open', 'sfx/drawer.wav'); 
+    loadSound('fever', 'sfx/fever.wav');
 
-        function handleCredentialResponse(response) {
-            const responsePayload = parseJwt(response.credential);
-            userProfile = responsePayload;
-            localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
-            if(gameFinished) showResult();
-        }
-    
-        function parseJwt (token) {
-            var base64Url = token.split('.')[1];
-            var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-            }).join(''));
-            return JSON.parse(jsonPayload);
-        }
+    function playSfx(name) {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        if (!soundBuffers[name]) return;
+        const source = audioCtx.createBufferSource();
+        source.buffer = soundBuffers[name];
+        const gainNode = audioCtx.createGain();
+        const savedVol = parseFloat(localStorage.getItem('wb_sfx_volume') || "0.7");
+        gainNode.gain.value = savedVol;
+        source.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        source.start(0);
+    }
 
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const soundBuffers = {};
+    // ============================================================
+    // 게임 변수
+    // ============================================================
+    let audio = new Audio();
+    let bpm = 130, offset = 0;
+    let beatNum = 4, beatDenom = 4;
+    const BASE_RES = 192;
 
-        async function loadSound(name, url) {
-            try {
-                const response = await fetch(url);
-                if(!response.ok) throw new Error(`SFX 404: ${url}`);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-                soundBuffers[name] = audioBuffer;
-            } catch (e) { console.warn(e); }
-        }
+    const gameCanvas    = document.getElementById('gameCanvas');
+    const gameCtx       = gameCanvas.getContext('2d');
+    const finishEffect  = document.getElementById('finish-effect');
+    const guideMsgEl    = document.getElementById('guide-message');
+    const resultOverlay = document.getElementById('result-overlay');
 
-        loadSound('hit', 'sfx/hit.mp3');
-        loadSound('hold_start', 'sfx/hold_start.mp3');
-        loadSound('hold_end', 'sfx/hold_end.mp3');
-        loadSound('fc', 'sfx/full_combo.wav');
-        loadSound('ap_main', 'sfx/all_perfect.wav');
-        loadSound('ap_layer', 'sfx/glitch.wav');
-        loadSound('menu_open', 'sfx/drawer.wav'); 
-        loadSound('fever', 'sfx/fever.wav');
+    let TRACK_X_OFFSET = 25;
+    let LANE_WIDTH     = 100;
+    let NOTE_WIDTH     = 90;
+    let NOTE_X_PADDING = 5;
+    const HIT_LINE_Y   = window.innerHeight * 0.85;
 
-        function playSfx(name) {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            if (!soundBuffers[name]) return;
-            const source = audioCtx.createBufferSource();
-            source.buffer = soundBuffers[name];
-            const gainNode = audioCtx.createGain();
-            const savedVol = parseFloat(localStorage.getItem('wb_sfx_volume') || "0.7");
-            gainNode.gain.value = savedVol; 
-            source.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            source.start(0);
-        }
+    if (isMobile) {
+        document.body.classList.add('mobile-mode');
+        gameCanvas.width = window.innerWidth;
+        LANE_WIDTH      = window.innerWidth / 4;
+        TRACK_X_OFFSET  = 0;
+        NOTE_WIDTH      = LANE_WIDTH * 0.9;
+        NOTE_X_PADDING  = (LANE_WIDTH - NOTE_WIDTH) / 2;
+        const startBtn  = document.getElementById('btn-start-auto');
+        if(startBtn) startBtn.innerText = "TOUCH TO START";
+    } else {
+        gameCanvas.width = 450;
+    }
+    gameCanvas.height = window.innerHeight;
 
-        let audio = new Audio(); 
-        let bpm = 130, offset = 0;
-        let beatNum = 4, beatDenom = 4;
-        const BASE_RES = 192; 
-        
-        const gameCanvas = document.getElementById('gameCanvas');
-        const gameCtx = gameCanvas.getContext('2d');
-        const finishEffect = document.getElementById('finish-effect');
-
-        // ★ [추가]
-        const guideMsgEl = document.getElementById('guide-message');
-        const resultOverlay = document.getElementById('result-overlay');
-        
-        let TRACK_X_OFFSET = 25; 
-        let LANE_WIDTH = 100;
-        let NOTE_WIDTH = 90;    
-        let NOTE_X_PADDING = 5;  
-        const HIT_LINE_Y = window.innerHeight * 0.85; 
-
-        if (isMobile) {
-            document.body.classList.add('mobile-mode');
-            gameCanvas.width = window.innerWidth;
-            LANE_WIDTH = window.innerWidth / 4;
-            TRACK_X_OFFSET = 0;
-            NOTE_WIDTH = LANE_WIDTH * 0.9;
-            NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
-            const startBtn = document.getElementById('btn-start-auto');
-            if(startBtn) startBtn.innerText = "TOUCH TO START";
-        } else {
-            gameCanvas.width = 450;
-        }
+    function resizeBg() {
+        bgCanvas.width  = window.innerWidth;
+        bgCanvas.height = window.innerHeight;
+    }
+    window.addEventListener('resize', () => {
         gameCanvas.height = window.innerHeight;
-
-        function resizeBg() {
-            bgCanvas.width = window.innerWidth;
-            bgCanvas.height = window.innerHeight;
+        if(isMobile) {
+            gameCanvas.width   = window.innerWidth;
+            LANE_WIDTH         = window.innerWidth / 4;
+            NOTE_WIDTH         = LANE_WIDTH * 0.9;
+            NOTE_X_PADDING     = (LANE_WIDTH - NOTE_WIDTH) / 2;
         }
-        window.addEventListener('resize', () => { 
-            gameCanvas.height = window.innerHeight;
-            if(isMobile) {
-                gameCanvas.width = window.innerWidth;
-                LANE_WIDTH = window.innerWidth / 4;
-                NOTE_WIDTH = LANE_WIDTH * 0.9;
-                NOTE_X_PADDING = (LANE_WIDTH - NOTE_WIDTH) / 2;
-            }
-            resizeBg();
-        });
         resizeBg();
+    });
+    resizeBg();
 
-        const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
-        
-        let gameFinished = false;
-        let finishTimer = null;
-        let gameState = 'LOADING'; 
-        let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
-        let speedEvents = []; 
-        let speedMap = [];    
-        
-        let activeKeys = [false, false, false, false];
-        let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
-        let gameAnimId;
-        let baseNoteSpeed = 5.0; 
-        let scorePerHit = 0; 
-        let currentChartHash = "";
-        
-        let startTimestamp = 0;
-        const START_DELAY = 2000; 
-        let lastNoteEndTime = 0; 
-        let totalMaxHits = 0; 
-        let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
-        
-        let isPaused = false;
-        let isResuming = false;
-        let pauseTime = 0;
-        let countdownTimer = null;
+    const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
 
-        // ★ [보안] 2. 게임 시작 시간 기록 (플레이 타임 검증용)
-        let gameStartTimeLocal = 0; 
+    let gameFinished    = false;
+    let finishTimer     = null;
+    let gameState       = 'LOADING';
+    let gameNotes       = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
+    let speedEvents     = [];
+    let speedMap        = [];
 
-        const FEVER_LV1 = 50;  
-        const FEVER_LV2 = 100;
-        const FEVER_LV3 = 250; 
-        
-        let isFever = false;
-        let fireflies = [];
-        let gearParticles = [];
+    let activeKeys      = [false, false, false, false];
+    let combo           = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, score = 0;
+    let gameAnimId;
+    let baseNoteSpeed   = 5.0;
+    let scorePerHit     = 0;
 
-        // ★ [추가] 메시지 이벤트 변수
-        let msgEvents = []; 
-        let activeMsgEvents = [];
+    let startTimestamp  = 0;
+    const START_DELAY   = 2000;
+    let lastNoteEndTime = 0;
+    let totalMaxHits    = 0;
 
-        // ★ 반딧불이 (배경)
-        class Firefly {
-            constructor() {
-                this.x = Math.random() * bgCanvas.width;
-                this.y = Math.random() * bgCanvas.height;
-                this.vx = (Math.random() - 0.5) * 0.5; 
-                this.vy = (Math.random() - 0.5) * 0.5;
-                this.size = Math.random() * 3 + 1;
-                this.baseAlpha = Math.random() * 0.5 + 0.3;
-                this.phase = Math.random() * Math.PI * 2; 
-                
-                const isMax = combo >= FEVER_LV3;
-                this.color = isMax ? 
-                    (Math.random() > 0.5 ? '#00ff00' : '#ccff00') : // Green/Lime
-                    (Math.random() > 0.5 ? '#ffd700' : '#00e5ff'); // Gold/Cyan
-                
-                this.scattering = false;
-            }
-            update() {
-                if(this.scattering) {
-                    this.x += this.vx * 10;
-                    this.y += this.vy * 10;
-                    this.baseAlpha -= 0.05;
-                } else {
-                    this.x += this.vx;
-                    this.y += this.vy;
-                    this.phase += 0.05;
-                }
-                if (!this.scattering) {
-                    if (this.x < 0) this.x = bgCanvas.width;
-                    if (this.x > bgCanvas.width) this.x = 0;
-                    if (this.y < 0) this.y = bgCanvas.height;
-                    if (this.y > bgCanvas.height) this.y = 0;
-                }
-            }
-            draw(ctx) {
-                if (this.baseAlpha <= 0) return;
-                const alpha = Math.max(0, this.baseAlpha + (this.scattering ? 0 : Math.sin(this.phase) * 0.2));
-                ctx.globalAlpha = alpha;
-                ctx.fillStyle = this.color;
-                ctx.shadowBlur = 10;
-                ctx.shadowColor = this.color;
-                ctx.beginPath();
-                ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.globalAlpha = 1.0;
+    // ★ 판정 통계 (8단계)
+    let judgeStats = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
+
+    let isPaused     = false;
+    let isResuming   = false;
+    let pauseTime    = 0;
+    let countdownTimer = null;
+
+    let gameStartTimeLocal = 0;
+
+    const FEVER_LV1 = 50;
+    const FEVER_LV2 = 100;
+    const FEVER_LV3 = 250;
+
+    let isFever      = false;
+    let fireflies    = [];
+    let gearParticles = [];
+
+    let msgEvents        = [];
+    let activeMsgEvents  = [];
+
+    // ============================================================
+    // ★ 파티클 시스템 (판정별 색상 분기)
+    // ============================================================
+    function createParticlesForJudge(lane, judgeInfo) {
+        const colors = judgeInfo.particleColors;
+        const count  = judgeInfo.comboBreak ? 4 : 14;
+        for(let i = 0; i < count; i++) {
+            const angle  = Math.random() * Math.PI * 2;
+            const speed  = Math.random() * 18 + 4;
+            const color  = colors[Math.floor(Math.random() * colors.length)];
+            const size   = Math.random() * 7 + 3;
+            particles.push({
+                x: TRACK_X_OFFSET + lane * LANE_WIDTH + LANE_WIDTH / 2,
+                y: HIT_LINE_Y,
+                vx: Math.cos(angle) * speed * 0.6,
+                vy: Math.sin(angle) * speed - 10,
+                life: 1.0,
+                decay: 0.03 + Math.random() * 0.02,
+                color,
+                size,
+                glow: !judgeInfo.comboBreak,
+            });
+        }
+        // 판정 라인 플래시 이펙트 (canvas)
+        if(!judgeInfo.comboBreak) {
+            lineFlash = { color: judgeInfo.glowColor, life: 1.0 };
+        }
+    }
+
+    // 라인 플래시 상태
+    let lineFlash = null;
+
+    // ============================================================
+    // ★ CSS 판정 팝업 (canvas 대신 DOM)
+    // ============================================================
+    let judgePopupTimeout = null;
+
+    function showJudgePopup(judgeInfo, lane) {
+        if(judgePopupTimeout) clearTimeout(judgePopupTimeout);
+        judgeDisplayEl.innerHTML = '';
+
+        const el = document.createElement('span');
+        el.className = `judge-popup ${judgeInfo.cssClass}`;
+        el.textContent = judgeInfo.name;
+        judgeDisplayEl.appendChild(el);
+
+        judgePopupTimeout = setTimeout(() => {
+            judgeDisplayEl.innerHTML = '';
+        }, 500);
+    }
+
+    // ============================================================
+    // Firefly
+    // ============================================================
+    class Firefly {
+        constructor() {
+            this.x = Math.random() * bgCanvas.width;
+            this.y = Math.random() * bgCanvas.height;
+            this.vx = (Math.random() - 0.5) * 0.5;
+            this.vy = (Math.random() - 0.5) * 0.5;
+            this.size = Math.random() * 3 + 1;
+            this.baseAlpha = Math.random() * 0.5 + 0.3;
+            this.phase = Math.random() * Math.PI * 2;
+            const isMax = combo >= FEVER_LV3;
+            this.color = isMax ?
+                (Math.random() > 0.5 ? '#00ff00' : '#ccff00') :
+                (Math.random() > 0.5 ? '#ffd700' : '#00e5ff');
+            this.scattering = false;
+        }
+        update() {
+            if(this.scattering) {
+                this.x += this.vx * 10;
+                this.y += this.vy * 10;
+                this.baseAlpha -= 0.05;
+            } else {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.phase += 0.05;
+                if (this.x < 0) this.x = bgCanvas.width;
+                if (this.x > bgCanvas.width) this.x = 0;
+                if (this.y < 0) this.y = bgCanvas.height;
+                if (this.y > bgCanvas.height) this.y = 0;
             }
         }
+        draw(ctx) {
+            if (this.baseAlpha <= 0) return;
+            const alpha = Math.max(0, this.baseAlpha + (this.scattering ? 0 : Math.sin(this.phase) * 0.2));
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = this.color;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = this.color;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+            ctx.globalAlpha = 1.0;
+        }
+    }
 
-        audio.onended = () => { 
-            if (!gameFinished && !isPaused) finishGame(); 
-        };
+    audio.onended = () => {
+        if (!gameFinished && !isPaused) finishGame();
+    };
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const song = urlParams.get('song');
-            const diff = urlParams.get('diff');
-            const speed = urlParams.get('speed');
+    // ============================================================
+    // 초기화
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const song  = urlParams.get('song');
+        const diff  = urlParams.get('diff');
+        const speed = urlParams.get('speed');
 
-            if (!song || !diff) {
-                alert("잘못된 접근입니다.");
-                location.href = "index.html"; 
-                return;
+        if (!song || !diff) {
+            alert("잘못된 접근입니다.");
+            location.href = "index.html";
+            return;
+        }
+
+        if(speed) baseNoteSpeed = parseFloat(speed);
+        const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
+        offset += userGlobalOffset;
+
+        const savedOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || "70");
+        const alpha = savedOpacity / 100;
+        document.getElementById('game-canvas-container').style.background = `rgba(0, 0, 0, ${alpha})`;
+
+        loadGameData(song, diff);
+    });
+
+    async function loadGameData(song, diff) {
+        const startBtn  = document.getElementById('btn-start-auto');
+        try {
+            logStatus("LOADING CHART...");
+            const chartRes = await fetch(`Maps/${song}/${diff}.json`);
+            if(!chartRes.ok) throw new Error(`Chart Not Found`);
+            const chartData = await chartRes.json();
+            parseChartData(chartData);
+
+            const bgaPath = `Maps/${song}/bga.mp4`;
+            bgaVideo.src = bgaPath;
+            bgaVideo.onerror = () => { useVideoBga = false; bgaVideo.style.display = 'none'; bgaFallback.style.display = 'block'; };
+            bgaVideo.oncanplay = () => { useVideoBga = true; bgaVideo.style.display = 'block'; bgaFallback.style.display = 'none'; };
+
+            logStatus("LOADING AUDIO...");
+            const audioPath = `Maps/${song}/audio.mp3`;
+
+            // ★ 로딩 완료 전까지 버튼 숨김, READY 후 표시
+            const checkAudioReady = () => {
+                if (audio.readyState >= 3) {
+                    logStatus("▶ PRESS START");
+                    document.getElementById('loading-msg').style.animation = 'none';
+                    document.getElementById('loading-msg').style.color = '#00ff88';
+                    startBtn.style.display = 'block';
+                    return true;
+                }
+                return false;
+            };
+
+            audio.oncanplaythrough = checkAudioReady;
+            audio.onloadeddata     = checkAudioReady;
+            audio.src = audioPath;
+            audio.load();
+
+            const forceCheck = setInterval(() => { if (checkAudioReady()) clearInterval(forceCheck); }, 100);
+
+        } catch (err) {
+            alert(`오류 발생: ${err.message}`);
+            window.location.href = "index.html";
+        }
+    }
+
+    function parseChartData(data) {
+        if(data.bpm)       bpm      = data.bpm;
+        if(data.offset)    offset  += (data.offset || 0);
+        if(data.beat)      beatNum  = data.beat;
+        if(data.beatDenom) beatDenom = data.beatDenom;
+
+        gameNotes = []; totalMaxHits = 0;
+        if(data.speedEvents) {
+            speedEvents = data.speedEvents;
+            if (!speedEvents.some(e => e.time === 0)) speedEvents.push({ time: 0, mult: 1.0 });
+        } else {
+            speedEvents = [{ time: 0, mult: 1.0 }];
+        }
+
+        msgEvents = [];
+        if(data.msgEvents) msgEvents = data.msgEvents;
+
+        if(data.measures) {
+            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+            data.measures.forEach(m => {
+                const ratio = BASE_RES / (m.split || 32);
+                m.notes.forEach(n => {
+                    const time     = (m.index + (n.pos * ratio / BASE_RES)) * msPerMeasure;
+                    const duration = ((n.len || 0) * ratio / BASE_RES) * msPerMeasure;
+                    const noteTime    = time + offset;
+                    const noteEndTime = noteTime + duration;
+                    if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
+                    gameNotes.push({ time: noteTime, endTime: noteEndTime, lane: n.lane, len: (n.len || 0) * ratio, hit: false, holding: false, finished: false });
+                    totalMaxHits++;
+                    if(n.len > 0) totalMaxHits++;
+                });
+            });
+
+            if(speedEvents.length > 0) {
+                speedEvents = speedEvents.map(ev => {
+                    if(ev.measureIdx !== undefined) {
+                        const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
+                        return { ...ev, time: calculatedTime + offset };
+                    }
+                    return { ...ev, time: ev.time + offset };
+                });
             }
+        }
+        gameNotes.sort((a,b) => a.time - b.time);
+        scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
+    }
 
-            if(speed) baseNoteSpeed = parseFloat(speed);
-            const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
-            offset += userGlobalOffset; 
-            
-            const savedOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || "70");
-            const alpha = savedOpacity / 100;
-            document.getElementById('game-canvas-container').style.background = `rgba(0, 0, 0, ${alpha})`;
-            
-            loadGameData(song, diff);
+    function buildSpeedMap() {
+        speedMap = [];
+        const sortedEvents = [...speedEvents].sort((a,b) => a.time - b.time);
+        speedMap.push({ time: -999999, vPos: 0, mult: 1.0 });
+        sortedEvents.forEach(ev => {
+            const prev = speedMap[speedMap.length - 1];
+            const dist = (ev.time - prev.time) * prev.mult;
+            speedMap.push({ time: ev.time, vPos: prev.vPos + dist, mult: ev.mult, warned: false });
+        });
+    }
+
+    function getVisualPos(time) {
+        let ev = speedMap[0];
+        for(let i = 1; i < speedMap.length; i++) {
+            if (speedMap[i].time > time) break;
+            ev = speedMap[i];
+        }
+        return ev.vPos + (time - ev.time) * ev.mult;
+    }
+
+    function startGame() {
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        document.getElementById('loading-screen').style.display = 'none';
+        buildSpeedMap();
+
+        const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+        activeMsgEvents = msgEvents.map(ev => {
+            let startTime = ev.time, duration = 0;
+            if(ev.measureIdx !== undefined) {
+                startTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
+                duration  = (ev.len / BASE_RES) * msPerMeasure;
+            }
+            return { ...ev, time: startTime + offset, endTime: startTime + offset + (duration || 1000) };
         });
 
-        async function loadGameData(song, diff) {
-            const startBtn = document.getElementById('btn-start-auto');
-            const loadingMsg = document.getElementById('loading-msg');
-            
-            try {
-                logStatus("LOADING CHART...");
-                const chartRes = await fetch(`Maps/${song}/${diff}.json`);
-                if(!chartRes.ok) throw new Error(`Chart Not Found`);
-                const chartData = await chartRes.json();
-                parseChartData(chartData);
+        if(guideMsgEl) { guideMsgEl.className = ''; guideMsgEl.innerText = ''; }
 
-                const bgaPath = `Maps/${song}/bga.mp4`;
-                bgaVideo.src = bgaPath;
-                bgaVideo.onerror = () => { useVideoBga = false; bgaVideo.style.display = 'none'; bgaFallback.style.display = 'block'; };
-                bgaVideo.oncanplay = () => { useVideoBga = true; bgaVideo.style.display = 'block'; bgaFallback.style.display = 'none'; };
+        combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; score = 0;
+        judgeStats = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
+        activeNotes = []; particles = []; recentHits = []; judgments = [];
+        fireflies = []; gearParticles = []; lineFlash = null;
+        resetFever();
 
-                logStatus("LOADING AUDIO...");
-                const audioPath = `Maps/${song}/audio.mp3`;
+        finishEffect.innerHTML = "";
+        judgeDisplayEl.innerHTML = "";
+        updateGameHUD();
 
-                const checkAudioReady = () => {
-                    if (audio.readyState >= 3) {
-                        logStatus("READY");
-                        loadingMsg.style.display = 'none'; 
-                        startBtn.style.display = 'block';
-                        return true;
-                    }
-                    return false;
-                };
+        warnLeft.className  = 'side-warn-col';
+        warnRight.className = 'side-warn-col';
 
-                audio.oncanplaythrough = checkAudioReady;
-                audio.onloadeddata = checkAudioReady; 
-                audio.src = audioPath;
-                audio.load();
+        if(useVideoBga) bgaVideo.currentTime = 0;
 
-                const forceCheck = setInterval(() => { if (checkAudioReady()) clearInterval(forceCheck); }, 100);
+        gameState = 'COUNTDOWN';
+        startTimestamp = Date.now();
+        audio.currentTime = 0;
+        gameStartTimeLocal = Date.now();
+        gameLoop();
+    }
 
-            } catch (err) { 
-                alert(`오류 발생: ${err.message}`); 
-                window.location.href = "index.html"; 
-            }
+    function finishGame() {
+        if (gameFinished) return;
+        gameFinished = true;
+        if (finishTimer) clearTimeout(finishTimer);
+        audio.pause();
+        if(useVideoBga) bgaVideo.pause();
+        showResult();
+    }
+
+    // ============================================================
+    // ★ Pause / Resume (키보드 네비게이션 통합)
+    // ============================================================
+    function togglePause() {
+        if (gameFinished) return;
+        if (isResuming) {
+            clearInterval(countdownTimer);
+            isResuming = false;
+            countdownEl.style.display = 'none';
+            isPaused = true;
+            pauseSelectedIdx = 0;
+            updatePauseSelection();
+            pauseMenu.style.display = 'flex';
+            return;
         }
 
-        function parseChartData(data) {
-            if(data.bpm) bpm = data.bpm;
-            if(data.offset) offset += (data.offset || 0);
-            if(data.beat) beatNum = data.beat; 
-            if(data.beatDenom) beatDenom = data.beatDenom; 
-            
-            gameNotes = []; totalMaxHits = 0;
-            if(data.speedEvents) {
-                speedEvents = data.speedEvents;
-                if (!speedEvents.some(e => e.time === 0)) {
-                    speedEvents.push({ time: 0, mult: 1.0 }); 
-                }
-            } else {
-                speedEvents = [{ time: 0, mult: 1.0 }];
-            }
-
-            // ★ [추가] 메시지 이벤트 로드
-            msgEvents = [];
-            if(data.msgEvents) {
-                // 에디터에서 좌표 기반으로 저장된 데이터를 시간 기반으로 변환할 수도 있으나,
-                // 보통 게임 실행 시 startGame에서 일괄 계산하므로 여기선 원본 데이터 저장만 함
-                msgEvents = data.msgEvents;
-            }
-
-            if(data.measures) {
-                const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
-                
-                data.measures.forEach(m => {
-                    const ratio = BASE_RES / (m.split || 32); 
-                    m.notes.forEach(n => {
-                        const time = (m.index + (n.pos * ratio / BASE_RES)) * msPerMeasure;
-                        const duration = ((n.len || 0) * ratio / BASE_RES) * msPerMeasure;
-                        const noteTime = time + offset; 
-                        const noteEndTime = noteTime + duration;
-                        
-                        if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
-                        gameNotes.push({ time: noteTime, endTime: noteEndTime, lane: n.lane, len: (n.len || 0) * ratio, hit: false, holding: false, finished: false });
-                        
-                        totalMaxHits++; 
-                        if(n.len > 0) totalMaxHits++; 
-                    });
-                });
-
-                if(speedEvents.length > 0) {
-                    speedEvents = speedEvents.map(ev => {
-                        if(ev.measureIdx !== undefined) {
-                            const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
-                            return { ...ev, time: calculatedTime + offset };
-                        }
-                        return { ...ev, time: ev.time + offset };
-                    });
-                }
-            }
-            gameNotes.sort((a,b) => a.time - b.time);
-            scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
-        }
-
-        function buildSpeedMap() {
-            speedMap = [];
-            const sortedEvents = [...speedEvents].sort((a,b) => a.time - b.time);
-            speedMap.push({ time: -999999, vPos: 0, mult: 1.0 });
-
-            sortedEvents.forEach(ev => {
-                const prev = speedMap[speedMap.length-1];
-                const dist = (ev.time - prev.time) * prev.mult;
-                speedMap.push({ time: ev.time, vPos: prev.vPos + dist, mult: ev.mult, warned: false });
-            });
-        }
-
-        function getVisualPos(time) {
-            let ev = speedMap[0];
-            for(let i=1; i<speedMap.length; i++) {
-                if (speedMap[i].time > time) break;
-                ev = speedMap[i];
-            }
-            return ev.vPos + (time - ev.time) * ev.mult;
-        }
-
-        function startGame() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            document.getElementById('loading-screen').style.display = 'none';
-            buildSpeedMap();
-
-            // ★ [추가] 메시지 이벤트 시간 계산 (오프셋 적용)
-            // (game.html에는 beatNum, beatDenom이 전역 변수로 있으므로 msPerMeasure 계산 가능)
-            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
-            
-            // 만약 msgEvents가 좌표(pos) 기반이라면 시간으로 변환
-            activeMsgEvents = msgEvents.map(ev => {
-                let startTime = ev.time;
-                let duration = 0;
-
-                // 좌표 기반 데이터인 경우 시간 계산 (에디터 저장 방식에 따라 다름)
-                if(ev.measureIdx !== undefined) {
-                    startTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
-                    duration = (ev.len / BASE_RES) * msPerMeasure;
-                }
-                
-                // 오프셋 적용
-                return { 
-                    ...ev, 
-                    time: startTime + offset, 
-                    endTime: startTime + offset + (duration || 1000) // 최소 1초 유지 
-                };
-            });
-
-            // UI 초기화
-            if(guideMsgEl) { guideMsgEl.className = ''; guideMsgEl.innerText = ''; }
-
-            combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; totalOffsetDiff = 0; score = 0;
-            judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
-            activeNotes = []; particles = []; recentHits = []; judgments = [];
-            
-            fireflies = [];
-            gearParticles = []; 
-            resetFever(); 
-
-            finishEffect.innerHTML = "";
-            updateGameHUD();
-            
-            warnLeft.className = 'side-warn-col';
-            warnRight.className = 'side-warn-col';
-
-            if(useVideoBga) bgaVideo.currentTime = 0;
-
-            gameState = 'COUNTDOWN';
-            startTimestamp = Date.now(); 
-            audio.currentTime = 0;
-            
-            // ★ [보안] 게임 시작 시간 기록
-            gameStartTimeLocal = Date.now(); 
-
-            gameLoop();
-        }
-
-        function finishGame() {
-            if (gameFinished) return;
-            gameFinished = true;
-            if (finishTimer) clearTimeout(finishTimer);
+        if (!isPaused) {
+            isPaused = true;
+            pauseTime = audio.currentTime;
             audio.pause();
             if(useVideoBga) bgaVideo.pause();
-            showResult();
+            playSfx('menu_open');
+            pauseSelectedIdx = 0;
+            updatePauseSelection();
+            pauseMenu.style.display = 'flex';
+        } else {
+            startResumeCountdown();
         }
+    }
 
-        function togglePause() {
-            if (gameFinished) return;
-            if (isResuming) {
-                clearInterval(countdownTimer);
-                isResuming = false;
-                countdownEl.style.display = 'none';
-                isPaused = true;
-                pauseMenu.style.display = 'flex';
-                return;
-            }
+    function startResumeCountdown() {
+        pauseMenu.style.display = 'none';
+        countdownEl.style.display = 'flex';
+        isResuming = true;
+        let count = 3;
+        countdownEl.innerText = count;
 
-            if (!isPaused) {
-                isPaused = true;
-                pauseTime = audio.currentTime;
-                audio.pause();
-                if(useVideoBga) bgaVideo.pause();
-                playSfx('menu_open'); 
-                pauseMenu.style.display = 'flex';
+        if(countdownTimer) clearInterval(countdownTimer);
+        countdownTimer = setInterval(() => {
+            count--;
+            if(count > 0) {
+                countdownEl.innerText = count;
             } else {
-                startResumeCountdown();
-            }
-        }
-
-        function startResumeCountdown() {
-            pauseMenu.style.display = 'none';
-            countdownEl.style.display = 'flex';
-            isResuming = true;
-            let count = 3;
-            countdownEl.innerText = count;
-
-            if(countdownTimer) clearInterval(countdownTimer);
-
-            countdownTimer = setInterval(() => {
-                count--;
-                if(count > 0) {
-                    countdownEl.innerText = count;
-                } else {
-                    clearInterval(countdownTimer);
-                    countdownEl.style.display = 'none';
-                    isPaused = false;
-                    isResuming = false;
-                    
-                    if(gameState === 'PLAYING') {
-                        audio.play().then(() => {
-                             if(useVideoBga) bgaVideo.play();
-                        }).catch(e => console.log(e));
-                    } else if (gameState === 'COUNTDOWN') {
-                        startTimestamp = Date.now() - (audio.currentTime * 1000); 
-                    }
+                clearInterval(countdownTimer);
+                countdownEl.style.display = 'none';
+                isPaused   = false;
+                isResuming = false;
+                if(gameState === 'PLAYING') {
+                    audio.play().then(() => { if(useVideoBga) bgaVideo.play(); }).catch(e => console.log(e));
+                } else if (gameState === 'COUNTDOWN') {
+                    startTimestamp = Date.now() - (audio.currentTime * 1000);
                 }
-            }, 500); 
+            }
+        }, 500);
+    }
+
+    function showSpeedWarning(targetMult, currentMult) {
+        const isUp  = targetMult > currentMult;
+        const cls   = isUp ? 'warn-up' : 'warn-down';
+        const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
+
+        warnLeft.querySelector('.warn-label').innerHTML  = label;
+        warnRight.querySelector('.warn-label').innerHTML = label;
+        warnLeft.classList.remove('warn-up', 'warn-down');
+        warnRight.classList.remove('warn-up', 'warn-down');
+        void warnLeft.offsetWidth;
+        warnLeft.classList.add(cls);
+        warnRight.classList.add(cls);
+
+        setTimeout(() => {
+            warnLeft.classList.remove(cls);
+            warnRight.classList.remove(cls);
+        }, 1500);
+
+        if (isUp) {
+            bgaOverlay.classList.add('effect-glitch', 'effect-flash');
+            setTimeout(() => { bgaOverlay.classList.remove('effect-glitch', 'effect-flash'); }, 500);
         }
+    }
 
-        function showSpeedWarning(targetMult, currentMult) {
-            const isUp = targetMult > currentMult;
-            const cls = isUp ? 'warn-up' : 'warn-down';
-            const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
-
-            warnLeft.querySelector('.warn-label').innerHTML = label;
-            warnRight.querySelector('.warn-label').innerHTML = label;
-
-            warnLeft.classList.remove('warn-up', 'warn-down');
-            warnRight.classList.remove('warn-up', 'warn-down');
-            void warnLeft.offsetWidth; 
-            warnLeft.classList.add(cls);
-            warnRight.classList.add(cls);
-
-            setTimeout(() => {
-                warnLeft.classList.remove(cls);
-                warnRight.classList.remove(cls);
-            }, 1500);
-
-            if (isUp) {
-                bgaOverlay.classList.add('effect-glitch');
-                bgaOverlay.classList.add('effect-flash');
-                setTimeout(() => {
-                    bgaOverlay.classList.remove('effect-glitch');
-                    bgaOverlay.classList.remove('effect-flash');
-                }, 500);
-            }
+    function checkFeverState(currentCombo) {
+        const container = document.getElementById('game-canvas-container');
+        const hud = document.getElementById('g-combo');
+        if (currentCombo === FEVER_LV1) {
+            isFever = true; playSfx('fever');
+            container.classList.add('fever-mode');
+            hud.classList.add('fever-text');
         }
-
-        function checkFeverState(currentCombo) {
-            const container = document.getElementById('game-canvas-container');
-            const hud = document.getElementById('g-combo');
-
-            if (currentCombo === FEVER_LV1) {
-                isFever = true; 
-                playSfx('fever'); 
-                container.classList.add('fever-mode');
-                hud.classList.add('fever-text');
-            }
-
-            if (currentCombo === FEVER_LV2) {
-                playSfx('fever'); 
-            }
-
-            if (currentCombo === FEVER_LV3) {
-                playSfx('fever'); 
-                container.classList.remove('fever-mode'); 
-                container.classList.add('fever-max-mode'); 
-                hud.classList.remove('fever-text');
-                hud.classList.add('fever-max-text');
-
-                fireflies.forEach(p => {
-                    p.color = Math.random() > 0.5 ? '#00ff00' : '#ccff00';
-                });
-            }
-        }
-
-        function resetFever() {
-            isFever = false;
-            const container = document.getElementById('game-canvas-container');
-            const hud = document.getElementById('g-combo');
-            
+        if (currentCombo === FEVER_LV2) playSfx('fever');
+        if (currentCombo === FEVER_LV3) {
+            playSfx('fever');
             container.classList.remove('fever-mode');
-            container.classList.remove('fever-max-mode');
+            container.classList.add('fever-max-mode');
             hud.classList.remove('fever-text');
-            hud.classList.remove('fever-max-text');
-            
-            fireflies.forEach(p => p.scattering = true);
-            gearParticles.forEach(p => p.life = 0.1); 
+            hud.classList.add('fever-max-text');
+            fireflies.forEach(p => { p.color = Math.random() > 0.5 ? '#00ff00' : '#ccff00'; });
+        }
+    }
+
+    function resetFever() {
+        isFever = false;
+        const container = document.getElementById('game-canvas-container');
+        const hud = document.getElementById('g-combo');
+        container.classList.remove('fever-mode', 'fever-max-mode');
+        hud.classList.remove('fever-text', 'fever-max-text');
+        fireflies.forEach(p => p.scattering = true);
+        gearParticles.forEach(p => p.life = 0.1);
+    }
+
+    function drawFeverGearEffect() {
+        if (!isFever) return;
+        if (Math.random() < 0.3) {
+            gearParticles.push({
+                x: TRACK_X_OFFSET + Math.random() * (LANE_WIDTH * 4),
+                y: gameCanvas.height,
+                size: Math.random() * 4 + 2,
+                speedY: Math.random() * 1.5 + 0.5,
+                life: 1.0,
+                offset: Math.random() * 100
+            });
+        }
+        const isInferno    = combo >= FEVER_LV3;
+        const particleColor = isInferno ? '#00ff00' : '#ffd700';
+        for (let i = gearParticles.length - 1; i >= 0; i--) {
+            let p = gearParticles[i];
+            p.y -= p.speedY;
+            p.x += Math.sin(p.y * 0.02 + p.offset) * 0.5;
+            p.life -= 0.005;
+            if (p.life <= 0) { gearParticles.splice(i, 1); continue; }
+            gameCtx.globalAlpha = p.life * 0.5;
+            gameCtx.fillStyle = particleColor;
+            gameCtx.shadowBlur = 15;
+            gameCtx.shadowColor = particleColor;
+            gameCtx.beginPath();
+            gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+            gameCtx.fill();
+            gameCtx.shadowBlur = 0;
+        }
+        gameCtx.globalAlpha = 1.0;
+    }
+
+    function updateBgParticles() {
+        bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        if (combo >= FEVER_LV2 && fireflies.length < 100) {
+            if(Math.random() < 0.1) fireflies.push(new Firefly());
+        }
+        for (let i = fireflies.length - 1; i >= 0; i--) {
+            let p = fireflies[i];
+            p.update(); p.draw(bgCtx);
+            if (p.baseAlpha <= 0) fireflies.splice(i, 1);
+        }
+    }
+
+    // ============================================================
+    // 게임 루프
+    // ============================================================
+    function gameLoop() {
+        if(gameFinished) return;
+        gameAnimId = requestAnimationFrame(gameLoop);
+
+        if(isPaused || isResuming) {
+            drawGameScreen(audio.currentTime * 1000);
+            return;
         }
 
-        function drawFeverGearEffect() {
-            if (!isFever) return;
+        updateBgParticles();
 
-            if (Math.random() < 0.3) {
-                gearParticles.push({
-                    x: TRACK_X_OFFSET + Math.random() * (LANE_WIDTH * 4),
-                    y: gameCanvas.height,
-                    size: Math.random() * 4 + 2,
-                    speedY: Math.random() * 1.5 + 0.5, 
-                    life: 1.0,
-                    offset: Math.random() * 100 
-                });
+        const now = Date.now();
+        let currentTime = -9999;
+
+        if (gameState === 'COUNTDOWN') {
+            const rawTime = now - startTimestamp;
+            currentTime = rawTime - START_DELAY;
+            if (rawTime >= START_DELAY) {
+                gameState = 'WAIT_AUDIO';
+                audio.play().then(() => { if(useVideoBga) bgaVideo.play(); }).catch(() => { gameState = 'PLAYING_NO_AUDIO'; });
             }
-
-            const isInferno = combo >= FEVER_LV3;
-            const particleColor = isInferno ? '#00ff00' : '#ffd700';
-
-            for (let i = gearParticles.length - 1; i >= 0; i--) {
-                let p = gearParticles[i];
-                p.y -= p.speedY;
-                
-                p.x += Math.sin(p.y * 0.02 + p.offset) * 0.5;
-                p.life -= 0.005; 
-
-                if (p.life <= 0) {
-                    gearParticles.splice(i, 1);
-                } else {
-                    gameCtx.globalAlpha = p.life * 0.5;
-                    gameCtx.fillStyle = particleColor;
-                    gameCtx.shadowBlur = 15;
-                    gameCtx.shadowColor = particleColor;
-                    gameCtx.beginPath();
-                    gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-                    gameCtx.fill();
-                    gameCtx.shadowBlur = 0;
-                }
-            }
-            gameCtx.globalAlpha = 1.0;
+        } else if (gameState === 'WAIT_AUDIO') {
+            currentTime = 0;
+            if (audio.currentTime > 0 && !audio.paused) gameState = 'PLAYING';
+        } else if (gameState === 'PLAYING') {
+            currentTime = audio.currentTime * 1000;
+        } else if (gameState === 'PLAYING_NO_AUDIO') {
+            currentTime = (Date.now() - startTimestamp) - START_DELAY;
         }
 
-        function updateBgParticles() {
-            bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-            
-            if (combo >= FEVER_LV2 && fireflies.length < 100) {
-                if(Math.random() < 0.1) fireflies.push(new Firefly());
-            }
+        if (!gameFinished && !isPaused) {
+            if (audio.ended || currentTime > lastNoteEndTime + 3000) finishGame();
+        }
 
-            for (let i = fireflies.length - 1; i >= 0; i--) {
-                let p = fireflies[i];
-                p.update();
-                p.draw(bgCtx);
-                
-                if (p.baseAlpha <= 0) {
-                    fireflies.splice(i, 1);
-                }
+        const msPerMeasure = (60000 / bpm) * 4;
+        let nextEvent = speedMap.find(ev => ev.time > currentTime);
+        if (nextEvent && !nextEvent.warned) {
+            let currentMult = 1.0;
+            for(let i = 0; i < speedMap.length; i++) {
+                if(speedMap[i].time <= currentTime) currentMult = speedMap[i].mult;
+                else break;
+            }
+            if (nextEvent.time - currentTime <= msPerMeasure) {
+                nextEvent.warned = true;
+                showSpeedWarning(nextEvent.mult, currentMult);
             }
         }
 
-        function gameLoop() {
-            if(gameFinished) return;
-            gameAnimId = requestAnimationFrame(gameLoop);
-            
-            if(isPaused || isResuming) {
-                drawGameScreen(audio.currentTime * 1000); 
-                return; 
-            }
-
-            updateBgParticles();
-
-            const now = Date.now();
-            let currentTime = -9999;
-
-            if (gameState === 'COUNTDOWN') {
-                const rawTime = now - startTimestamp;
-                currentTime = rawTime - START_DELAY;
-                if (rawTime >= START_DELAY) {
-                    gameState = 'WAIT_AUDIO';
-                    audio.play().then(() => {
-                        if(useVideoBga) bgaVideo.play();
-                    }).catch(error => { gameState = 'PLAYING_NO_AUDIO'; });
+        // 메시지 이벤트
+        if (activeMsgEvents.length > 0 && !gameFinished) {
+            const activeMsg = activeMsgEvents.find(ev => currentTime >= ev.time && currentTime <= ev.endTime);
+            if (activeMsg) {
+                if (guideMsgEl.innerText !== activeMsg.text) {
+                    guideMsgEl.innerText = activeMsg.text;
+                    guideMsgEl.classList.add('msg-active');
                 }
-            } else if (gameState === 'WAIT_AUDIO') {
-                currentTime = 0;
-                if (audio.currentTime > 0 && !audio.paused) gameState = 'PLAYING';
-            } else if (gameState === 'PLAYING') {
-                currentTime = audio.currentTime * 1000;
-            } else if (gameState === 'PLAYING_NO_AUDIO') {
-                currentTime = (Date.now() - startTimestamp) - START_DELAY;
+            } else {
+                guideMsgEl.classList.remove('msg-active');
             }
-
-            if (!gameFinished && !isPaused) {
-                if (audio.ended || currentTime > lastNoteEndTime + 3000) {
-                    finishGame();
-                }
-            }
-
-            const msPerMeasure = (60000 / bpm) * 4; 
-            let nextEvent = speedMap.find(ev => ev.time > currentTime);
-            if (nextEvent && !nextEvent.warned) {
-                let currentMult = 1.0;
-                for(let i=0; i<speedMap.length; i++) {
-                    if(speedMap[i].time <= currentTime) currentMult = speedMap[i].mult;
-                    else break;
-                }
-                if (nextEvent.time - currentTime <= msPerMeasure) {
-                    nextEvent.warned = true;
-                    showSpeedWarning(nextEvent.mult, currentMult);
-                }
-            }
-
-            // ★ [추가] 안내 메시지 체크 및 표시
-            if (activeMsgEvents.length > 0 && !gameFinished) {
-                // 현재 시간에 해당하는 메시지 찾기
-                const activeMsg = activeMsgEvents.find(ev => 
-                    currentTime >= ev.time && currentTime <= ev.endTime
-                );
-
-                if (activeMsg) {
-                    // 텍스트가 다르면 업데이트 (깜빡임 방지)
-                    if (guideMsgEl.innerText !== activeMsg.text) {
-                        guideMsgEl.innerText = activeMsg.text;
-                        guideMsgEl.classList.add('msg-active');
-                    }
-                } else {
-                    // 해당하는 메시지가 없으면 숨김
-                    guideMsgEl.classList.remove('msg-active');
-                }
-            }
-
-            drawGameScreen(currentTime);
         }
 
-        function drawGameScreen(currentTime) {
-            gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
-            
-            drawFeverGearEffect();
+        drawGameScreen(currentTime);
+    }
 
-            drawLaneBeams();
-            drawJudgmentLine();
+    // ============================================================
+    // 게임 화면 렌더링
+    // ============================================================
+    function drawGameScreen(currentTime) {
+        gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+        drawFeverGearEffect();
+        drawLaneBeams();
+        drawJudgmentLine();
 
-            const currentVisualY = getVisualPos(currentTime);
-            const GLOBAL_SCALE = 0.1 * baseNoteSpeed; 
+        const currentVisualY = getVisualPos(currentTime);
+        const GLOBAL_SCALE   = 0.1 * baseNoteSpeed;
 
-            while(gameNotes.length > 0 && gameNotes[0].time - 10000 < currentTime) {
-                activeNotes.push(gameNotes.shift());
-            }
+        while(gameNotes.length > 0 && gameNotes[0].time - 10000 < currentTime) {
+            activeNotes.push(gameNotes.shift());
+        }
 
-            for(let i=0; i<activeNotes.length; i++) {
-                let n = activeNotes[i];
-                
-                const nPos = getVisualPos(n.time);
-                const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
+        // ============================================================
+        // ★ 노트 판정 / 렌더링 (개선된 얼리미스 / 롱노트)
+        // ============================================================
+        const MAX_HIT_WINDOW = 110; // Oh... 윈도우 (초과시 Miss)
 
-                const headY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
-                let tailY = headY;
-                if (n.len > 0) tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
+        for(let i = 0; i < activeNotes.length; i++) {
+            let n = activeNotes[i];
+            const nPos   = getVisualPos(n.time);
+            const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
+            const headY  = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
+            let   tailY  = headY;
+            if (n.len > 0) tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
 
-                if (tailY > gameCanvas.height) {
-                    if (!n.finished) {
-                        n.finished = true;
-                        if (!n.hit) {
-                            n.hit = true; 
-                            combo = 0; totalHits++; judgeStats.miss++; 
-                            if(n.len > 0) totalHits++; 
-                            updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
-                            resetFever(); 
-                        }
-                    }
-                    continue; 
-                }
-
-                if (headY < -150 && !n.hit && n.len === 0) continue; 
-
-                if(!n.hit && !n.finished && currentTime > n.time + 200) { 
-                    if(headY > HIT_LINE_Y + 50) {
-                        n.hit = true; n.finished = true; 
-                        combo = 0; totalHits++; judgeStats.miss++; 
-                        if(n.len > 0) totalHits++; 
-                        updateGameHUD(); showJudge("No..", n.lane, "#ff5555");
-                        checkFinish();
-                        resetFever(); 
-                    }
-                }
-
-                if (n.hit && n.len > 0 && !n.finished) {
-                    if (activeKeys[n.lane]) {
-                        if (currentTime >= n.endTime) {
-                            n.finished = true; totalHits++; score += scorePerHit; 
-                            totalRateSum += 100; combo++; judgeStats.perfect++; 
-                            updateGameHUD(); createParticles(n.lane); playSfx('hold_end'); checkFinish();
-                            checkFeverState(combo);
-                        }
-                    }
-                }
-
+            // ★ 화면 아래로 사라진 경우 (Miss 처리) - 롱노트 테일도 포함
+            if (tailY > gameCanvas.height + 30) {
                 if (!n.finished) {
-                    const laneX = TRACK_X_OFFSET + (n.lane * LANE_WIDTH);
-                    if (n.len > 0) {
-                        const drawHeadY = n.hit ? HIT_LINE_Y : headY;
-                        const bodyH = drawHeadY - tailY;
-                        if (drawHeadY > -50 && tailY < gameCanvas.height) {
-                            gameCtx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                            gameCtx.fillRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
+                    n.finished = true;
+                    if (!n.hit) {
+                        // 아직 히트 안 된 노트: Miss
+                        applyJudge(n, 'miss');
+                    }
+                }
+                continue;
+            }
+
+            // ★ 얼리 미스 판정: 히트하지 않은 노트가 판정선 아래 MAX_HIT_WINDOW 이상 지난 경우
+            if (!n.hit && !n.finished) {
+                const lateDiff = currentTime - n.time;
+                if (lateDiff > MAX_HIT_WINDOW + 50) { // 버퍼 50ms
+                    n.hit = true; n.finished = true;
+                    applyJudge(n, 'miss');
+                    checkFinish();
+                    continue;
+                }
+            }
+
+            // ★ 롱노트 홀딩 중 끝 체크
+            if (n.hit && n.len > 0 && !n.finished) {
+                if (activeKeys[n.lane]) {
+                    if (currentTime >= n.endTime) {
+                        n.finished = true;
+                        totalHits++;
+                        score += scorePerHit;
+                        totalRateSum += 100;
+                        combo++;
+                        judgeStats.perfectEx++;
+                        if(combo > maxCombo) maxCombo = combo;
+                        updateGameHUD();
+                        createParticlesForJudge(n.lane, JUDGE_TABLE[0]);
+                        showJudgePopup(JUDGE_TABLE[0], n.lane);
+                        playSfx('hold_end');
+                        checkFinish();
+                        checkFeverState(combo);
+                    }
+                } else {
+                    // ★ 롱노트 도중 손을 뗀 경우 - 안전 구간 / 불안전 구간 판별
+                    const remaining    = n.endTime - currentTime;
+                    const totalDuration = n.endTime - n.time;
+                    const safeZone     = Math.max(100, totalDuration * 0.2);
+
+                    if (remaining > safeZone) {
+                        // 불안전 구간에서 손 뗌: Miss
+                        n.finished = true;
+                        combo = 0;
+                        totalHits++;
+                        judgeStats.miss++;
+                        updateGameHUD();
+                        showJudgePopup(JUDGE_TABLE[7], n.lane);
+                        resetFever();
+                    } else {
+                        // 안전 구간에서 손 뗌: Perfect 처리 (checkRelease 에서 처리됨)
+                        // (여기선 아직 손 안 뗀 상태 = 별도 처리 없음)
+                    }
+                }
+            }
+
+            // 화면 위쪽 컬링 (헤드만 체크)
+            if (!n.hit && headY < -150 && n.len === 0) continue;
+
+            if (!n.finished) {
+                const laneX = TRACK_X_OFFSET + (n.lane * LANE_WIDTH);
+                if (n.len > 0) {
+                    const drawHeadY = n.hit ? HIT_LINE_Y : headY;
+                    const bodyH    = drawHeadY - tailY;
+                    if (drawHeadY > -50 && tailY < gameCanvas.height) {
+                        // 롱노트 바디: 홀딩중 색상 변화
+                        const bodyColor = n.hit ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)';
+                        gameCtx.fillStyle = bodyColor;
+                        gameCtx.fillRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
+                        // 롱노트 엣지 네온
+                        if(n.hit) {
+                            gameCtx.strokeStyle = COLORS[n.lane];
+                            gameCtx.lineWidth = 3;
+                            gameCtx.shadowBlur = 8;
+                            gameCtx.shadowColor = COLORS[n.lane];
+                            gameCtx.strokeRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
+                            gameCtx.shadowBlur = 0;
                         }
                     }
-                    if (!n.hit && headY > -50 && headY < gameCanvas.height) {
-                        gameCtx.fillStyle = COLORS[n.lane]; 
-                        gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 30);
-                        gameCtx.fillStyle = "rgba(255,255,255,0.7)"; 
-                        gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 8);
-                    }
                 }
-            }
-            activeNotes = activeNotes.filter(n => !n.finished);
-            drawParticles(); drawGameFX(); drawHitErrorBar();
-        }
-
-        let KEY_MAP = JSON.parse(localStorage.getItem('wb_key_layout')) || ['d', 'f', 'j', 'k'];
-        KEY_MAP = KEY_MAP.map(k => k.toLowerCase());
-
-        window.addEventListener('keydown', e => {
-            if(gameFinished) return;
-            if (e.code === 'Escape') { togglePause(); return; }
-            if(isPaused || isResuming) return;
-
-            const key = e.key.toLowerCase();
-            const lane = KEY_MAP.indexOf(key);
-
-            if(lane !== -1 && !activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
-        });
-
-        window.addEventListener('keyup', e => {
-            if(gameFinished) return;
-            
-            const key = e.key.toLowerCase();
-            const lane = KEY_MAP.indexOf(key);
-            
-            if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
-        });
-
-        if (isMobile) {
-            gameCanvas.addEventListener('touchstart', handleTouch, {passive: false});
-            gameCanvas.addEventListener('touchend', handleTouch, {passive: false});
-            gameCanvas.addEventListener('touchcancel', handleTouch, {passive: false}); 
-        }
-
-        function handleTouch(e) {
-            if (gameFinished || isPaused || isResuming) return;
-            e.preventDefault();
-            const touches = e.changedTouches;
-            for (let i = 0; i < touches.length; i++) {
-                const touch = touches[i];
-                const lane = Math.floor(touch.clientX / (window.innerWidth / 4));
-                if (lane >= 0 && lane < 4) {
-                    if (e.type === 'touchstart') {
-                        if (!activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
-                    } else if (e.type === 'touchend' || e.type === 'touchcancel') {
-                        activeKeys[lane] = false; checkRelease(lane);
-                    }
+                // 헤드 노트
+                if (!n.hit && headY > -50 && headY < gameCanvas.height) {
+                    // 노트 그림자 글로우
+                    gameCtx.shadowBlur  = 18;
+                    gameCtx.shadowColor = COLORS[n.lane];
+                    gameCtx.fillStyle   = COLORS[n.lane];
+                    gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 30);
+                    // 하이라이트
+                    gameCtx.shadowBlur = 0;
+                    gameCtx.fillStyle  = "rgba(255,255,255,0.75)";
+                    gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 8);
                 }
             }
         }
+        activeNotes = activeNotes.filter(n => !n.finished);
+        drawParticles();
+        drawGameFX();
+        drawHitErrorBar();
+    }
 
-        function checkHit(lane) {
-            let currentTime = 0;
-            if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
-            else currentTime = (Date.now() - startTimestamp) - START_DELAY;
-
-            const HIT_WINDOW = 150; 
-            const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
-            if (candidates.length === 0) return;
-
-            const n = candidates.reduce((prev, curr) => Math.abs(currentTime - curr.time) < Math.abs(currentTime - prev.time) ? curr : prev);
-            const absDiff = Math.abs(currentTime - n.time);
-
-            n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
-            totalHits++; 
-            if (typeof playSfx === 'function') { if (n.len > 0) playSfx('hold_start'); else playSfx('hit'); }
-
-            let judge="No..", clr="#888", rate=0;
-            if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
-            else if(absDiff <= 48) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
-            else if(absDiff <= 64) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
-            else { judge="OH..."; clr="#ff5555"; rate=10; judgeStats.oh++; }
-
-            if(rate >= 10) { 
-                combo++; 
-                if(combo > maxCombo) maxCombo = combo; 
-                score += (rate / 100) * scorePerHit; 
-                createParticles(lane); 
-                checkFeverState(combo); 
-            } else { 
-                combo = 0; 
-                resetFever(); 
-            }
-
-            if(rate == 10) {
-                combo = 0;
-                resetFever();
-            }
-            
-            totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); 
-            recentHits.push({ diff: currentTime - n.time, color: clr, life: 600, maxLife: 600 });
-            
-            checkFinish(); 
-            if(totalHits === totalMaxHits && !finishTimer) finishTimer = setTimeout(finishGame, 1500);
-        }
-
-        function checkRelease(lane) {
-            const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
-            if (n) {
-                let currentTime = 0;
-                if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
-                else currentTime = (Date.now() - startTimestamp) - START_DELAY;
-                const remaining = n.endTime - currentTime; 
-                const totalDuration = n.endTime - n.time;
-                const safeZone = Math.max(100, totalDuration * 0.2); 
-                
-                if (remaining > safeZone) { 
-                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; updateGameHUD(); showJudge("No..", lane, "#555");
-                    resetFever();
-                } else {
-                    n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; combo++; judgeStats.perfect++; 
-                    createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff"); playSfx('hold_end');
-                    if(combo >= FEVER_LV1) checkFeverState(combo);
-                }
-                
-                checkFinish();
-                if(totalHits === totalMaxHits && !finishTimer) finishTimer = setTimeout(finishGame, 1500);
-            }
-        }
-
-        function updateGameHUD() {
-            document.getElementById('g-combo').innerText = combo;
-            document.getElementById('g-score').innerText = Math.round(score).toString().padStart(6, '0');
-            let currentRate = 100.00;
-            if (totalHits > 0) currentRate = Math.min(100, (totalRateSum / (totalHits * 100)) * 100);
-            document.getElementById('g-rate').innerText = currentRate.toFixed(2) + "%";
-        }
-
-        function drawJudgmentLine() {
-            gameCtx.shadowBlur = 10; 
-            const lineColor = (combo >= FEVER_LV3) ? '#00ff00' : (isFever ? '#ffd700' : '#00e5ff');
-            gameCtx.shadowColor = lineColor;
-            gameCtx.strokeStyle = lineColor;
-            gameCtx.lineWidth = 3;
-            gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(gameCanvas.width, HIT_LINE_Y); gameCtx.stroke(); gameCtx.shadowBlur = 0;
-            
-            gameCtx.strokeStyle = 'rgba(255,255,255,0.3)'; gameCtx.lineWidth = 2;
-            for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = TRACK_X_OFFSET + i*LANE_WIDTH; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); }
-        }
-
-        function drawLaneBeams() {
-            gameCtx.globalCompositeOperation = 'lighter';
-            for(let i=0; i<4; i++) { 
-                if(activeKeys[i]) { 
-                    const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); 
-                    grd.addColorStop(0, COLORS[i] + '80'); grd.addColorStop(1, "transparent"); 
-                    gameCtx.fillStyle=grd; 
-                    gameCtx.fillRect(TRACK_X_OFFSET + i*LANE_WIDTH, 0, LANE_WIDTH, HIT_LINE_Y); 
-                } 
-            }
-            gameCtx.globalCompositeOperation = 'source-over';
-        }
-
-        function showJudge(text, lane, color) { judgments.push({text, x: TRACK_X_OFFSET + lane*LANE_WIDTH + LANE_WIDTH/2, y: HIT_LINE_Y - 50, life: 30, maxLife: 30, color}); }
-        function createParticles(lane) { for(let i=0; i<8; i++) particles.push({x:TRACK_X_OFFSET + lane*LANE_WIDTH + LANE_WIDTH/2, y:HIT_LINE_Y, vx:(Math.random()-0.5)*15, vy:(Math.random()-1)*15, life:1.0, color:COLORS[lane]}); }
+    // ============================================================
+    // ★ 판정 적용 통합 함수
+    // ============================================================
+    function applyJudge(note, forceKey) {
+        const key      = forceKey || 'miss';
+        const judgeInfo = JUDGE_TABLE.find(j => j.key === key) || JUDGE_TABLE[7];
         
-        function drawGameFX() {
-            for(let i=judgments.length-1; i>=0; i--) {
-                const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; 
-                gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y - (30 - j.life)); 
-                gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1);
-            }
-        }
-        function drawHitErrorBar() {
-            const cx = gameCanvas.width / 2; const cy = HIT_LINE_Y + 40; const width = 300;
-            gameCtx.fillStyle = "rgba(100, 100, 100, 0.5)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4);
-            gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 6, 2, 12);
-            for(let i = recentHits.length - 1; i >= 0; i--) {
-                const h = recentHits[i]; const px = (h.diff / 150) * (width / 2); 
-                let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px));
-                gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife;
-                gameCtx.fillRect(drawX - 2, cy - 6, 4, 12);
-                gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1);
-            }
-        }
-        function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.8; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,6,6); } } gameCtx.globalAlpha=1.0; }
+        totalHits++;
+        if(note.len > 0) totalHits++; // 롱노트는 head+tail 2카운트
 
-        function checkFinish() {
-            if (totalHits === totalMaxHits && totalMaxHits > 0) {
-                if (judgeStats.perfect === totalMaxHits) { 
-                    finishEffect.innerHTML = "<div class='text-glitch' data-text='TROLL BEAT!!'>TROLL BEAT!!</div>"; 
-                    playSfx('ap_main'); playSfx('ap_layer');
-                } else if (combo === totalMaxHits) { 
-                    finishEffect.innerHTML = "<div class='text-fc'>FULL COMBO</div>"; 
-                    playSfx('fc'); 
-                }
-            }
+        judgeStats[judgeInfo.key]++;
+        totalRateSum += judgeInfo.rate;
+        score += scorePerHit * judgeInfo.scoreRate;
+
+        if(judgeInfo.comboBreak) {
+            combo = 0;
+            resetFever();
+        } else {
+            combo++;
+            if(combo > maxCombo) maxCombo = combo;
+            checkFeverState(combo);
         }
 
-        async function showResult() {
-            try {
-                // ============================================================
-                // 🛡️ [보안 1단계] 플레이 시간 검증
-                // ============================================================
-                const currentTime = Date.now();
-                const playDuration = currentTime - gameStartTimeLocal; 
-                const minPlayTime = lastNoteEndTime * 0.5; 
+        updateGameHUD();
+        showJudgePopup(judgeInfo, note ? note.lane : 0);
+        if(!judgeInfo.comboBreak) createParticlesForJudge(note.lane, judgeInfo);
+    }
 
-                if (playDuration < minPlayTime && !isFever) { 
-                    console.warn(`🚨 Security Alert: Play time too short. (${playDuration}ms / Ref: ${minPlayTime}ms)`);
-                    alert("비정상적인 플레이가 감지되었습니다. (Time Logic)");
-                    location.href = 'index.html';
-                    return;
-                }
+    // ============================================================
+    // 키 입력
+    // ============================================================
+    let KEY_MAP = JSON.parse(localStorage.getItem('wb_key_layout') || '["d","f","j","k"]');
+    KEY_MAP = KEY_MAP.map(k => k.toLowerCase());
 
-                // ============================================================
-                // 🛡️ [보안 2단계] 점수 무결성 검증
-                // ============================================================
-                const pureScore = Math.floor(score); 
-                const calcScore = Math.floor(
-                    (judgeStats.perfect * scorePerHit * 1.0) + 
-                    (judgeStats.great * scorePerHit * 0.9) + 
-                    (judgeStats.okay * scorePerHit * 0.5) + 
-                    (judgeStats.oh * scorePerHit * 0.1)
-                );
+    window.addEventListener('keydown', e => {
+        // ★ 일시정지 메뉴에서 키보드 탐색
+        if (isPaused && !isResuming) {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+                pauseSelectedIdx = (pauseSelectedIdx - 1 + pauseActions.length) % pauseActions.length;
+                updatePauseSelection(); return;
+            }
+            if (e.key === 'ArrowDown' || e.key === 'ArrowRight') {
+                pauseSelectedIdx = (pauseSelectedIdx + 1) % pauseActions.length;
+                updatePauseSelection(); return;
+            }
+            if (e.key === 'Enter' || e.key === ' ') {
+                executePauseAction(pauseActions[pauseSelectedIdx]); return;
+            }
+            if (e.key === 'Escape') { togglePause(); return; }
+            return;
+        }
 
-                if (Math.abs(pureScore - calcScore) > 500) { 
-                    console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, memory: ${pureScore}`);
-                    alert("데이터 무결성 오류가 발생했습니다. (점수 불일치)");
-                    location.href = 'index.html';
-                    return;
-                }
+        if(gameFinished) return;
+        if (e.code === 'Escape') { togglePause(); return; }
+        if(isPaused || isResuming) return;
 
-                // ============================================================
-                // 🛡️ [보안 3단계] 데이터 서명 및 정수화 동기화
-                // ============================================================
-                const SECRET_SALT = "WebBeat_Secure_Key_2026_Ver42"; 
-                
-                const secureScore = Math.floor(score);
-                const secureMaxCombo = Math.floor(maxCombo || 0);
-                
-                const secureUserId = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2, 9);
-                const secureUserName = userProfile ? userProfile.name : "GUEST";
-                const securePlayTime = Math.floor(playDuration || 0);
+        const key  = e.key.toLowerCase();
+        const lane = KEY_MAP.indexOf(key);
+        if(lane !== -1 && !activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
+    });
 
-                const rawSignature = `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
-                const signatureToken = btoa(unescape(encodeURIComponent(rawSignature)));
+    window.addEventListener('keyup', e => {
+        if(gameFinished || isPaused) return;
+        const key  = e.key.toLowerCase();
+        const lane = KEY_MAP.indexOf(key);
+        if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
+    });
 
-                console.log("📤 [WEB BEAT] 전송 서명 문자열 원본:", rawSignature);
-                console.log("🔑 [WEB BEAT] 생성된 서명 토큰:", signatureToken);
+    if (isMobile) {
+        gameCanvas.addEventListener('touchstart',  handleTouch, {passive: false});
+        gameCanvas.addEventListener('touchend',    handleTouch, {passive: false});
+        gameCanvas.addEventListener('touchcancel', handleTouch, {passive: false});
+    }
 
-                // ------------------------------------------------------------
-                // [기존 로직 시작] UI 표시 및 데이터 전송
-                // ------------------------------------------------------------
-                const SERVER_BASE = SERVER_URL.replace('/api/score', '');
-                finishEffect.innerHTML = "";
-                
-                // 달성률(%) 계산 (UI 표시용으로만 사용)
-                let finalRate = 0; 
-                if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
-
-                // XP 및 레벨업 로직
-                let gainedXp = Math.floor(secureScore / 5000); 
-                if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50; 
-
-                let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
-                let currentXp = parseInt(localStorage.getItem('wb_user_xp') || "0");
-
-                currentXp += gainedXp;
-                let requiredXp = currentLv * 500; 
-                while (currentXp >= requiredXp) { currentXp -= requiredXp; currentLv++; requiredXp = currentLv * 500; }
-                localStorage.setItem('wb_user_lv', currentLv);
-                localStorage.setItem('wb_user_xp', currentXp);
-
-                // ============================================================
-                // 🌟 [새로운 등급 시스템 적용] 점수 기반 세분화 및 FAILED 처리
-                // ============================================================
-                let rank = "";
-                let gradeColor = "";
-                let glowEffect = "";
-
-                if (secureScore <= 0) {
-                    rank = "—";
-                    gradeColor = "#444";
-                    glowEffect = "none";
-                } else if (secureScore < 600000) {
-                    rank = "FAILED";
-                    gradeColor = "#ff4455";
-                    glowEffect = "0 0 40px #ff4455";
+    function handleTouch(e) {
+        if (gameFinished || isPaused || isResuming) return;
+        e.preventDefault();
+        const touches = e.changedTouches;
+        for (let i = 0; i < touches.length; i++) {
+            const touch = touches[i];
+            const lane  = Math.floor(touch.clientX / (window.innerWidth / 4));
+            if (lane >= 0 && lane < 4) {
+                if (e.type === 'touchstart') {
+                    if (!activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
                 } else {
-                    const thresholds = [
-                        { min: 1000000, grade: 'TB', hex: '#ffffff' },
-                        { min: 950000,  grade: 'S+', hex: '#00ffff' },
-                        { min: 900000,  grade: 'S',  hex: '#00e5ff' },
-                        { min: 850000,  grade: 'A+', hex: '#00ff88' },
-                        { min: 800000,  grade: 'A',  hex: '#00cc66' },
-                        { min: 700000,  grade: 'B',  hex: '#3b9eff' },
-                        { min: 600000,  grade: 'C',  hex: '#ffc832' }
-                    ];
-                    const gradeInfo = thresholds.find(t => secureScore >= t.min) || thresholds[thresholds.length - 1];
-                    rank = gradeInfo.grade;
-                    gradeColor = gradeInfo.hex;
-                    glowEffect = `0 0 40px ${gradeInfo.hex}`;
+                    activeKeys[lane] = false; checkRelease(lane);
                 }
-
-                const finalScoreStr = secureScore.toString().padStart(6, '0');
-                
-                const urlParams = new URLSearchParams(window.location.search);
-                const songParam = urlParams.get('song');
-                const diffParam = urlParams.get('diff');
-
-                // 로컬 스토리지 저장 (최고 기록 갱신 시)
-                if (songParam && diffParam) {
-                    const scoreKey = `wb_score_${songParam}_${diffParam}`;
-                    const badgeKey = `wb_badge_${songParam}_${diffParam}`;
-                    const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
-                    
-                    if (secureScore > savedScore) localStorage.setItem(scoreKey, secureScore.toString().padStart(6, '0'));
-
-                    if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
-                    else if (combo === totalMaxHits && totalMaxHits > 0) {
-                        if (localStorage.getItem(badgeKey) !== "TB") localStorage.setItem(badgeKey, "FC");
-                    }
-                }
-                
-                // 서버 전송 (보안 토큰 포함)
-                if (songParam && diffParam && userProfile) { 
-                    try {
-                        const response = await fetch(`${SERVER_BASE}/api/score`, {
-                            method: "POST", 
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ 
-                                userId: secureUserId, 
-                                userName: secureUserName, 
-                                song: songParam, 
-                                diff: diffParam, 
-                                score: secureScore,         
-                                maxCombo: secureMaxCombo,   
-                                level: currentLv,
-                                signature: signatureToken,  
-                                playTime: securePlayTime,
-                                details: judgeStats 
-                            })
-                        });
-
-                        const resData = await response.json();
-                        if (!response.ok || !resData.success) {
-                            throw new Error(resData.error || "Server Validation Failed");
-                        }
-                        console.log("✅ 서버 검증 및 랭킹 등록 성공!");
-
-                        await fetch(`${SERVER_BASE}/api/user/update`, {
-                            method: "POST", 
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ userId: secureUserId, level: currentLv, xp: currentXp })
-                        });
-                    } catch (err) { 
-                        console.error("🚨 서버 전송 중 에러 발생:", err);
-                        alert("점수 검증 에러: " + err.message);
-                    }
-                }
-
-                // 랭킹 로딩
-                let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
-                try {
-                    const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
-                    const rankData = await res.json();
-                    
-                    if(rankData.length > 0) {
-                        rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);"><div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
-                        rankData.slice(0, 5).forEach((r, idx) => {
-                            const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
-                            const isMe = userProfile && r.userId === secureUserId ? "color:#ffd700;" : "color:#fff;";
-                            rankingHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}"><span>${medal} ${r.userName}</span><span>${r.score}</span></div>`;
-                        });
-                        rankingHtml += `</div>`;
-                    } else { rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>"; }
-                } catch(e) { console.warn("Ranking Load Fail", e); }
-
-                let badgeHtml = "";
-                if (judgeStats.perfect === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
-                else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
-
-                const songName = decodeURIComponent(songParam);
-                const diffName = diffParam.toUpperCase();
-
-                // 결과창 HTML 렌더링 (동적 색상/네온 효과 적용)
-                resultOverlay.innerHTML = `
-                    <div style="text-align:center; margin-bottom:20px;">
-                        <div class="res-song-title">${songName}</div>
-                        <div class="res-diff-name">${diffName}</div>
-                        <div class="${rank} res-rank" style="color: ${gradeColor}; text-shadow: ${glowEffect};">${rank}</div>
-                    </div>
-                    ${badgeHtml}
-                    <div class="res-info">
-                        <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScoreStr}</div></div>
-                        <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
-                        <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${secureMaxCombo}</div></div>
-                    </div>
-                    <div class="res-detail" style="margin-bottom:20px;">
-                        <div class="detail-item"><div class="detail-label" style="color:#00e5ff">PERFECT</div><div class="detail-val">${judgeStats.perfect}</div></div>
-                        <div class="detail-item"><div class="detail-label" style="color:#00ff00">GREAT</div><div class="detail-val">${judgeStats.great}</div></div>
-                        <div class="detail-item"><div class="detail-label" style="color:#ffff00">OKAY</div><div class="detail-val">${judgeStats.okay}</div></div>
-                        <div class="detail-item"><div class="detail-label" style="color:#ff5555">OH...</div><div class="detail-val">${judgeStats.oh}</div></div>
-                        <div class="detail-item"><div class="detail-label" style="color:#888">No..</div><div class="detail-val">${judgeStats.miss}</div></div>
-                    </div>
-                    ${rankingHtml}
-                    <div id="google-login-btn-result" style="margin-top: 15px; display: flex; justify-content: center; min-height:40px;"></div>
-                    <button class="btn-common" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
-                `;
-                
-                resultOverlay.style.display = 'flex';
-
-                if (!userProfile) {
-                    google.accounts.id.renderButton(
-                        document.getElementById("google-login-btn-result"),
-                        { theme: "filled_black", size: "large", shape: "pill" }
-                    );
-                }
-            } catch(e) {
-                alert("Result Error: " + e.message);
-                location.href='index.html';
             }
         }
-                
-        // ★ [보안] 5. 문지기 설정 (외부에서 필요한 함수만 노출)
-        window.startGame = startGame;
-        window.togglePause = togglePause;
-        window.handleCredentialResponse = handleCredentialResponse;
+    }
 
-        // [보안] 텍스트의 SHA-256 해시값(지문)을 구하는 함수
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    // ============================================================
+    // ★ checkHit (8단계 판정)
+    // ============================================================
+    function checkHit(lane) {
+        let currentTime = getCurrentTime();
+
+        const MAX_WINDOW = 110; // Oh... 까지의 최대 윈도우
+        const candidates = activeNotes.filter(n =>
+            n.lane === lane && !n.hit && !n.finished &&
+            Math.abs(currentTime - n.time) <= MAX_WINDOW
+        );
+        if (candidates.length === 0) return;
+
+        const n = candidates.reduce((prev, curr) =>
+            Math.abs(currentTime - curr.time) < Math.abs(currentTime - prev.time) ? curr : prev
+        );
+        const diff    = currentTime - n.time;
+        const absDiff = Math.abs(diff);
+
+        n.hit = true;
+        n.holding = true;
+        if (n.len === 0) n.finished = true;
+
+        // ★ SFX
+        if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
+
+        // ★ 판정 결정 (8단계)
+        let judgeInfo = JUDGE_TABLE[7]; // 기본: No...
+        for(const j of JUDGE_TABLE) {
+            if(absDiff <= j.window) { judgeInfo = j; break; }
         }
 
-        })(); // 즉시 실행 함수 닫기
+        // 판정 통계 반영
+        totalHits++;
+        judgeStats[judgeInfo.key]++;
+        totalRateSum += judgeInfo.rate;
+        score += scorePerHit * judgeInfo.scoreRate;
+
+        if(judgeInfo.comboBreak) {
+            combo = 0;
+            resetFever();
+        } else {
+            combo++;
+            if(combo > maxCombo) maxCombo = combo;
+            checkFeverState(combo);
+        }
+
+        updateGameHUD();
+        showJudgePopup(judgeInfo, lane);
+        createParticlesForJudge(lane, judgeInfo);
+
+        // 히트 에러 바 기록
+        recentHits.push({ diff, color: judgeInfo.color, life: 600, maxLife: 600 });
+
+        checkFinish();
+        if(totalHits === totalMaxHits && !finishTimer) finishTimer = setTimeout(finishGame, 1500);
+    }
+
+    // ============================================================
+    // ★ checkRelease (롱노트 해제)
+    // ============================================================
+    function checkRelease(lane) {
+        const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
+        if (!n) return;
+
+        const currentTime   = getCurrentTime();
+        const remaining     = n.endTime - currentTime;
+        const totalDuration = n.endTime - n.time;
+        const safeZone      = Math.max(100, totalDuration * 0.2);
+
+        if (remaining > safeZone) {
+            // 너무 일찍 뗌: Miss
+            n.finished = true;
+            totalHits++;
+            judgeStats.miss++;
+            totalRateSum += 0;
+            combo = 0;
+            updateGameHUD();
+            showJudgePopup(JUDGE_TABLE[7], lane);
+            resetFever();
+        } else {
+            // 안전 구간에서 뗌: Perfect! 처리
+            n.finished = true;
+            totalHits++;
+            score += scorePerHit * 1.0;
+            totalRateSum += 100;
+            combo++;
+            judgeStats.perfectEx++;
+            if(combo > maxCombo) maxCombo = combo;
+            updateGameHUD();
+            showJudgePopup(JUDGE_TABLE[0], lane);
+            createParticlesForJudge(lane, JUDGE_TABLE[0]);
+            playSfx('hold_end');
+            checkFeverState(combo);
+        }
+
+        checkFinish();
+        if(totalHits === totalMaxHits && !finishTimer) finishTimer = setTimeout(finishGame, 1500);
+    }
+
+    function getCurrentTime() {
+        if (gameState === 'PLAYING' && audio.currentTime > 0) return audio.currentTime * 1000;
+        return (Date.now() - startTimestamp) - START_DELAY;
+    }
+
+    function updateGameHUD() {
+        document.getElementById('g-combo').innerText  = combo;
+        document.getElementById('g-score').innerText  = Math.round(score).toString().padStart(6, '0');
+        let currentRate = 100.00;
+        if (totalHits > 0) currentRate = Math.min(100, (totalRateSum / (totalHits * 100)) * 100);
+        document.getElementById('g-rate').innerText   = currentRate.toFixed(2) + "%";
+    }
+
+    // ============================================================
+    // 그리기 유틸
+    // ============================================================
+    function drawJudgmentLine() {
+        // ★ 라인 플래시
+        if(lineFlash && lineFlash.life > 0) {
+            gameCtx.globalAlpha = lineFlash.life * 0.5;
+            gameCtx.fillStyle   = lineFlash.color;
+            gameCtx.fillRect(0, HIT_LINE_Y - 20, gameCanvas.width, 40);
+            gameCtx.globalAlpha = 1.0;
+            lineFlash.life -= 0.08;
+        }
+
+        const lineColor = (combo >= FEVER_LV3) ? '#00ff00' : (isFever ? '#ffd700' : '#00e5ff');
+        gameCtx.shadowBlur   = 12;
+        gameCtx.shadowColor  = lineColor;
+        gameCtx.strokeStyle  = lineColor;
+        gameCtx.lineWidth    = 3;
+        gameCtx.beginPath();
+        gameCtx.moveTo(0, HIT_LINE_Y);
+        gameCtx.lineTo(gameCanvas.width, HIT_LINE_Y);
+        gameCtx.stroke();
+        gameCtx.shadowBlur = 0;
+
+        // 레인 구분선
+        gameCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+        gameCtx.lineWidth   = 2;
+        for(let i = 0; i <= 4; i++) {
+            const x = TRACK_X_OFFSET + i * LANE_WIDTH;
+            gameCtx.beginPath();
+            gameCtx.moveTo(x, 0);
+            gameCtx.lineTo(x, gameCanvas.height);
+            gameCtx.stroke();
+        }
+    }
+
+    function drawLaneBeams() {
+        gameCtx.globalCompositeOperation = 'lighter';
+        for(let i = 0; i < 4; i++) {
+            if(activeKeys[i]) {
+                const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300);
+                grd.addColorStop(0, COLORS[i] + '80');
+                grd.addColorStop(1, "transparent");
+                gameCtx.fillStyle = grd;
+                gameCtx.fillRect(TRACK_X_OFFSET + i * LANE_WIDTH, 0, LANE_WIDTH, HIT_LINE_Y);
+            }
+        }
+        gameCtx.globalCompositeOperation = 'source-over';
+    }
+
+    function drawGameFX() {
+        for(let i = judgments.length - 1; i >= 0; i--) {
+            const j = judgments[i];
+            gameCtx.save();
+            gameCtx.globalAlpha = j.life / j.maxLife;
+            gameCtx.fillStyle   = j.color;
+            gameCtx.font        = "900 24px Arial";
+            gameCtx.textAlign   = "center";
+            gameCtx.fillText(j.text, j.x, j.y - (30 - j.life));
+            gameCtx.restore();
+            j.life--;
+            if(j.life <= 0) judgments.splice(i, 1);
+        }
+    }
+
+    function drawHitErrorBar() {
+        const cx    = gameCanvas.width / 2;
+        const cy    = HIT_LINE_Y + 40;
+        const width = 300;
+
+        // 판정 구간 배경 (색상 그라디언트로)
+        const barGrd = gameCtx.createLinearGradient(cx - width/2, 0, cx + width/2, 0);
+        barGrd.addColorStop(0,    'rgba(255,45,120,0.3)');
+        barGrd.addColorStop(0.25, 'rgba(255,119,51,0.3)');
+        barGrd.addColorStop(0.4,  'rgba(255,179,0,0.3)');
+        barGrd.addColorStop(0.5,  'rgba(0,242,255,0.5)');
+        barGrd.addColorStop(0.6,  'rgba(255,179,0,0.3)');
+        barGrd.addColorStop(0.75, 'rgba(255,119,51,0.3)');
+        barGrd.addColorStop(1,    'rgba(255,45,120,0.3)');
+        gameCtx.fillStyle = barGrd;
+        gameCtx.fillRect(cx - width/2, cy - 3, width, 6);
+
+        // 중심선
+        gameCtx.fillStyle = "#fff";
+        gameCtx.fillRect(cx - 1, cy - 8, 2, 16);
+
+        // 히트 마크
+        for(let i = recentHits.length - 1; i >= 0; i--) {
+            const h   = recentHits[i];
+            const px  = (h.diff / 110) * (width / 2);
+            const drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px));
+            gameCtx.fillStyle   = h.color;
+            gameCtx.globalAlpha = h.life / h.maxLife;
+            gameCtx.shadowBlur  = 6;
+            gameCtx.shadowColor = h.color;
+            gameCtx.fillRect(drawX - 2, cy - 8, 4, 16);
+            gameCtx.shadowBlur  = 0;
+            gameCtx.globalAlpha = 1.0;
+            h.life--;
+            if(h.life <= 0) recentHits.splice(i, 1);
+        }
+    }
+
+    function drawParticles() {
+        for(let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x   += p.vx;
+            p.y   += p.vy;
+            p.vy  += 0.5;
+            p.vx  *= 0.98;
+            p.life -= p.decay;
+            if(p.life <= 0) { particles.splice(i, 1); continue; }
+            gameCtx.globalAlpha = p.life;
+            if(p.glow) {
+                gameCtx.shadowBlur  = 12;
+                gameCtx.shadowColor = p.color;
+            }
+            gameCtx.fillStyle = p.color;
+            gameCtx.fillRect(p.x - p.size/2, p.y - p.size/2, p.size, p.size);
+            gameCtx.shadowBlur  = 0;
+        }
+        gameCtx.globalAlpha = 1.0;
+    }
+
+    function checkFinish() {
+        if (totalHits === totalMaxHits && totalMaxHits > 0) {
+            if (judgeStats.perfectEx === totalMaxHits) {
+                finishEffect.innerHTML = "<div class='text-glitch' data-text='TROLL BEAT!!'>TROLL BEAT!!</div>";
+                playSfx('ap_main'); playSfx('ap_layer');
+            } else if (combo === totalMaxHits) {
+                finishEffect.innerHTML = "<div class='text-fc'>FULL COMBO</div>";
+                playSfx('fc');
+            }
+        }
+    }
+
+    // ============================================================
+    // 결과 화면
+    // ============================================================
+    async function showResult() {
+        try {
+            const currentTime  = Date.now();
+            const playDuration = currentTime - gameStartTimeLocal;
+            const minPlayTime  = lastNoteEndTime * 0.5;
+
+            if (playDuration < minPlayTime && !isFever) {
+                console.warn(`🚨 Security Alert: Play time too short.`);
+                alert("비정상적인 플레이가 감지되었습니다. (Time Logic)");
+                location.href = 'index.html'; return;
+            }
+
+            const pureScore = Math.floor(score);
+            // 세분화된 8단계 판정 기준으로 재계산
+            const calcScore = Math.floor(
+                (judgeStats.perfectEx * scorePerHit * 1.0) +
+                (judgeStats.perfect   * scorePerHit * 0.96) +
+                (judgeStats.great     * scorePerHit * 0.88) +
+                (judgeStats.good      * scorePerHit * 0.70) +
+                (judgeStats.notBad    * scorePerHit * 0.45) +
+                (judgeStats.save      * scorePerHit * 0.20) +
+                (judgeStats.oh        * scorePerHit * 0.05)
+            );
+
+            if (Math.abs(pureScore - calcScore) > 1000) {
+                console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, memory: ${pureScore}`);
+                alert("데이터 무결성 오류가 발생했습니다. (점수 불일치)");
+                location.href = 'index.html'; return;
+            }
+
+            const SECRET_SALT     = "WebBeat_Secure_Key_2026_Ver42";
+            const secureScore     = Math.floor(score);
+            const secureMaxCombo  = Math.floor(maxCombo || 0);
+            const secureUserId    = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2, 9);
+            const secureUserName  = userProfile ? userProfile.name : "GUEST";
+            const securePlayTime  = Math.floor(playDuration || 0);
+            const rawSignature    = `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
+            const signatureToken  = btoa(unescape(encodeURIComponent(rawSignature)));
+
+            const SERVER_BASE = SERVER_URL.replace('/api/score', '');
+            finishEffect.innerHTML = "";
+
+            let finalRate = 0;
+            if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
+
+            let gainedXp = Math.floor(secureScore / 5000);
+            if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50;
+
+            let currentLv  = parseInt(localStorage.getItem('wb_user_lv') || "1");
+            let currentXp  = parseInt(localStorage.getItem('wb_user_xp') || "0");
+            currentXp     += gainedXp;
+            let requiredXp = currentLv * 500;
+            while (currentXp >= requiredXp) { currentXp -= requiredXp; currentLv++; requiredXp = currentLv * 500; }
+            localStorage.setItem('wb_user_lv', currentLv);
+            localStorage.setItem('wb_user_xp', currentXp);
+
+            let rank = "", gradeColor = "", glowEffect = "";
+            if (secureScore <= 0) {
+                rank = "—"; gradeColor = "#444"; glowEffect = "none";
+            } else if (secureScore < 600000) {
+                rank = "FAILED"; gradeColor = "#ff4455"; glowEffect = "0 0 40px #ff4455";
+            } else {
+                const thresholds = [
+                    { min: 1000000, grade: 'TB', hex: '#ffffff' },
+                    { min: 950000,  grade: 'S+', hex: '#00ffff' },
+                    { min: 900000,  grade: 'S',  hex: '#00e5ff' },
+                    { min: 850000,  grade: 'A+', hex: '#00ff88' },
+                    { min: 800000,  grade: 'A',  hex: '#00cc66' },
+                    { min: 700000,  grade: 'B',  hex: '#3b9eff' },
+                    { min: 600000,  grade: 'C',  hex: '#ffc832' }
+                ];
+                const gradeInfo = thresholds.find(t => secureScore >= t.min) || thresholds[thresholds.length - 1];
+                rank        = gradeInfo.grade;
+                gradeColor  = gradeInfo.hex;
+                glowEffect  = `0 0 40px ${gradeInfo.hex}`;
+            }
+
+            const finalScoreStr = secureScore.toString().padStart(6, '0');
+            const urlParams     = new URLSearchParams(window.location.search);
+            const songParam     = urlParams.get('song');
+            const diffParam     = urlParams.get('diff');
+
+            if (songParam && diffParam) {
+                const scoreKey  = `wb_score_${songParam}_${diffParam}`;
+                const badgeKey  = `wb_badge_${songParam}_${diffParam}`;
+                const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
+                if (secureScore > savedScore) localStorage.setItem(scoreKey, secureScore.toString().padStart(6, '0'));
+                if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
+                else if (combo === totalMaxHits && totalMaxHits > 0) {
+                    if (localStorage.getItem(badgeKey) !== "TB") localStorage.setItem(badgeKey, "FC");
+                }
+            }
+
+            if (songParam && diffParam && userProfile) {
+                try {
+                    const response = await fetch(`${SERVER_BASE}/api/score`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                            userId: secureUserId, userName: secureUserName,
+                            song: songParam, diff: diffParam,
+                            score: secureScore, maxCombo: secureMaxCombo,
+                            level: currentLv, signature: signatureToken,
+                            playTime: securePlayTime, details: judgeStats
+                        })
+                    });
+                    const resData = await response.json();
+                    if (!response.ok || !resData.success) throw new Error(resData.error || "Server Validation Failed");
+                    console.log("✅ 서버 검증 및 랭킹 등록 성공!");
+                    await fetch(`${SERVER_BASE}/api/user/update`, {
+                        method: "POST", headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: secureUserId, level: currentLv, xp: currentXp })
+                    });
+                } catch (err) {
+                    console.error("🚨 서버 전송 중 에러:", err);
+                    alert("점수 검증 에러: " + err.message);
+                }
+            }
+
+            let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
+            try {
+                const res      = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
+                const rankData = await res.json();
+                if(rankData.length > 0) {
+                    rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);"><div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
+                    rankData.slice(0, 5).forEach((r, idx) => {
+                        const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
+                        const isMe  = userProfile && r.userId === secureUserId ? "color:#ffd700;" : "color:#fff;";
+                        rankingHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}"><span>${medal} ${r.userName}</span><span>${r.score}</span></div>`;
+                    });
+                    rankingHtml += `</div>`;
+                } else { rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>"; }
+            } catch(e) { console.warn("Ranking Load Fail", e); }
+
+            let badgeHtml = "";
+            if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
+            else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
+
+            const songName = decodeURIComponent(songParam);
+            const diffName = diffParam.toUpperCase();
+
+            // ★ 판정 상세: 8단계
+            resultOverlay.innerHTML = `
+                <div style="text-align:center; margin-bottom:20px;">
+                    <div class="res-song-title">${songName}</div>
+                    <div class="res-diff-name">${diffName}</div>
+                    <div class="res-rank" style="color:${gradeColor}; text-shadow:${glowEffect};">${rank}</div>
+                </div>
+                ${badgeHtml}
+                <div class="res-info">
+                    <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScoreStr}</div></div>
+                    <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
+                    <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${secureMaxCombo}</div></div>
+                </div>
+                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; width:90%; max-width:560px; background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:15px; border:1px solid #333; margin-bottom:20px;">
+                    <div class="detail-item"><div class="detail-label" style="color:#fff;background:linear-gradient(90deg,#ff0080,#00e5ff,#88ff00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Perfect!</div><div class="detail-val">${judgeStats.perfectEx}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#FFE000;">Perfect</div><div class="detail-val">${judgeStats.perfect}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#00F2FF;">Great</div><div class="detail-val">${judgeStats.great}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#88FF00;">Good</div><div class="detail-val">${judgeStats.good}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#FFB300;">Not Bad</div><div class="detail-val">${judgeStats.notBad}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#FF7733;">Save</div><div class="detail-val">${judgeStats.save}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#FF2D78;">Oh...</div><div class="detail-val">${judgeStats.oh}</div></div>
+                    <div class="detail-item"><div class="detail-label" style="color:#555566;">No...</div><div class="detail-val">${judgeStats.miss}</div></div>
+                </div>
+                ${rankingHtml}
+                <div id="google-login-btn-result" style="margin-top:15px; display:flex; justify-content:center; min-height:40px;"></div>
+                <button class="btn-common" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
+            `;
+
+            resultOverlay.style.display = 'flex';
+
+            if (!userProfile && typeof google !== 'undefined') {
+                google.accounts.id.renderButton(
+                    document.getElementById("google-login-btn-result"),
+                    { theme: "filled_black", size: "large", shape: "pill" }
+                );
+            }
+        } catch(e) {
+            alert("Result Error: " + e.message);
+            location.href = 'index.html';
+        }
+    }
+
+    async function sha256(message) {
+        const msgBuffer  = new TextEncoder().encode(message);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+        const hashArray  = Array.from(new Uint8Array(hashBuffer));
+        return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // ★ 외부 노출
+    window.startGame               = startGame;
+    window.togglePause             = togglePause;
+    window.handleCredentialResponse = handleCredentialResponse;
+
+    })();
     </script>
 </body>
 </html>
