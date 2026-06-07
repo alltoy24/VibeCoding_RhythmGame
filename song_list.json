@@ -5,7 +5,11 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 12,
-    "charts": ["normal_4.json", "hard_8.json","troll_11.json"]
+    "charts": [
+      { "name": "Normal", "level": 4, "file": "normal_4.json" },
+      { "name": "Hard", "level": 8, "file": "hard_8.json" },
+      { "name": "Troll", "level": 11, "file": "troll_11.json" }
+    ]
   },
   {
     "folder": "세계수의정원",
@@ -13,7 +17,11 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 40,
-    "charts": ["normal_1.json", "hard_6.json", "troll_13.json"]
+    "charts": [
+      { "name": "Normal", "level": 1, "file": "normal_1.json" },
+      { "name": "Hard", "level": 6, "file": "hard_6.json" },
+      { "name": "Troll", "level": 13, "file": "troll_13.json" }
+    ]
   },
   {
     "folder": "SystemOverload",
@@ -21,7 +29,10 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 25,
-    "charts": ["normal_5.json", "troll_16.json"]
+    "charts": [
+      { "name": "Normal", "level": 5, "file": "normal_5.json" },
+      { "name": "Troll", "level": 16, "file": "troll_16.json" }
+    ]
   },
   {
     "folder": "SuddenAccelerationOfEmpty",
@@ -29,7 +40,10 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 58,
-    "charts": ["hard_14.json", "troll_17.json"]
+    "charts": [
+      { "name": "Hard", "level": 14, "file": "hard_14.json" },
+      { "name": "Troll", "level": 17, "file": "troll_17.json" }
+    ]
   },
   {
     "folder": "BreakGlassDayDream",
@@ -37,7 +51,9 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 43,
-    "charts": ["troll_15.json"]
+    "charts": [
+      { "name": "Troll", "level": 15, "file": "troll_15.json"}
+    ]
   },
   {
     "folder": "Cataclysm",
@@ -45,7 +61,9 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 10,
-    "charts": ["troll_18.json"]
+    "charts": [
+      { "name": "Troll", "level": 18, "file": "troll_18.json" }
+    ]
   },
   {
     "folder": "Checkpoint1",
@@ -53,7 +71,9 @@
     "artist": "Alltoy24",
     "pack": "Core1",
     "previewStart": 53,
-    "charts": ["hard_6.json"]
+    "charts": [
+      { "name": "Hard", "level": 6, "file": "hard_6.json" }
+    ]
   },
   {
     "folder": "PuzzleVIP",
@@ -61,7 +81,9 @@
     "artist": "RetroVision",
     "pack": "Reference1",
     "previewStart": 46.5,
-    "charts": ["troll_15.json"]
+    "charts": [
+      { "name": "Troll", "level": 15, "file": "troll_15.json" }
+    ]
   },
   {
     "folder": "SATELLITE",
@@ -69,7 +91,9 @@
     "artist": "NOMA",
     "pack": "Reference1",
     "previewStart": 85,
-    "charts": ["hard_10.json"]
+    "charts": [
+      { "name": "Normal", "level": 10, "file": "normal_10.json" }
+    ]
   },
   {
     "folder": "DreamHigh",
@@ -77,6 +101,9 @@
     "artist": "CUPE",
     "pack": "Community1",
     "previewStart": 18,
-    "charts": ["hard_5.json"]
+    "charts": [
+      { "name": "Hard", "level": 5, "file": "hard_5.json" },
+      { "name": "Extra", "level": 9, "file": "extra_9.json", "customColor": "#00ff88" }
+    ]
   }
 ]

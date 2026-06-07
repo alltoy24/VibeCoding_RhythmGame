@@ -1017,12 +1017,48 @@ function updateAlbumArt(song) {
     img.onerror=()=>{ dynBg.style.backgroundImage='none'; bigCover.style.backgroundImage='linear-gradient(135deg, #0a0a1a 0%, #141430 100%)'; bigCover.textContent='🎵'; };
 }
 
-// ═══════════ DIFF ═══════════
 function getDiffs(song) {
-    const diffs=[]; (song.charts||[]).forEach(f=>{ const lo=f.toLowerCase(); const type=lo.includes('normal')?'normal':lo.includes('hard')?'hard':lo.includes('troll')?'troll':null; if(!type)return; const lv=parseInt(f.match(/_(\d+)\.json$/)?.[1]||0); const lvRaw=f.match(/_(\d+)\.json$/)?.[1]||'?'; const fileKey=f.replace(/\.json$/i,''); diffs.push({type,level:lv,levelRaw:lvRaw,fileKey}); });
-    const order={normal:1,hard:2,troll:3}; return diffs.sort((a,b)=>(order[a.type]-order[b.type])||(a.level-b.level));
+    if (!song.charts) return [];
+    
+    const diffs = song.charts.map(c => {
+        // 하위 호환성 유지: 기존의 문자열(["Normal_4.json"]) 형태인 경우
+        if (typeof c === 'string') {
+            const lo = c.toLowerCase();
+            const type = lo.includes('normal') ? 'Normal' : lo.includes('hard') ? 'Hard' : lo.includes('troll') ? 'Troll' : 'Custom';
+            const lv = parseInt(c.match(/_(\d+)\.json$/)?.[1] || 0);
+            const lvRaw = c.match(/_(\d+)\.json$/)?.[1] || '?';
+            const fileKey = c.replace(/\.json$/i, '');
+            return { type, level: lv, levelRaw: lvRaw, fileKey, customColor: null };
+        }
+        
+        // 새로운 오브젝트([ { name: "Glitch", ... } ]) 형태인 경우
+        return {
+            type: c.name || 'CUSTOM',
+            level: parseInt(c.level) || 0,
+            levelRaw: String(c.level || '?'),
+            fileKey: c.file ? c.file.replace(/\.json$/i, '') : '',
+            customColor: c.customColor || null
+        };
+    });
+
+    // 정해진 타입이 없다면 순수하게 레벨이 낮은 순서대로 자동 정렬
+    return diffs.sort((a, b) => a.level - b.level);
 }
-function getLevelColor(lv) { if(lv<=5)return{cls:'blue',...DIFF_COLORS.blue}; if(lv<=10)return{cls:'yellow',...DIFF_COLORS.yellow}; if(lv<=15)return{cls:'red',...DIFF_COLORS.red}; return{cls:'purple',...DIFF_COLORS.purple}; }
+function getLevelColor(lv, customColor) {
+    // 팩 제조사나 채보 제작자가 커스텀 색상을 지정한 경우 최우선 적용
+    if (customColor) {
+        return { 
+            cls: 'custom', 
+            hex: customColor, 
+            glow: customColor + '66' // Hex 코드 뒤에 66을 붙여 불투명도 40%의 Glow 효과 연출
+        }; 
+    }
+    // 기본 레벨별 테마 색상 상속
+    if(lv<=5)return{cls:'blue',...DIFF_COLORS.blue};
+    if(lv<=10)return{cls:'yellow',...DIFF_COLORS.yellow};
+    if(lv<=15)return{cls:'red',...DIFF_COLORS.red};
+    return{cls:'purple',...DIFF_COLORS.purple};
+}
 function hexToRgb(hex) { return `${parseInt(hex.slice(1,3),16)},${parseInt(hex.slice(3,5),16)},${parseInt(hex.slice(5,7),16)}`; }
 function applyDiffColor(hex, glow) {
     document.documentElement.style.setProperty('--cur-diff',hex);
@@ -1037,26 +1073,54 @@ function applyDiffColor(hex, glow) {
 function buildDiffUI() { const song=currentSongs()[currentSongIdx]; if(!song)return; _cachedDiffs=getDiffs(song); buildDiffIndicators(); buildDiffCards(); applyDiffSelection(false); }
 function buildDiffIndicators() {
     const container=document.getElementById('diff-indicators'); container.innerHTML='';
-    _cachedDiffs.forEach((d,i)=>{ const col=getLevelColor(d.level); const chip=document.createElement('div'); chip.className='diff-ind-chip'+(i===currentDiffIdx?' active':''); chip.dataset.label=d.type.toUpperCase(); chip.setAttribute('data-label',d.type.toUpperCase()); chip.style.background=i===currentDiffIdx?col.hex:'rgba(255,255,255,0.12)'; if(i===currentDiffIdx)chip.style.boxShadow=`0 0 6px ${col.glow}`; chip.addEventListener('click',()=>selectDiff(i)); container.appendChild(chip); });
+    _cachedDiffs.forEach((d,i)=>{ const col = getLevelColor(d.level, d.customColor); const chip=document.createElement('div'); chip.className='diff-ind-chip'+(i===currentDiffIdx?' active':''); chip.dataset.label=d.type.toUpperCase(); chip.setAttribute('data-label',d.type.toUpperCase()); chip.style.background=i===currentDiffIdx?col.hex:'rgba(255,255,255,0.12)'; if(i===currentDiffIdx)chip.style.boxShadow=`0 0 6px ${col.glow}`; chip.addEventListener('click',()=>selectDiff(i)); container.appendChild(chip); });
 }
 function buildDiffCards() {
     const viewport=document.getElementById('diff-card-viewport'), track=document.getElementById('diff-card-track'); track.innerHTML=''; _cardWidth=viewport.offsetWidth;
     const song=currentSongs()[currentSongIdx];
-    _cachedDiffs.forEach((d,i)=>{ const col=getLevelColor(d.level); const pct=Math.min(100,(d.level/20)*100); const score=localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`)||'000000'; const badge=localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`); const badgeHtml=badge==='TB'?'👑':badge==='FC'?'⭐':''; const card=document.createElement('div'); card.className='diff-card'; card.dataset.idx=i; card.style.width=_cardWidth+'px'; card.innerHTML=`<div class="diff-card-slab" style="background:${col.hex}"></div><div class="diff-card-body"><div class="diff-card-top"><div class="diff-card-type" style="color:${col.hex}">${d.type.toUpperCase()}</div><div class="diff-card-lv-label">Lv.</div><div class="diff-card-lv">${d.levelRaw}</div></div><div class="diff-card-bar-wrap"><div class="diff-card-bar-fill" data-pct="${pct}" style="width:0%;background:${col.hex}"></div></div></div><div class="diff-card-right"><div class="diff-card-badge">${badgeHtml}</div><div class="diff-card-score">🏆 ${score}</div></div>`; card.addEventListener('click',()=>selectDiff(i)); track.appendChild(card); });
+    _cachedDiffs.forEach((d,i)=>{ const col = getLevelColor(d.level, d.customColor); const pct=Math.min(100,(d.level/20)*100); const score=localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`)||'000000'; const badge=localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`); const badgeHtml=badge==='TB'?'👑':badge==='FC'?'⭐':''; const card=document.createElement('div'); card.className='diff-card'; card.dataset.idx=i; card.style.width=_cardWidth+'px'; card.innerHTML=`<div class="diff-card-slab" style="background:${col.hex}"></div><div class="diff-card-body"><div class="diff-card-top"><div class="diff-card-type" style="color:${col.hex}">${d.type.toUpperCase()}</div><div class="diff-card-lv-label">Lv.</div><div class="diff-card-lv">${d.levelRaw}</div></div><div class="diff-card-bar-wrap"><div class="diff-card-bar-fill" data-pct="${pct}" style="width:0%;background:${col.hex}"></div></div></div><div class="diff-card-right"><div class="diff-card-badge">${badgeHtml}</div><div class="diff-card-score">🏆 ${score}</div></div>`; card.addEventListener('click',()=>selectDiff(i)); track.appendChild(card); });
 }
 function applyDiffSelection() {
-    const diffs=_cachedDiffs; if(!diffs.length)return;
-    const track=document.getElementById('diff-card-track'), offset=currentDiffIdx*(_cardWidth+10); track.style.transform=`translateX(-${offset}px)`;
-    document.querySelectorAll('.diff-ind-chip').forEach((chip,i)=>{ const col=getLevelColor(diffs[i].level); chip.classList.toggle('active',i===currentDiffIdx); chip.style.background=i===currentDiffIdx?col.hex:'rgba(255,255,255,0.12)'; chip.style.boxShadow=i===currentDiffIdx?`0 0 6px ${col.glow}`:'none'; });
-    document.querySelectorAll('.diff-card').forEach((card,i)=>{ const col=getLevelColor(diffs[i].level); const fill=card.querySelector('.diff-card-bar-fill'); const sel=i===currentDiffIdx; if(fill)fill.style.width=sel?fill.dataset.pct+'%':'0%'; card.style.borderColor=sel?`rgba(${hexToRgb(col.hex)},0.4)`:'rgba(255,255,255,0.07)'; card.style.boxShadow=sel?`0 0 20px ${col.glow}`:'none'; });
-    const col=getLevelColor(diffs[currentDiffIdx].level); applyDiffColor(col.hex,col.glow);
-    document.getElementById('diff-prev').disabled=currentDiffIdx<=0;
-    document.getElementById('diff-next').disabled=currentDiffIdx>=diffs.length-1;
-    updateScoreChips();
+    const diffs = _cachedDiffs; 
+    if (!diffs.length) return;
 
-    // ★ 난이도 변경 시 랭킹 사이드바도 갱신
-    clearTimeout(_rsbLoadTimer);
-    _rsbLoadTimer = setTimeout(loadRankingSidebar, 400);
+    // 1. 디피컬티 카드 트랙 이동 처리 
+    const track = document.getElementById('diff-card-track');
+    const offset = currentDiffIdx * (_cardWidth + 10); 
+    track.style.transform = `translateX(-${offset}px)`; 
+
+    // 2. 상단 인디케이터 칩(점 모양) 스타일 업데이트 (커스텀 색상 대응) 
+    document.querySelectorAll('.diff-ind-chip').forEach((chip, i) => { 
+        const col = getLevelColor(diffs[i].level, diffs[i].customColor); 
+        chip.classList.toggle('active', i === currentDiffIdx); 
+        chip.style.background = i === currentDiffIdx ? col.hex : 'rgba(255,255,255,0.12)'; 
+        chip.style.boxShadow = i === currentDiffIdx ? `0 0 6px ${col.glow}` : 'none'; 
+    });
+
+    // 3. 메인 디피컬티 카드 스타일 업데이트 (커스텀 색상 대응) 
+    document.querySelectorAll('.diff-card').forEach((card, i) => { 
+        const col = getLevelColor(diffs[i].level, diffs[i].customColor); 
+        const fill = card.querySelector('.diff-card-bar-fill'); 
+        const sel = i === currentDiffIdx; 
+        
+        if (fill) fill.style.width = sel ? fill.dataset.pct + '%' : '0%'; 
+        card.style.borderColor = sel ? `rgba(${hexToRgb(col.hex)},0.4)` : 'rgba(255,255,255,0.07)'; 
+        card.style.boxShadow = sel ? `0 0 20px ${col.glow}` : 'none'; 
+    });
+
+    // 4. [버그 수정] 현재 선택된 차트 오브젝트를 명시적으로 선언 후 메인 네온 컬러 테마 적용
+    const currentChart = diffs[currentDiffIdx];
+    const col = getLevelColor(currentChart.level, currentChart.customColor); 
+    applyDiffColor(col.hex, col.glow); 
+
+    // 5. 내비게이션 버튼 활성화/비활성화 처리 및 스코어 갱신 
+    document.getElementById('diff-prev').disabled = currentDiffIdx <= 0; 
+    document.getElementById('diff-next').disabled = currentDiffIdx >= diffs.length - 1; 
+    updateScoreChips(); 
+
+    // ★ 난이도 변경 시 랭킹 사이드바 디바운스 갱신 
+    clearTimeout(_rsbLoadTimer); 
+    _rsbLoadTimer = setTimeout(loadRankingSidebar, 400); 
 }
 function selectDiff(idx) { currentDiffIdx=idx; applyDiffSelection(); updateScoreVisualizer(); }
 function changeDiff(dir) { const next=currentDiffIdx+dir; if(next<0||next>=_cachedDiffs.length)return; selectDiff(next); }
