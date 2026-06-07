@@ -966,19 +966,35 @@ function changePack(dir) {
     buildPackDots(); renderList(); selectSong(0,true);
 }
 
-// ═══════════ LIST ═══════════
 function renderList() {
-    const wrap=document.getElementById('list-wrap'); wrap.innerHTML='';
-    const frag=document.createDocumentFragment();
-    currentSongs().forEach((song,idx)=>{
-        const el=document.createElement('div'); el.className='song-item'; el.dataset.idx=idx; el.style.height=ITEM_H+'px';
-        const diffs=getDiffs(song), dots=diffs.map(d=>`<div class="idot ${d.type}"></div>`).join('');
-        el.innerHTML=`<div class="item-num">${idx+1}</div><div class="item-cover">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div><div class="item-diffs">${dots}</div></div>`;
-        const cover=el.querySelector('.item-cover'), img=new Image(); img.src=`songs/${song.folder}/image.png`;
-        img.onload=()=>{ cover.style.backgroundImage=`url('${img.src}')`;cover.textContent=''; };
-        el.addEventListener('click',()=>selectSong(idx)); frag.appendChild(el);
+    const wrap = document.getElementById('list-wrap'); 
+    wrap.innerHTML = '';
+    const frag = document.createDocumentFragment();
+    
+    currentSongs().forEach((song, idx) => {
+        const el = document.createElement('div'); 
+        el.className = 'song-item'; 
+        el.dataset.idx = idx; 
+        el.style.height = ITEM_H + 'px';
+        
+        // [핵심 수정] d.type 클래스 매칭 대신, 함수를 돌려 hex 컬러를 추출한 뒤 인라인 style로 주입
+        const diffs = getDiffs(song);
+        const dots = diffs.map(d => {
+            const col = getLevelColor(d.level, d.customColor);
+            return `<div class="idot" style="background: ${col.hex}"></div>`;
+        }).join('');
+        
+        el.innerHTML = `<div class="item-num">${idx+1}</div><div class="item-cover">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div><div class="item-diffs">${dots}</div></div>`;
+        
+        const cover = el.querySelector('.item-cover'), img = new Image(); 
+        img.src = `songs/${song.folder}/image.png`;
+        img.onload = () => { cover.style.backgroundImage = `url('${img.src}')`; cover.textContent = ''; };
+        
+        el.addEventListener('click', () => selectSong(idx)); 
+        frag.appendChild(el);
     });
-    wrap.appendChild(frag); scrollList(true);
+    wrap.appendChild(frag); 
+    scrollList(true);
 }
 function scrollList(instant) {
     const wrap=document.getElementById('list-wrap'), inner=document.getElementById('list-inner');

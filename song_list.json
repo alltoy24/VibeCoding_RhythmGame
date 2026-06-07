@@ -92,7 +92,7 @@
     "pack": "Reference1",
     "previewStart": 85,
     "charts": [
-      { "name": "hard", "level": 10, "file": "hard_10.json" }
+      { "name": "Hard", "level": 10, "file": "hard_10.json" }
     ]
   },
   {
