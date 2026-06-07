@@ -70,5 +70,13 @@
     "pack": "Reference1",
     "previewStart": 85,
     "charts": ["hard_10.json"]
+  },
+  {
+    "folder": "DreamHigh",
+    "title": "Dream High",
+    "artist": "CUPE",
+    "pack": "Community1",
+    "previewStart": 18,
+    "charts": ["hard_5.json"]
   }
 ]
