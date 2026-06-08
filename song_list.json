@@ -20,7 +20,7 @@
     "charts": [
       { "name": "Normal", "level": 1, "file": "normal_1.json" },
       { "name": "Hard", "level": 6, "file": "hard_6.json" },
-      { "name": "Troll", "level": 13, "file": "troll_13.json" }
+      { "name": "Troll", "level": "12+", "file": "troll_13.json" }
     ]
   },
   {
@@ -41,8 +41,8 @@
     "pack": "Core1",
     "previewStart": 58,
     "charts": [
-      { "name": "Hard", "level": 14, "file": "hard_14.json" },
-      { "name": "Troll", "level": 17, "file": "troll_17.json" }
+      { "name": "Hard", "level": "13+", "file": "hard_14.json" },
+      { "name": "Troll", "level": "16+", "file": "troll_17.json" }
     ]
   },
   {
@@ -52,7 +52,7 @@
     "pack": "Core1",
     "previewStart": 43,
     "charts": [
-      { "name": "Troll", "level": 15, "file": "troll_15.json"}
+      { "name": "Troll", "level": "14+", "file": "troll_15.json"}
     ]
   },
   {
@@ -62,7 +62,7 @@
     "pack": "Core1",
     "previewStart": 10,
     "charts": [
-      { "name": "Troll", "level": 18, "file": "troll_18.json" }
+      { "name": "Troll", "level": "17+", "file": "troll_18.json" }
     ]
   },
   {
@@ -92,7 +92,8 @@
     "pack": "Reference1",
     "previewStart": 85,
     "charts": [
-      { "name": "Hard", "level": 10, "file": "hard_10.json" }
+      { "name": "Normal", "level": 10, "file": "normal_10.json" },
+      { "name": "Troll", "level": "19+", "file": "troll_19.json" }
     ]
   },
   {

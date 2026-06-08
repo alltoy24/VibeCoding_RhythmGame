@@ -1036,29 +1036,53 @@ function updateAlbumArt(song) {
 function getDiffs(song) {
     if (!song.charts) return [];
     
-    const diffs = song.charts.map(c => {
-        // 하위 호환성 유지: 기존의 문자열(["Normal_4.json"]) 형태인 경우
+    const diffs = [];
+    song.charts.forEach(c => {
+        // 1. 하위 호환성 유지: 기존의 파일명 문자열 형태(["normal_14+.json"])인 경우
         if (typeof c === 'string') {
             const lo = c.toLowerCase();
-            const type = lo.includes('normal') ? 'Normal' : lo.includes('hard') ? 'Hard' : lo.includes('troll') ? 'Troll' : 'Custom';
-            const lv = parseInt(c.match(/_(\d+)\.json$/)?.[1] || 0);
-            const lvRaw = c.match(/_(\d+)\.json$/)?.[1] || '?';
+            const type = lo.includes('normal') ? 'normal' : lo.includes('hard') ? 'hard' : lo.includes('troll') ? 'troll' : 'custom';
+            
+            // 파일명 뒤에 +가 붙어있는지 정규식 검사 (예: hard_14+.json)
+            const match = c.match(/_(\d+)(\+)?\.json$/i);
+            let lv = 0;
+            let lvRaw = '?';
+            
+            if (match) {
+                const baseLv = parseInt(match[1]) || 0;
+                const hasPlus = !!match[2];
+                lv = baseLv + (hasPlus ? 0.5 : 0); // +가 있으면 내부적으론 .5를 더함
+                lvRaw = match[1] + (hasPlus ? '+' : '');
+            }
             const fileKey = c.replace(/\.json$/i, '');
-            return { type, level: lv, levelRaw: lvRaw, fileKey, customColor: null };
+            diffs.push({ type, level: lv, levelRaw: lvRaw, fileKey, customColor: null });
+        } else {
+            // 2. 새로운 오브젝트 형태([ { "name": "Glitch", "level": "14+" } ])인 경우
+            let lvRaw = String(c.level || '?'); // UI 표시용 문자열 ("14+")
+            let lv = 0; // 내부 정렬 및 게이지 연산용 실수 (14.5)
+            
+            if (lvRaw.includes('+')) {
+                // "+" 기호를 떼어내고 숫자로 바꾼 뒤 0.5를 더해줌
+                const base = parseInt(lvRaw.replace('+', '')) || 0;
+                lv = base + 0.5;
+            } else {
+                // 일반 정수형 문자열이거나 숫자인 경우 평범하게 파싱
+                lv = parseFloat(lvRaw) || 0;
+            }
+
+            diffs.push({
+                type: (c.name || 'custom').toLowerCase(),
+                level: lv,        // 내부 정렬용 (14.5)
+                levelRaw: lvRaw,  // UI 텍스트 출력용 ("14+")
+                fileKey: c.file ? c.file.replace(/\.json$/i, '') : '',
+                customColor: c.customColor || null
+            });
         }
-        
-        // 새로운 오브젝트([ { name: "Glitch", ... } ]) 형태인 경우
-        return {
-            type: c.name || 'CUSTOM',
-            level: parseInt(c.level) || 0,
-            levelRaw: String(c.level || '?'),
-            fileKey: c.file ? c.file.replace(/\.json$/i, '') : '',
-            customColor: c.customColor || null
-        };
     });
 
-    // 정해진 타입이 없다면 순수하게 레벨이 낮은 순서대로 자동 정렬
-    return diffs.sort((a, b) => a.level - b.level);
+    // 난이도 정렬 순서 (타입별 우선순위 정렬 후 -> 내부 실수형 레벨 순으로 정교하게 2차 정렬)
+    const order = { normal: 1, hard: 2, troll: 3, glitch: 4, anomaly: 5, extra: 6, custom: 7 };
+    return diffs.sort((a, b) => (order[a.type] || 99) - (order[b.type] || 99) || (a.level - b.level));
 }
 function getLevelColor(lv, customColor) {
     // 팩 제조사나 채보 제작자가 커스텀 색상을 지정한 경우 최우선 적용

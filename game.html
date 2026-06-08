@@ -257,7 +257,7 @@
     const JUDGE_TABLE = [
         {
             name: 'Perfect!',
-            window: 20,
+            window: 32,
             rate: 100,
             scoreRate: 1.0,
             key: 'perfectEx',
@@ -269,7 +269,7 @@
         },
         {
             name: 'Perfect',
-            window: 32,
+            window: 40,
             rate: 96,
             scoreRate: 0.96,
             key: 'perfect',
@@ -281,7 +281,7 @@
         },
         {
             name: 'Great',
-            window: 44,
+            window: 48,
             rate: 88,
             scoreRate: 0.88,
             key: 'great',
@@ -377,14 +377,16 @@
 
     const GRADE_THRESHOLDS = [
         { min: 1000000, grade: 'TB',     label: 'TROLL BEAT', hex: '#ffffff' },
-        { min: 950000,  grade: 'S+',     label: 'S+',         hex: '#00ffff' },
-        { min: 900000,  grade: 'S',      label: 'S',          hex: '#00e5ff' },
-        { min: 850000,  grade: 'A+',     label: 'A+',         hex: '#00ff88' },
-        { min: 800000,  grade: 'A',      label: 'A',          hex: '#00cc66' },
-        { min: 700000,  grade: 'B',      label: 'B',          hex: '#3b9eff' },
+        { min: 980000,  grade: 'S+',     label: 'S+',         hex: '#00ffff' },
+        { min: 950000,  grade: 'S',      label: 'S',          hex: '#00e5ff' },
+        { min: 925000,  grade: 'A+',     label: 'A+',         hex: '#00ff88' },
+        { min: 880000,  grade: 'A',      label: 'A',          hex: '#00cc66' },
+        { min: 800000,  grade: 'B',      label: 'B',          hex: '#3b9eff' },
         { min: 600000,  grade: 'C',      label: 'C',          hex: '#ffc832' },
         { min: 0,       grade: 'FAILED', label: 'FAILED',     hex: '#ff4455' } 
     ];
+
+    
 
     function getGradeFromScore(score) {
         return GRADE_THRESHOLDS.find(t => score >= t.min) || GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
@@ -703,25 +705,23 @@
     // ============================================================
     document.addEventListener('DOMContentLoaded', () => {
         const urlParams = new URLSearchParams(window.location.search);
-        const song  = urlParams.get('song');
-        const diff  = urlParams.get('diff');
-        const speed = urlParams.get('speed');
-
-        if (!song || !diff) {
-            alert("잘못된 접근입니다.");
-            location.href = "index.html";
-            return;
-        }
-
+        const _songFolder = urlParams.get('song') || '';
+        const _diffType = urlParams.get('diff') || 'Normal';
+        // 1. UI 표시용 원본 문자열 확보 ("14+")
+        const _levelRaw = urlParams.get('level') || '?';
+        // 2. 내부 연산 및 DB 저장용 실수 계산 (14.5)
+        const _levelNum = _levelRaw.includes('+') ? parseFloat(_levelRaw.replace('+', '')) + 0.5 : parseFloat(_levelRaw) || 0;
+        
+        const speed = urlParams.get('speed'); // 누락된 변수 선언 추가
         if(speed) baseNoteSpeed = parseFloat(speed);
+        
         const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
         offset += userGlobalOffset;
-
         const savedOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || "70");
         const alpha = savedOpacity / 100;
         document.getElementById('game-canvas-container').style.background = `rgba(0, 0, 0, ${alpha})`;
-
-        loadGameData(song, diff);
+        
+        loadGameData(_songFolder, _diffType); // 변수명 수정
     });
 
     async function loadGameData(song, diff) {
@@ -1662,6 +1662,8 @@
             const songParam     = urlParams.get('song');
             const diffParam     = urlParams.get('diff');
 
+            const _levelRaw     = urlParams.get('level') || '?';
+
             if (songParam && diffParam) {
                 const scoreKey  = `wb_score_${songParam}_${diffParam}`;
                 const badgeKey  = `wb_badge_${songParam}_${diffParam}`;
@@ -1725,7 +1727,7 @@
             resultOverlay.innerHTML = `
                 <div style="text-align:center; margin-bottom:20px;">
                     <div class="res-song-title">${songName}</div>
-                    <div class="res-diff-name">${diffName}</div>
+                    <div class="res-diff-name">${diffName} Lv.${_levelRaw}</div>
                     <div class="res-rank" style="color:${gradeColor}; text-shadow:${glowEffect};">${rank}</div>
                 </div>
                 ${badgeHtml}
