@@ -21,15 +21,13 @@
         body.mobile-mode #game-canvas-container { width: 100% !important; border: none; }
 
         /* BGA Layer */
+        /* BGA Layer → 곡 이미지 전체화면 블러 배경 */
         #bga-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; overflow: hidden; background: #000; }
-        #bga-video { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; display: none; }
-        #bga-fallback { width: 100%; height: 100%; background: radial-gradient(circle at center, #1a0b2e 0%, #000000 80%); display: none; perspective: 1000px; overflow: hidden; }
-        #bga-grid { position: absolute; bottom: -50%; left: -50%; width: 200%; height: 100%; background-image: linear-gradient(transparent 95%, rgba(0, 229, 255, 0.3) 95%), linear-gradient(90deg, transparent 95%, rgba(123, 31, 162, 0.3) 95%); background-size: 60px 60px; transform: rotateX(60deg); animation: grid-scroll 2s linear infinite; mask-image: linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,0) 80%); }
-        #bga-stars { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.1; }
+        #bga-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+            filter: blur(14px) brightness(0.4) saturate(1.1); transform: scale(1.1); display: none; }
         #bgCanvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
-        @keyframes grid-scroll { 0% { background-position: 0 0; } 100% { background-position: 0 60px; } }
-        .bga-pulse #bga-grid { filter: brightness(2.0) drop-shadow(0 0 10px var(--accent)); transition: 0.1s; }
-        #bga-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; mix-blend-mode: overlay; z-index: 3; background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent 20%, transparent 80%, rgba(0,0,0,0.8)); }
+        #bga-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3;
+            background: radial-gradient(ellipse at center, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0.75) 100%); }
         
         .effect-glitch { animation: glitch-anim 0.2s infinite; background: rgba(255, 0, 85, 0.1); }
         .effect-flash { animation: flash-anim 0.5s forwards; }
@@ -48,24 +46,88 @@
         @keyframes flicker { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 
         #game-canvas-container { 
-            position: relative; width: 480px; height: 100%; 
-            border-left: 1px solid rgba(255,255,255,0.2); border-right: 1px solid rgba(255,255,255,0.2); 
-            box-shadow: 0 0 80px rgba(0,0,0,0.8); background: rgba(0,0,0,0.6); flex-shrink: 0; backdrop-filter: blur(3px);
-            transition: border-color 0.5s, box-shadow 0.5s;
+            position: absolute; inset: 0; width: 100%; height: 100%;
+            background: transparent; flex-shrink: 0;
+            transition: box-shadow 0.5s;
         }
-        #game-canvas-container.fever-mode { border-color: rgba(255, 215, 0, 0.6); box-shadow: 0 0 80px rgba(255, 215, 0, 0.4), inset 0 0 40px rgba(255, 215, 0, 0.1); }
-        #game-canvas-container.fever-max-mode { border-color: rgba(0, 255, 0, 0.8); box-shadow: 0 0 100px rgba(0, 255, 0, 0.6), inset 0 0 50px rgba(0, 255, 0, 0.2); }
+        #game-canvas-container.fever-mode,
+        #game-canvas-container.fever-max-mode {
+            box-shadow: inset 0 0 58px rgba(0, 229, 255, 0.14), inset 0 0 0 1px rgba(0, 229, 255, 0.1);
+        }
+        #game-canvas-container.fever-level-2 {
+            box-shadow: inset 0 0 68px rgba(255, 214, 82, 0.18), inset 0 0 0 1px rgba(255, 214, 82, 0.2);
+        }
+        #game-canvas-container.fever-level-3 {
+            box-shadow: inset 0 0 82px rgba(120, 255, 180, 0.22), inset 0 0 0 1px rgba(120, 255, 180, 0.26);
+        }
+
+        .side-warn-col { display: none; }
+        #speed-edge-warning {
+            position: absolute;
+            inset: 0;
+            z-index: 65;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.12s ease;
+        }
+        #speed-edge-warning::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            box-shadow: inset 0 0 0 0 transparent;
+            transition: box-shadow 0.12s ease;
+        }
+        #speed-edge-warning .speed-edge-label {
+            position: absolute;
+            top: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: 'Orbitron', sans-serif;
+            font-weight: 900;
+            font-size: clamp(15px, 1.5vw, 18px);
+            letter-spacing: 0;
+            text-align: center;
+            white-space: nowrap;
+            text-shadow: 0 0 7px currentColor, 0 0 14px currentColor;
+        }
+        #speed-edge-warning.speed-edge-up,
+        #speed-edge-warning.speed-edge-down {
+            opacity: 1;
+        }
+        #speed-edge-warning.speed-edge-up {
+            color: #ff2d55;
+        }
+        #speed-edge-warning.speed-edge-up::before {
+            animation: speedEdgeUp 1.5s ease-out forwards;
+        }
+        #speed-edge-warning.speed-edge-down {
+            color: #00d5ff;
+        }
+        #speed-edge-warning.speed-edge-down::before {
+            animation: speedEdgeDown 1.5s ease-out forwards;
+        }
+        @keyframes speedEdgeUp {
+            0% { box-shadow: inset 0 0 0 0 rgba(255, 45, 85, 0); }
+            16% { box-shadow: inset 0 0 32px 7px rgba(255, 45, 85, 0.28); }
+            100% { box-shadow: inset 0 0 44px 5px rgba(255, 45, 85, 0); }
+        }
+        @keyframes speedEdgeDown {
+            0% { box-shadow: inset 0 0 0 0 rgba(0, 213, 255, 0); }
+            16% { box-shadow: inset 0 0 32px 7px rgba(0, 213, 255, 0.26); }
+            100% { box-shadow: inset 0 0 44px 5px rgba(0, 213, 255, 0); }
+        }
 
         canvas.game { display: block; width: 100%; height: 100%; }
         
-        #game-hud { position: absolute; top: 30px; left: 30px; right: 30px; display: flex; justify-content: space-between; pointer-events: none; z-index: 10; }
-        .hud-item { flex: 1; }
-        .hud-text { font-family: 'Orbitron', sans-serif; font-weight:700; font-size: 28px; color: #fff; text-shadow: 0 0 10px var(--accent); transition: color 0.3s; }
-        .fever-text { color: var(--fever-gold) !important; text-shadow: 0 0 20px var(--fever-gold) !important; transform: scale(1.1); }
-        .fever-max-text { color: var(--fever-max) !important; text-shadow: 0 0 30px var(--fever-max) !important; transform: scale(1.2); animation: shake 0.2s infinite; }
-        .hud-sub { font-family: 'Segoe UI', sans-serif; font-size: 11px; color: #aaa; font-weight: 600; letter-spacing: 1px; }
-        #g-avg-box { position: absolute; bottom: 15%; width: 100%; text-align: center; pointer-events: none; }
-        #g-avg { font-family: 'Consolas', monospace; font-size: 12px; font-weight: bold; color: #666; }
+        #game-hud { position: absolute; inset: 0; pointer-events: none; z-index: 10; }
+        .hud-item { position: absolute; }
+        .hud-rate { top: 16px; left: 24px; text-align: left; }
+        .hud-score { top: 16px; right: 24px; text-align: right; }
+        .hud-combo { left: 50%; top: 48%; transform: translate(-50%,-50%); text-align: center; opacity: 0.18; }
+        .hud-text { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 30px; color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.4); transition: color 0.2s, text-shadow 0.2s; }
+        .hud-sub { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #666; font-weight: 700; letter-spacing: 1px; }
+        .hud-combo .hud-sub { display: none; }
+        .hud-combo .hud-text { font-size: 150px; line-height: 1; text-shadow: 0 0 30px rgba(255,255,255,0.25); }
         
         #finish-effect { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; pointer-events: none; z-index: 80; }
         .text-fc { font-family: 'Orbitron', sans-serif; font-size: 60px; color: #00e5ff; text-shadow: 0 0 20px #00e5ff, 0 0 40px #fff; animation: popIn 0.5s forwards; font-style: italic; }
@@ -92,12 +154,202 @@
         .detail-label { font-size: 11px; font-weight: bold; margin-bottom: 5px; opacity:0.7; }
         .detail-val { font-size: 20px; color: #fff; font-family: 'Orbitron', sans-serif; }
 
+        #result-overlay {
+            overflow: hidden;
+            background:
+                linear-gradient(100deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.82) 38%, rgba(0,0,0,0.96) 100%),
+                radial-gradient(circle at 78% 22%, rgba(0,229,255,0.18), transparent 34%),
+                radial-gradient(circle at 18% 82%, rgba(255,45,120,0.1), transparent 38%);
+            align-items: flex-end;
+            justify-content: stretch;
+            backdrop-filter: blur(8px);
+        }
+        #result-overlay::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.12) 48%, transparent 56%);
+            transform: translateX(110%);
+            pointer-events: none;
+        }
+        #result-overlay.result-show::before { animation: resultSweep 0.72s cubic-bezier(.2,.8,.2,1) forwards; }
+        .result-panel {
+            position: relative;
+            width: min(610px, 88vw);
+            min-height: auto;
+            max-height: calc(100vh - 24px);
+            margin: 12px 20px 12px 0;
+            padding: 24px 30px 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            background: linear-gradient(180deg, rgba(8,12,18,0.92), rgba(2,3,7,0.96));
+            border: 1px solid rgba(255,255,255,0.12);
+            box-shadow: -28px 0 70px rgba(0,0,0,0.44), inset 1px 0 0 rgba(0,229,255,0.14);
+            transform: translateX(105%);
+            overflow: hidden;
+        }
+        #result-overlay.result-show .result-panel { animation: resultPanelIn 0.72s cubic-bezier(.16,.82,.24,1) 0.08s forwards; }
+        .result-topline { color: rgba(255,255,255,0.48); font-family:'Orbitron'; font-size: 10px; letter-spacing: 0; margin-bottom: 6px; }
+        .result-head { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; margin-bottom: 12px; }
+        .result-title { min-width: 0; }
+        .result-rank-wrap { text-align: right; }
+        .result-rank-wrap::before {
+            content: 'RANK';
+            display: block;
+            margin-bottom: 4px;
+            color: rgba(255,255,255,0.44);
+            font-family: 'Orbitron';
+            font-size: 10px;
+            letter-spacing: 0;
+        }
+        .res-song-title { text-align:left; font-size: 34px; line-height: 1.05; margin-bottom: 8px; }
+        .res-diff-name { text-align:left; margin-bottom: 0; font-size: 14px; letter-spacing: 3px; }
+        .res-rank {
+            margin: 0;
+            min-width: 128px;
+            padding: 5px 14px 8px;
+            border: 1px solid color-mix(in srgb, currentColor 36%, transparent);
+            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.015));
+            font-size: clamp(52px, 8vw, 84px);
+            letter-spacing: 0;
+            text-align: center;
+            box-shadow: inset 0 0 24px rgba(255,255,255,0.04), 0 0 22px color-mix(in srgb, currentColor 22%, transparent);
+            animation: rankReveal 0.65s cubic-bezier(.2,.9,.2,1) 0.62s both;
+        }
+        .res-rank::after {
+            content: '';
+            display: block;
+            width: 70%;
+            height: 2px;
+            margin: 3px auto 0;
+            background: currentColor;
+            opacity: 0.55;
+            box-shadow: 0 0 12px currentColor;
+        }
+        .rank-tb { color:#fff; text-shadow: 0 0 18px #fff, 0 0 34px #00e5ff, 0 0 60px #ff2d78; }
+        .rank-sp, .rank-s { color:#00e5ff; text-shadow: 0 0 24px #00e5ff, 0 0 54px rgba(0,229,255,0.7); }
+        .rank-ap, .rank-a { color:#00ff88; text-shadow: 0 0 22px #00ff88, 0 0 48px rgba(0,255,136,0.55); }
+        .rank-b { color:#6aa7ff; text-shadow: 0 0 22px #3b9eff; }
+        .rank-c { color:#ffc832; text-shadow: 0 0 22px #ffc832; }
+        .rank-failed { color:#ff4455; text-shadow: 0 0 24px #ff4455; }
+        .res-info {
+            width: 100%;
+            max-width: none;
+            gap: 7px;
+            margin-bottom: 9px;
+        }
+        .res-box {
+            padding: 8px 10px;
+            background: rgba(255,255,255,0.035);
+            border: 1px solid rgba(255,255,255,0.09);
+            text-align: left;
+        }
+        .res-val { font-size: 20px; }
+        .res-val.primary-score { font-size: 27px; color:#fff; text-shadow: 0 0 18px rgba(0,229,255,0.42); }
+        .result-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .result-detail-grid .detail-item {
+            padding: 6px 5px;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+        .result-ranking { width: 100%; }
+        .result-ranking > div {
+            width: 100% !important;
+            max-width: none !important;
+            margin-top: 6px !important;
+            padding: 6px 8px !important;
+            font-size: 13px !important;
+        }
+        .result-ranking > div > div {
+            margin-bottom: 3px !important;
+            font-size: 13px !important;
+            line-height: 1.15;
+        }
+        #google-login-btn-result {
+            margin-top: 6px !important;
+            min-height: 0 !important;
+        }
+        .result-panel .btn-common {
+            margin-top: 0;
+            padding: 9px 28px;
+            font-size: 13px;
+        }
+        .result-actions { display:flex; justify-content:flex-end; margin-top: 7px; }
+        .result-prep {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255,255,255,0.68);
+            font-family: 'Orbitron';
+            font-size: 14px;
+            letter-spacing: 0;
+            background: radial-gradient(circle at center, rgba(0,229,255,0.08), rgba(0,0,0,0.82) 55%);
+        }
+        .result-prep::after {
+            content: '';
+            width: 120px;
+            height: 1px;
+            margin-left: 14px;
+            background: linear-gradient(90deg, var(--accent), transparent);
+            animation: prepLine 0.8s ease-in-out infinite;
+        }
+        @keyframes resultSweep {
+            0% { transform: translateX(110%); opacity: 0; }
+            35% { opacity: 1; }
+            100% { transform: translateX(-115%); opacity: 0; }
+        }
+        @keyframes resultPanelIn {
+            0% { transform: translateX(105%); }
+            100% { transform: translateX(0); }
+        }
+        @keyframes rankReveal {
+            0% { opacity: 0; transform: translateY(18px) scale(0.86); filter: blur(8px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+        @keyframes prepLine { 0%,100% { opacity: 0.25; transform: scaleX(0.5); } 50% { opacity: 1; transform: scaleX(1); } }
+        @media (max-height: 820px) {
+            .result-panel {
+                transform: translateX(105%) scale(0.93);
+                transform-origin: right center;
+            }
+            #result-overlay.result-show .result-panel { animation: resultPanelInCompact 0.72s cubic-bezier(.16,.82,.24,1) 0.08s forwards; }
+        }
+        @keyframes resultPanelInCompact {
+            0% { transform: translateX(105%) scale(0.93); }
+            100% { transform: translateX(0) scale(0.93); }
+        }
+
         .btn-common { margin-top: 20px; padding: 15px 50px; font-size: 18px; background: transparent; color: #fff; border: 2px solid var(--accent); border-radius: 50px; cursor: pointer; font-weight: 900; font-family: 'Orbitron'; letter-spacing: 2px; transition: 0.2s; box-shadow: 0 0 15px rgba(0,229,255,0.2); text-shadow: 0 0 5px var(--accent); }
         .btn-common:hover { background: var(--accent); color: #000; box-shadow: 0 0 40px var(--accent); transform: scale(1.05); }
         .btn-secondary { border-color: #666; color: #aaa; box-shadow: none; text-shadow: none; }
         .btn-secondary:hover { background: #333; color: #fff; box-shadow: none; }
         .res-song-title { font-family: 'Orbitron'; font-size: 40px; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--accent); margin-bottom: 5px; text-align:center; }
         .res-diff-name { font-family: 'Segoe UI'; font-size: 18px; color: #aaa; letter-spacing: 5px; margin-bottom: 30px; text-transform: uppercase; font-weight: 600; }
+        .result-panel .res-song-title {
+            text-align: left;
+            font-size: 25px;
+            line-height: 1.05;
+            margin-bottom: 5px;
+            overflow-wrap: anywhere;
+        }
+        .result-panel .res-diff-name {
+            text-align: left;
+            margin-bottom: 0;
+            font-size: 11px;
+            letter-spacing: 1.8px;
+        }
+        .result-panel .detail-label { font-size: 10px; margin-bottom: 3px; }
+        .result-panel .detail-val { font-size: 18px; }
+        .result-panel .res-label { font-size: 10px; margin-bottom: 3px; letter-spacing: 1px; }
 
         /* Loading */
         .loading-text { font-family: 'Orbitron'; font-size: 30px; margin-bottom: 30px; animation: blink 1s infinite; letter-spacing: 3px; color: var(--accent); }
@@ -202,11 +454,7 @@
     <div id="result-overlay" class="overlay-screen"></div>
 
     <div id="bga-layer">
-        <video id="bga-video" muted playsinline></video>
-        <div id="bga-fallback">
-            <div id="bga-stars"></div>
-            <div id="bga-grid"></div>
-        </div>
+        <img id="bga-image" alt="">
         <canvas id="bgCanvas"></canvas>
         <div id="bga-overlay"></div>
     </div>
@@ -220,25 +468,25 @@
 
         <div id="game-canvas-container">
             <canvas id="gameCanvas" class="game"></canvas>
+            <div id="speed-edge-warning"><div class="speed-edge-label"></div></div>
             <div id="finish-effect"></div>
             <div id="guide-message"></div>
             <div id="judge-display"></div>
 
             <div id="game-hud">
-                <div class="hud-item" style="text-align:left">
+                <div class="hud-item hud-rate">
                     <span class="hud-sub">RATE</span><br>
                     <span id="g-rate" class="hud-text">100.00%</span>
                 </div>
-                <div class="hud-item" style="text-align:center">
+                <div class="hud-item hud-score">
                     <span class="hud-sub">SCORE</span><br>
                     <span id="g-score" class="hud-text">000000</span>
                 </div>
-                <div class="hud-item" style="text-align:right">
+                <div class="hud-item hud-combo">
                     <span class="hud-sub">COMBO</span><br>
                     <span id="g-combo" class="hud-text">0</span>
                 </div>
             </div>
-            <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
         </div>
 
         <div id="warn-right" class="side-warn-col">
@@ -392,15 +640,17 @@
         return GRADE_THRESHOLDS.find(t => score >= t.min) || GRADE_THRESHOLDS[GRADE_THRESHOLDS.length - 1];
     }
 
-    const bgaVideo    = document.getElementById('bga-video');
-    const bgaFallback = document.getElementById('bga-fallback');
+    const bgaImage    = document.getElementById('bga-image');
     const bgaOverlay  = document.getElementById('bga-overlay');
     const bgCanvas    = document.getElementById('bgCanvas');
     const bgCtx       = bgCanvas.getContext('2d');
-    let useVideoBga   = false;
+    const bgaVideo    = null;     // BGA 비디오 제거 — 곡 이미지 배경 사용
+    let useVideoBga   = false;    // 항상 false (아래 video 관련 코드는 전부 no-op)
 
     const warnLeft  = document.getElementById('warn-left');
     const warnRight = document.getElementById('warn-right');
+    const speedEdgeWarning = document.getElementById('speed-edge-warning');
+    const speedEdgeLabel = speedEdgeWarning.querySelector('.speed-edge-label');
     const pauseMenu = document.getElementById('pause-menu');
     const countdownEl = document.getElementById('resume-countdown');
     const judgeDisplayEl = document.getElementById('judge-display');
@@ -510,6 +760,10 @@
     // 게임 변수
     // ============================================================
     let audio = new Audio();
+    const resultBgm = new Audio();
+    resultBgm.loop = false;
+    resultBgm.volume = 0;
+    let resultBgmFadeTimer = null;
     let bpm = 130, offset = 0;
     let beatNum = 4, beatDenom = 4;
     const BASE_RES = 192;
@@ -524,42 +778,167 @@
     let LANE_WIDTH     = 100;
     let NOTE_WIDTH     = 90;
     let NOTE_X_PADDING = 5;
-    const HIT_LINE_Y   = window.innerHeight * 0.85;
+    let HIT_LINE_Y   = window.innerHeight * 0.85;
+
+    // 노트가 모이는 중앙 영역 (editor의 GEAR 영역과 동일 개념)
+    let GEAR_W = 0, GEAR_X = 0;
+    function computeGear(){
+        GEAR_W = Math.min(400, window.innerWidth * 0.95);
+        GEAR_X = (window.innerWidth - GEAR_W) / 2;
+        TRACK_X_OFFSET = GEAR_X;
+        LANE_WIDTH = GEAR_W / 4;
+        NOTE_WIDTH = LANE_WIDTH - 10;
+    }
 
     if (isMobile) {
         document.body.classList.add('mobile-mode');
-        gameCanvas.width = window.innerWidth;
-        LANE_WIDTH      = window.innerWidth / 4;
-        TRACK_X_OFFSET  = 0;
-        NOTE_WIDTH      = LANE_WIDTH * 0.9;
-        NOTE_X_PADDING  = (LANE_WIDTH - NOTE_WIDTH) / 2;
         const startBtn  = document.getElementById('btn-start-auto');
         if(startBtn) startBtn.innerText = "TOUCH TO START";
-    } else {
-        gameCanvas.width = 450;
     }
+    // 캔버스는 항상 전체화면 (HUD가 창 가장자리에, 노트는 중앙 GEAR 영역에)
+    gameCanvas.width  = window.innerWidth;
     gameCanvas.height = window.innerHeight;
+    computeGear();
 
     function resizeBg() {
         bgCanvas.width  = window.innerWidth;
         bgCanvas.height = window.innerHeight;
     }
     window.addEventListener('resize', () => {
+        gameCanvas.width  = window.innerWidth;
         gameCanvas.height = window.innerHeight;
-        if(isMobile) {
-            gameCanvas.width   = window.innerWidth;
-            LANE_WIDTH         = window.innerWidth / 4;
-            NOTE_WIDTH         = LANE_WIDTH * 0.9;
-            NOTE_X_PADDING     = (LANE_WIDTH - NOTE_WIDTH) / 2;
-        }
+        HIT_LINE_Y = window.innerHeight * 0.85;
+        computeGear();
         resizeBg();
     });
     resizeBg();
 
     const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
 
+    // ============================================================
+    // ★ LINE CHOREOGRAPHY SYSTEM (에디터에서 이식)
+    // ============================================================
+    const LANE_COLORS = ['#b84060','#2a9558','#3d8fb0','#b07830'];
+    const DEFAULT_LINE = [
+      {x:0.125,y:0.85,angle:0},
+      {x:0.375,y:0.85,angle:0},
+      {x:0.625,y:0.85,angle:0},
+      {x:0.875,y:0.85,angle:0},
+    ];
+    let lineEvents  = [[],[],[],[]];
+    let pulseEvents = [[],[],[],[]];
+    let lineStates  = DEFAULT_LINE.map(l=>({...l}));
+    let linePulsePhase = [0,0,0,0];
+
+    function evTimeMs(ev){
+      if(ev.measureIdx!==undefined){
+        const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+        return ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm;
+      }
+      return ev.time||0;
+    }
+    const DEFAULT_CURVE = [{x:0,y:0},{x:1,y:1}];
+    function clamp01(v){return v<0?0:v>1?1:v;}
+    function catmull(p0,p1,p2,p3,t){
+      const t2=t*t,t3=t2*t;
+      return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);
+    }
+    function evalCurve(pts,t){
+      if(!pts||pts.length<2) return t;
+      const p=[...pts].sort((a,b)=>a.x-b.x);
+      t=clamp01(t);
+      if(t<=p[0].x) return clamp01(p[0].y);
+      if(t>=p[p.length-1].x) return clamp01(p[p.length-1].y);
+      let i=0; while(i<p.length-1 && p[i+1].x<t) i++;
+      const a=p[i-1]||p[i], b=p[i], c=p[i+1], d=p[i+2]||p[i+1];
+      const seg=c.x-b.x; const lt=seg<=0?0:(t-b.x)/seg;
+      return clamp01(catmull(a.y,b.y,c.y,d.y,lt));
+    }
+    // 속도 곡선: 곡선의 면적(=이동량)을 적분해 진행도로 변환 (에디터와 동일)
+    function evalSpeedCurve(pts,t){
+      if(!pts||pts.length<2) return t;
+      t=clamp01(t);
+      const STEPS=120; let total=0, partial=0;
+      for(let i=0;i<STEPS;i++){
+        const ta=i/STEPS, tb=(i+1)/STEPS;
+        const vm=Math.max(0,evalCurve(pts,(ta+tb)/2));
+        const dw=(tb-ta)*vm; total+=dw;
+        if(tb<=t) partial+=dw;
+        else if(ta<t) partial+=(t-ta)*vm;
+      }
+      if(total<=0) return t;
+      return clamp01(partial/total);
+    }
+    function applyEasing(t,type,kf){
+      switch(type){
+        case 'step': return t>=1?1:0;
+        case 'ease-in': return t*t*t;
+        case 'ease-out': return 1-Math.pow(1-t,3);
+        case 'ease-inout': return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+        case 'circ': return t<0.5
+          ? (1-Math.sqrt(1-Math.pow(2*t,2)))/2
+          : (Math.sqrt(1-Math.pow(-2*t+2,2))+1)/2;
+        case 'custom': return evalSpeedCurve((kf&&kf.curve)?kf.curve:DEFAULT_CURVE, t);
+        default: return t;
+      }
+    }
+    // 누적 이동 방식 (키프레임 x/y/angle = 더할 이동량)
+    function getLineState(lane,chartMs){
+      const def=DEFAULT_LINE[lane];
+      const events=lineEvents[lane];
+      let cx=def.x, cy=def.y, ca=def.angle;
+      if(!events||events.length===0) return {x:cx,y:cy,angle:ca};
+      for(let i=0;i<events.length;i++){
+        const ev=events[i];
+        const startT=evTimeMs(ev);
+        if(chartMs<startT) break;
+        let t=(chartMs-startT)/Math.max(1,ev.duration);
+        if(t>1)t=1;
+        const et=applyEasing(t,ev.easing,ev);
+        cx+=ev.x*et; cy+=ev.y*et; ca+=ev.angle*et;
+      }
+      return {x:cx,y:cy,angle:ca};
+    }
+    function getPulseMagnitude(lane,chartMs){
+      const events=pulseEvents[lane];
+      if(!events||!events.length) return 0;
+      let p=null;
+      for(let i=events.length-1;i>=0;i--){
+        if(evTimeMs(events[i])<=chartMs){p=events[i];break;}
+      }
+      if(!p||p.type==='stop') return 0;
+      const beatLen=60000/bpm;
+      const phase=(chartMs-evTimeMs(p))%beatLen;
+      const d=p.decay;
+      if(phase>d) return 0;
+      const u=phase/d;
+      let env;
+      if(u<0.12){ env=u/0.12; }
+      else{ const k=(u-0.12)/0.88; env=Math.pow(1-k,2); }
+      return p.intensity*env;
+    }
+    function hexA(hex,a){
+      const h=hex.replace('#','');
+      const r=parseInt(h.substring(0,2),16),g=parseInt(h.substring(2,4),16),b=parseInt(h.substring(4,6),16);
+      return `rgba(${r},${g},${b},${a})`;
+    }
+    function roundRect(ctx,x,y,w,h,r){
+      ctx.beginPath();
+      ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+      ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+      ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+      ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+      ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+      ctx.closePath();
+    }
+    // 라인 좌표(0~1) → 캔버스 픽셀 (중앙 GEAR 영역 기준)
+    function laneHalfW(){ return (GEAR_W/4)*0.44; }
+    function lineX(st){ return GEAR_X + st.x * GEAR_W; }
+    function lineY(st){ return st.y * gameCanvas.height; }
+
     let gameFinished    = false;
     let finishTimer     = null;
+    let speedWarningTimer = null;
     let gameState       = 'LOADING';
     let gameNotes       = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
     let speedEvents     = [];
@@ -591,6 +970,8 @@
     const FEVER_LV3 = 250;
 
     let isFever      = false;
+    let feverLevel   = 0;
+    let feverPulse   = 0;
     let fireflies    = [];
     let gearParticles = [];
 
@@ -603,14 +984,17 @@
     function createParticlesForJudge(lane, judgeInfo) {
         const colors = judgeInfo.particleColors;
         const count  = judgeInfo.comboBreak ? 4 : 14;
+        const st = lineStates[lane] || DEFAULT_LINE[lane];
+        const ox = GEAR_X + st.x * GEAR_W;
+        const oy = st.y * gameCanvas.height;
         for(let i = 0; i < count; i++) {
             const angle  = Math.random() * Math.PI * 2;
             const speed  = Math.random() * 18 + 4;
             const color  = colors[Math.floor(Math.random() * colors.length)];
             const size   = Math.random() * 7 + 3;
             particles.push({
-                x: TRACK_X_OFFSET + lane * LANE_WIDTH + LANE_WIDTH / 2,
-                y: HIT_LINE_Y,
+                x: ox,
+                y: oy,
                 vx: Math.cos(angle) * speed * 0.6,
                 vy: Math.sin(angle) * speed - 10,
                 life: 1.0,
@@ -655,15 +1039,12 @@
         constructor() {
             this.x = Math.random() * bgCanvas.width;
             this.y = Math.random() * bgCanvas.height;
-            this.vx = (Math.random() - 0.5) * 0.5;
-            this.vy = (Math.random() - 0.5) * 0.5;
-            this.size = Math.random() * 3 + 1;
-            this.baseAlpha = Math.random() * 0.5 + 0.3;
+            this.vx = (Math.random() - 0.5) * 0.28;
+            this.vy = (Math.random() - 0.5) * 0.28;
+            this.size = Math.random() * 2.2 + 1.0;
+            this.baseAlpha = Math.random() * 0.24 + 0.14;
             this.phase = Math.random() * Math.PI * 2;
-            const isMax = combo >= FEVER_LV3;
-            this.color = isMax ?
-                (Math.random() > 0.5 ? '#00ff00' : '#ccff00') :
-                (Math.random() > 0.5 ? '#ffd700' : '#00e5ff');
+            this.color = combo >= FEVER_LV3 ? '#78ffb4' : '#ffd652';
             this.scattering = false;
         }
         update() {
@@ -683,10 +1064,10 @@
         }
         draw(ctx) {
             if (this.baseAlpha <= 0) return;
-            const alpha = Math.max(0, this.baseAlpha + (this.scattering ? 0 : Math.sin(this.phase) * 0.2));
+            const alpha = Math.max(0, this.baseAlpha + (this.scattering ? 0 : Math.sin(this.phase) * 0.08));
             ctx.globalAlpha = alpha;
             ctx.fillStyle = this.color;
-            ctx.shadowBlur = 10;
+            ctx.shadowBlur = 7;
             ctx.shadowColor = this.color;
             ctx.beginPath();
             ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
@@ -699,6 +1080,70 @@
     audio.onended = () => {
         if (!gameFinished && !isPaused) finishGame();
     };
+
+    function sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function fadeAudioElement(el, targetVolume, duration = 1000, pauseAtZero = false) {
+        return new Promise(resolve => {
+            const startVolume = el.volume;
+            const startTime = performance.now();
+            function step(now) {
+                const t = Math.min(1, (now - startTime) / duration);
+                el.volume = startVolume + (targetVolume - startVolume) * t;
+                if (t < 1) {
+                    requestAnimationFrame(step);
+                } else {
+                    el.volume = targetVolume;
+                    if (pauseAtZero && targetVolume <= 0) el.pause();
+                    resolve();
+                }
+            }
+            requestAnimationFrame(step);
+        });
+    }
+
+    function scheduleResultBgmFadeOut() {
+        if (resultBgmFadeTimer) clearTimeout(resultBgmFadeTimer);
+        resultBgmFadeTimer = setTimeout(() => {
+            fadeAudioElement(resultBgm, 0, 8000, true);
+            resultBgmFadeTimer = null;
+        }, 30000);
+    }
+
+    async function playResultBgm(isClear) {
+        const targetVolume = parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || "0.65");
+        const primarySrc = isClear ? 'BGM/result.mp3' : 'BGM/result_failed.mp3';
+        const fallbackSrc = 'BGM/result.mp3';
+        try {
+            if (resultBgmFadeTimer) clearTimeout(resultBgmFadeTimer);
+            resultBgm.pause();
+            resultBgm.src = primarySrc;
+            resultBgm.currentTime = 0;
+            resultBgm.volume = 0;
+            await resultBgm.play();
+            await fadeAudioElement(resultBgm, Math.min(1, targetVolume), 1800);
+            scheduleResultBgmFadeOut();
+        } catch(e) {
+            if (!isClear) {
+                try {
+                    if (resultBgmFadeTimer) clearTimeout(resultBgmFadeTimer);
+                    resultBgm.pause();
+                    resultBgm.src = fallbackSrc;
+                    resultBgm.currentTime = 0;
+                    resultBgm.volume = 0;
+                    await resultBgm.play();
+                    await fadeAudioElement(resultBgm, Math.min(1, targetVolume), 1800);
+                    scheduleResultBgmFadeOut();
+                    return;
+                } catch(fallbackError) {
+                    console.warn("Result BGM fallback unavailable:", fallbackError);
+                }
+            }
+            console.warn("Result BGM unavailable:", e);
+        }
+    }
 
     // ============================================================
     // 초기화
@@ -733,10 +1178,10 @@
             const chartData = await chartRes.json();
             parseChartData(chartData);
 
-            const bgaPath = `Maps/${song}/bga.mp4`;
-            bgaVideo.src = bgaPath;
-            bgaVideo.onerror = () => { useVideoBga = false; bgaVideo.style.display = 'none'; bgaFallback.style.display = 'block'; };
-            bgaVideo.oncanplay = () => { useVideoBga = true; bgaVideo.style.display = 'block'; bgaFallback.style.display = 'none'; };
+            // ★ 곡 이미지 배경 (songs/{folder}/image.png, 전체화면 블러)
+            bgaImage.onload  = () => { bgaImage.style.display = 'block'; };
+            bgaImage.onerror = () => { bgaImage.style.display = 'none'; };
+            bgaImage.src = `songs/${song}/image.png`;
 
             logStatus("LOADING AUDIO...");
             const audioPath = `Maps/${song}/audio.mp3`;
@@ -782,6 +1227,12 @@
 
         msgEvents = [];
         if(data.msgEvents) msgEvents = data.msgEvents;
+
+        // ★ 라인 안무 / 펄스 기믹 로딩 (에디터 export 포맷)
+        lineEvents  = data.lineEvents  ? data.lineEvents.map(arr=>arr.map(e=>({...e})))  : [[],[],[],[]];
+        pulseEvents = data.pulseEvents ? data.pulseEvents.map(arr=>arr.map(e=>({...e}))) : [[],[],[],[]];
+        while(lineEvents.length<4) lineEvents.push([]);
+        while(pulseEvents.length<4) pulseEvents.push([]);
 
         if(data.measures) {
             const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
@@ -854,6 +1305,8 @@
         judgeStats = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
         activeNotes = []; particles = []; recentHits = []; judgments = [];
         fireflies = []; gearParticles = []; lineFlash = null;
+        lineStates = DEFAULT_LINE.map(l=>({...l}));
+        linePulsePhase = [0,0,0,0];
         resetFever();
 
         finishEffect.innerHTML = "";
@@ -862,6 +1315,12 @@
 
         warnLeft.className  = 'side-warn-col';
         warnRight.className = 'side-warn-col';
+        speedEdgeWarning.classList.remove('speed-edge-up', 'speed-edge-down');
+        speedEdgeLabel.textContent = '';
+        if (speedWarningTimer) {
+            clearTimeout(speedWarningTimer);
+            speedWarningTimer = null;
+        }
 
         if(useVideoBga) bgaVideo.currentTime = 0;
 
@@ -872,12 +1331,17 @@
         gameLoop();
     }
 
-    function finishGame() {
+    async function finishGame() {
         if (gameFinished) return;
         gameFinished = true;
         if (finishTimer) clearTimeout(finishTimer);
-        audio.pause();
+        showResultPreparing();
+        const savedMusicVol = parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || "1");
+        audio.volume = Math.min(1, savedMusicVol);
+        await fadeAudioElement(audio, 0, 900, true);
         if(useVideoBga) bgaVideo.pause();
+        await sleep(800);
+        playResultBgm(Math.floor(score) >= 600000);
         showResult();
     }
 
@@ -938,21 +1402,20 @@
     }
 
     function showSpeedWarning(targetMult, currentMult) {
+        if (Math.abs(targetMult - currentMult) < 0.001) return;
+
         const isUp  = targetMult > currentMult;
-        const cls   = isUp ? 'warn-up' : 'warn-down';
-        const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
+        const cls = isUp ? 'speed-edge-up' : 'speed-edge-down';
 
-        warnLeft.querySelector('.warn-label').innerHTML  = label;
-        warnRight.querySelector('.warn-label').innerHTML = label;
-        warnLeft.classList.remove('warn-up', 'warn-down');
-        warnRight.classList.remove('warn-up', 'warn-down');
-        void warnLeft.offsetWidth;
-        warnLeft.classList.add(cls);
-        warnRight.classList.add(cls);
+        speedEdgeLabel.textContent = isUp ? '속도 증가' : '속도 감소';
+        speedEdgeWarning.classList.remove('speed-edge-up', 'speed-edge-down');
+        void speedEdgeWarning.offsetWidth;
+        speedEdgeWarning.classList.add(cls);
 
-        setTimeout(() => {
-            warnLeft.classList.remove(cls);
-            warnRight.classList.remove(cls);
+        if (speedWarningTimer) clearTimeout(speedWarningTimer);
+        speedWarningTimer = setTimeout(() => {
+            speedEdgeWarning.classList.remove(cls);
+            speedWarningTimer = null;
         }, 1500);
 
         if (isUp) {
@@ -963,28 +1426,35 @@
 
     function checkFeverState(currentCombo) {
         const container = document.getElementById('game-canvas-container');
-        const hud = document.getElementById('g-combo');
         if (currentCombo === FEVER_LV1) {
-            isFever = true; playSfx('fever');
-            container.classList.add('fever-mode');
-            hud.classList.add('fever-text');
-        }
-        if (currentCombo === FEVER_LV2) playSfx('fever');
-        if (currentCombo === FEVER_LV3) {
+            isFever = true;
+            feverLevel = 1;
+            feverPulse = 1.0;
             playSfx('fever');
-            container.classList.remove('fever-mode');
-            container.classList.add('fever-max-mode');
-            hud.classList.remove('fever-text');
-            hud.classList.add('fever-max-text');
-            fireflies.forEach(p => { p.color = Math.random() > 0.5 ? '#00ff00' : '#ccff00'; });
+            container.classList.add('fever-mode', 'fever-level-1');
+        }
+        if (currentCombo === FEVER_LV2) {
+            feverLevel = 2;
+            feverPulse = 1.0;
+            playSfx('fever');
+            container.classList.add('fever-level-2');
+        }
+        if (currentCombo === FEVER_LV3) {
+            feverLevel = 3;
+            feverPulse = 1.0;
+            playSfx('fever');
+            container.classList.remove('fever-level-1', 'fever-level-2');
+            container.classList.add('fever-max-mode', 'fever-level-3');
         }
     }
 
     function resetFever() {
         isFever = false;
+        feverLevel = 0;
+        feverPulse = 0;
         const container = document.getElementById('game-canvas-container');
         const hud = document.getElementById('g-combo');
-        container.classList.remove('fever-mode', 'fever-max-mode');
+        container.classList.remove('fever-mode', 'fever-max-mode', 'fever-level-1', 'fever-level-2', 'fever-level-3');
         hud.classList.remove('fever-text', 'fever-max-text');
         fireflies.forEach(p => p.scattering = true);
         gearParticles.forEach(p => p.life = 0.1);
@@ -992,40 +1462,58 @@
 
     function drawFeverGearEffect() {
         if (!isFever) return;
-        if (Math.random() < 0.3) {
-            gearParticles.push({
-                x: TRACK_X_OFFSET + Math.random() * (LANE_WIDTH * 4),
-                y: gameCanvas.height,
-                size: Math.random() * 4 + 2,
-                speedY: Math.random() * 1.5 + 0.5,
-                life: 1.0,
-                offset: Math.random() * 100
-            });
-        }
-        const isInferno    = combo >= FEVER_LV3;
-        const particleColor = isInferno ? '#00ff00' : '#ffd700';
-        for (let i = gearParticles.length - 1; i >= 0; i--) {
-            let p = gearParticles[i];
-            p.y -= p.speedY;
-            p.x += Math.sin(p.y * 0.02 + p.offset) * 0.5;
-            p.life -= 0.005;
-            if (p.life <= 0) { gearParticles.splice(i, 1); continue; }
-            gameCtx.globalAlpha = p.life * 0.5;
-            gameCtx.fillStyle = particleColor;
-            gameCtx.shadowBlur = 15;
-            gameCtx.shadowColor = particleColor;
+        const level = Math.max(1, feverLevel || (combo >= FEVER_LV3 ? 3 : combo >= FEVER_LV2 ? 2 : 1));
+        const colors = [
+            null,
+            { main: '#00e5ff', soft: 'rgba(0,229,255,0.22)' },
+            { main: '#ffd652', soft: 'rgba(255,214,82,0.25)' },
+            { main: '#78ffb4', soft: 'rgba(120,255,180,0.28)' }
+        ][level];
+        const cx = TRACK_X_OFFSET + LANE_WIDTH * 2;
+        const cy = HIT_LINE_Y;
+        const width = LANE_WIDTH * 4;
+        const time = performance.now() * 0.001;
+        const pulse = feverPulse;
+
+        gameCtx.save();
+        gameCtx.strokeStyle = colors.main;
+        gameCtx.fillStyle = colors.soft;
+        gameCtx.lineWidth = 1.4;
+        gameCtx.shadowColor = colors.main;
+        gameCtx.shadowBlur = 12 + level * 3;
+
+        gameCtx.globalAlpha = 0.14 + level * 0.04 + pulse * 0.2;
+        gameCtx.beginPath();
+        gameCtx.ellipse(cx, cy, width * (0.48 + pulse * 0.16), 34 + level * 8 + pulse * 28, 0, 0, Math.PI * 2);
+        gameCtx.stroke();
+
+        gameCtx.shadowBlur = 0;
+        gameCtx.globalAlpha = 0.09 + level * 0.03;
+        for (let i = 0; i < 5 + level * 2; i++) {
+            const offset = ((time * (24 + level * 7) + i * 74) % (width + 160)) - 80;
             gameCtx.beginPath();
-            gameCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-            gameCtx.fill();
-            gameCtx.shadowBlur = 0;
+            gameCtx.moveTo(TRACK_X_OFFSET + offset, cy + 58);
+            gameCtx.lineTo(TRACK_X_OFFSET + offset + 56, cy - 58);
+            gameCtx.stroke();
         }
+
+        if (pulse > 0.01) {
+            gameCtx.globalAlpha = pulse * 0.28;
+            gameCtx.fillRect(TRACK_X_OFFSET, cy - 2, width, 4);
+            feverPulse *= 0.88;
+        } else {
+            feverPulse = 0;
+        }
+
+        gameCtx.restore();
         gameCtx.globalAlpha = 1.0;
     }
 
     function updateBgParticles() {
         bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-        if (combo >= FEVER_LV2 && fireflies.length < 100) {
-            if(Math.random() < 0.1) fireflies.push(new Firefly());
+        const maxFireflies = combo >= FEVER_LV3 ? 42 : 26;
+        if (combo >= FEVER_LV2 && fireflies.length < maxFireflies) {
+            if(Math.random() < 0.055) fireflies.push(new Firefly());
         }
         for (let i = fireflies.length - 1; i >= 0; i--) {
             let p = fireflies[i];
@@ -1081,7 +1569,9 @@
             }
             if (nextEvent.time - currentTime <= msPerMeasure) {
                 nextEvent.warned = true;
-                showSpeedWarning(nextEvent.mult, currentMult);
+                if (Math.abs(nextEvent.mult - currentMult) >= 0.001) {
+                    showSpeedWarning(nextEvent.mult, currentMult);
+                }
             }
         }
 
@@ -1107,8 +1597,10 @@
     function drawGameScreen(currentTime) {
         gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
         drawFeverGearEffect();
-        drawLaneBeams();
-        drawJudgmentLine();
+
+        // ★ 라인 안무/펄스 상태 갱신 (에디터와 동일 타임라인)
+        lineStates    = [0,1,2,3].map(l=>getLineState(l, currentTime));
+        linePulsePhase = [0,1,2,3].map(l=>getPulseMagnitude(l, currentTime));
 
         const currentVisualY = getVisualPos(currentTime);
         const GLOBAL_SCALE   = 0.1 * baseNoteSpeed;
@@ -1193,45 +1685,90 @@
                 }
             }
 
-            // 화면 위쪽 컬링 (헤드만 체크)
-            if (!n.hit && headY < -150 && n.len === 0) continue;
-
-            if (!n.finished) {
-                const laneX = TRACK_X_OFFSET + (n.lane * LANE_WIDTH);
-                if (n.len > 0) {
-                    const drawHeadY = n.hit ? HIT_LINE_Y : headY;
-                    const bodyH    = drawHeadY - tailY;
-                    if (drawHeadY > -50 && tailY < gameCanvas.height) {
-                        // 롱노트 바디: 홀딩중 색상 변화
-                        const bodyColor = n.hit ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.45)';
-                        gameCtx.fillStyle = bodyColor;
-                        gameCtx.fillRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
-                        // 롱노트 엣지 네온
-                        if(n.hit) {
-                            gameCtx.strokeStyle = COLORS[n.lane];
-                            gameCtx.lineWidth = 3;
-                            gameCtx.shadowBlur = 8;
-                            gameCtx.shadowColor = COLORS[n.lane];
-                            gameCtx.strokeRect(laneX + NOTE_X_PADDING, tailY, NOTE_WIDTH, bodyH);
-                            gameCtx.shadowBlur = 0;
-                        }
-                    }
-                }
-                // 헤드 노트
-                if (!n.hit && headY > -50 && headY < gameCanvas.height) {
-                    // 노트 그림자 글로우
-                    gameCtx.shadowBlur  = 18;
-                    gameCtx.shadowColor = COLORS[n.lane];
-                    gameCtx.fillStyle   = COLORS[n.lane];
-                    gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 30);
-                    // 하이라이트
-                    gameCtx.shadowBlur = 0;
-                    gameCtx.fillStyle  = "rgba(255,255,255,0.75)";
-                    gameCtx.fillRect(laneX + NOTE_X_PADDING, headY - 15, NOTE_WIDTH, 8);
-                }
-            }
+            // (그리기는 아래 무빙 라인 렌더 패스에서 처리 — 여기선 판정 로직만)
         }
         activeNotes = activeNotes.filter(n => !n.finished);
+
+        // ============================================================
+        // ★ 무빙 라인 렌더 패스 (에디터와 동일: 라인 + 수직 접근 노트)
+        // ============================================================
+        const cvy = currentVisualY;
+        const gs  = GLOBAL_SCALE;
+        const laneHalf = laneHalfW();
+        const safeLimit = Math.sqrt(gameCanvas.width*gameCanvas.width + gameCanvas.height*gameCanvas.height) * 3;
+
+        for(let lane=0; lane<4; lane++){
+            const st=lineStates[lane];
+            const pulse=linePulsePhase[lane]||0;
+            const px=lineX(st), py=lineY(st);
+            const ang=(st.angle*Math.PI)/180;
+            const col=LANE_COLORS[lane];
+
+            gameCtx.save();
+            gameCtx.translate(px,py);
+            gameCtx.rotate(ang);
+            gameCtx.translate(0,pulse);
+
+            // 키 입력 글로우 빔
+            if(activeKeys[lane]){
+                const bg=gameCtx.createLinearGradient(0,0,0,-180);
+                bg.addColorStop(0,hexA(col,0.18)); bg.addColorStop(1,hexA(col,0));
+                gameCtx.fillStyle=bg;
+                gameCtx.fillRect(-laneHalf,-180,laneHalf*2,180);
+            }
+
+            // 판정 라인
+            gameCtx.shadowBlur=activeKeys[lane]?10:3;
+            gameCtx.shadowColor=col;
+            gameCtx.strokeStyle=col;
+            gameCtx.lineWidth=activeKeys[lane]?2.2:1.4;
+            gameCtx.globalAlpha=activeKeys[lane]?0.95:0.7;
+            gameCtx.beginPath();
+            gameCtx.moveTo(-laneHalf,0); gameCtx.lineTo(laneHalf,0);
+            gameCtx.stroke();
+            // 중심 점
+            gameCtx.fillStyle=col; gameCtx.globalAlpha=1;
+            gameCtx.shadowBlur=activeKeys[lane]?8:2;
+            gameCtx.beginPath(); gameCtx.arc(0,0,activeKeys[lane]?3.5:2,0,Math.PI*2); gameCtx.fill();
+            gameCtx.shadowBlur=0;
+
+            // 라인에 수직 접근하는 노트
+            const visibleNotes=activeNotes.filter(n=>n.lane===lane&&!n.finished
+                && n.endTime>currentTime-800 && n.time<currentTime+8000);
+            visibleNotes.forEach(n=>{
+                const nPos=getVisualPos(n.time);
+                const endPos=n.len>0?getVisualPos(n.endTime):nPos;
+                const headLocalY=-(nPos-cvy)*gs;
+                if(n.len>0){
+                    const endLocalY=-(endPos-cvy)*gs;
+                    const drawHeadY=(n.hit&&!isPaused)?0:headLocalY;
+                    const top=Math.min(drawHeadY,endLocalY), bot=Math.max(drawHeadY,endLocalY);
+                    const clTop=Math.max(-safeLimit,top), clBot=Math.min(60,bot);
+                    if(clBot>clTop){
+                        gameCtx.fillStyle=col; gameCtx.globalAlpha=0.15;
+                        gameCtx.fillRect(-laneHalf+12,clTop,(laneHalf-12)*2,clBot-clTop);
+                        gameCtx.globalAlpha=0.35;
+                        gameCtx.fillRect(-laneHalf+12,clTop,1.5,clBot-clTop);
+                        gameCtx.fillRect(laneHalf-13.5,clTop,1.5,clBot-clTop);
+                        gameCtx.globalAlpha=1;
+                    }
+                }
+                if((!n.hit||isPaused)&&headLocalY>-safeLimit&&headLocalY<60){
+                    gameCtx.globalAlpha=0.88;
+                    gameCtx.fillStyle=col;
+                    gameCtx.shadowBlur=5; gameCtx.shadowColor=col;
+                    roundRect(gameCtx,-laneHalf+6,headLocalY-4,(laneHalf-6)*2,8,2); gameCtx.fill();
+                    gameCtx.fillStyle='rgba(255,255,255,0.18)'; gameCtx.shadowBlur=0;
+                    roundRect(gameCtx,-laneHalf+6,headLocalY-4,(laneHalf-6)*2,2.5,1); gameCtx.fill();
+                    gameCtx.globalAlpha=1;
+                }
+            });
+
+            gameCtx.globalAlpha=1;
+            gameCtx.restore();
+            gameCtx.globalAlpha=1; gameCtx.shadowBlur=0; gameCtx.shadowColor='transparent';
+        }
+
         drawParticles();
         drawGameFX();
         drawHitErrorBar();
@@ -1434,11 +1971,22 @@
     }
 
     function updateGameHUD() {
-        document.getElementById('g-combo').innerText  = combo;
+        const comboEl = document.getElementById('g-combo');
+        comboEl.innerText  = combo;
         document.getElementById('g-score').innerText  = Math.round(score).toString().padStart(6, '0');
         let currentRate = 100.00;
         if (totalHits > 0) currentRate = Math.min(100, (totalRateSum / (totalHits * 100)) * 100);
         document.getElementById('g-rate').innerText   = currentRate.toFixed(2) + "%";
+
+        // ★ 콤보 색상: TB(All Perfect) 가능 → 노랑 / FC 가능 → 파랑 / 그 외 → 흰색
+        const tbPossible = (judgeStats.perfect + judgeStats.great + judgeStats.good
+                          + judgeStats.notBad + judgeStats.save + judgeStats.oh + judgeStats.miss) === 0;
+        const fcPossible = (judgeStats.oh + judgeStats.miss) === 0;
+        let cColor = '#ffffff', cGlow = 'rgba(255,255,255,0.4)';
+        if (tbPossible)      { cColor = '#ffd700'; cGlow = '#ffd700'; }   // TROLL BEAT 가능
+        else if (fcPossible) { cColor = '#00e5ff'; cGlow = '#00e5ff'; }   // FULL COMBO 가능
+        comboEl.style.color = cColor;
+        comboEl.style.textShadow = `0 0 20px ${cGlow}`;
     }
 
     // ============================================================
@@ -1577,6 +2125,70 @@
         }
     }
 
+    function animateResultValue(el, target, formatter, duration = 1400) {
+        if (!el) return;
+        const startTime = performance.now();
+        function step(now) {
+            const t = Math.min(1, (now - startTime) / duration);
+            const eased = 1 - Math.pow(1 - t, 4);
+            let value = target * eased;
+            if (t < 0.88) {
+                value += (Math.random() - 0.5) * target * 0.018 * (1 - t);
+            }
+            el.textContent = formatter(Math.max(0, Math.min(target, value)));
+            if (t < 1) requestAnimationFrame(step);
+            else el.textContent = formatter(target);
+        }
+        requestAnimationFrame(step);
+    }
+
+    function startResultCountUp(scoreValue, rateValue) {
+        animateResultValue(
+            document.getElementById('result-score-value'),
+            scoreValue,
+            value => Math.floor(value).toString().padStart(6, '0'),
+            1550
+        );
+        animateResultValue(
+            document.getElementById('result-rate-value'),
+            rateValue,
+            value => value.toFixed(2) + "%",
+            1550
+        );
+    }
+
+    function showResultPreparing() {
+        resultOverlay.classList.remove('result-show');
+        resultOverlay.innerHTML = `<div class="result-prep">COMPILING RESULT</div>`;
+        resultOverlay.style.display = 'flex';
+    }
+
+    async function getResultSongInfo(songParam, diffParam) {
+        const fallbackSong = songParam ? decodeURIComponent(songParam) : "UNKNOWN SONG";
+        const fallbackDiff = diffParam ? diffParam.replace(/\.json$/i, '').split('_')[0].toUpperCase() : "UNKNOWN";
+        const fallbackLevel = new URLSearchParams(window.location.search).get('level') || "?";
+
+        try {
+            const res = await fetch('song_list.json');
+            if (!res.ok) throw new Error('song_list.json not found');
+            const songs = await res.json();
+            const song = songs.find(s => s.folder === songParam || decodeURIComponent(s.folder) === decodeURIComponent(songParam || ''));
+            const diffFile = diffParam && diffParam.endsWith('.json') ? diffParam : `${diffParam}.json`;
+            const chart = song && song.charts
+                ? song.charts.find(c => c.file === diffFile || c.file.replace(/\.json$/i, '') === diffParam)
+                : null;
+
+            return {
+                title: song?.title || fallbackSong,
+                diffName: chart?.name || fallbackDiff,
+                level: chart?.level ?? fallbackLevel
+            };
+        } catch(e) {
+            console.warn("Result song info fallback:", e);
+            return { title: fallbackSong, diffName: fallbackDiff, level: fallbackLevel };
+        }
+    }
+
     // ============================================================
     // 결과 화면
     // ============================================================
@@ -1658,11 +2270,20 @@
             }
 
             const finalScoreStr = secureScore.toString().padStart(6, '0');
+            const rankClass = rank === 'TB' ? 'rank-tb'
+                : rank === 'S+' ? 'rank-sp'
+                : rank === 'S' ? 'rank-s'
+                : rank === 'A+' ? 'rank-ap'
+                : rank === 'A' ? 'rank-a'
+                : rank === 'B' ? 'rank-b'
+                : rank === 'C' ? 'rank-c'
+                : rank === 'FAILED' ? 'rank-failed'
+                : '';
             const urlParams     = new URLSearchParams(window.location.search);
             const songParam     = urlParams.get('song');
             const diffParam     = urlParams.get('diff');
 
-            const _levelRaw     = urlParams.get('level') || '?';
+            const resultSongInfo = await getResultSongInfo(songParam, diffParam);
 
             if (songParam && diffParam) {
                 const scoreKey  = `wb_score_${songParam}_${diffParam}`;
@@ -1720,23 +2341,31 @@
             if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
             else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
 
-            const songName = decodeURIComponent(songParam);
-            const diffName = diffParam.toUpperCase();
+            const songName = resultSongInfo.title;
+            const diffName = resultSongInfo.diffName;
+            const levelName = resultSongInfo.level;
 
             // ★ 판정 상세: 8단계
+            resultOverlay.classList.remove('result-show');
             resultOverlay.innerHTML = `
-                <div style="text-align:center; margin-bottom:20px;">
-                    <div class="res-song-title">${songName}</div>
-                    <div class="res-diff-name">${diffName} Lv.${_levelRaw}</div>
-                    <div class="res-rank" style="color:${gradeColor}; text-shadow:${glowEffect};">${rank}</div>
-                </div>
+                <div class="result-panel">
+                    <div class="result-topline">RESULT ANALYSIS</div>
+                    <div class="result-head">
+                        <div class="result-title">
+                            <div class="res-song-title">${songName}</div>
+                            <div class="res-diff-name">${diffName} Lv.${levelName}</div>
+                        </div>
+                        <div class="result-rank-wrap">
+                            <div class="res-rank ${rankClass}" style="color:${gradeColor}; text-shadow:${glowEffect};">${rank}</div>
+                        </div>
+                    </div>
                 ${badgeHtml}
                 <div class="res-info">
-                    <div class="res-box"><div class="res-label">SCORE</div><div class="res-val">${finalScoreStr}</div></div>
-                    <div class="res-box"><div class="res-label">RATE</div><div class="res-val">${finalRate.toFixed(2)}%</div></div>
+                    <div class="res-box"><div class="res-label">SCORE</div><div class="res-val primary-score" id="result-score-value">000000</div></div>
+                    <div class="res-box"><div class="res-label">RATE</div><div class="res-val" id="result-rate-value">0.00%</div></div>
                     <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${secureMaxCombo}</div></div>
                 </div>
-                <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; width:90%; max-width:560px; background:rgba(255,255,255,0.03); padding:16px 20px; border-radius:15px; border:1px solid #333; margin-bottom:20px;">
+                <div class="result-detail-grid">
                     <div class="detail-item"><div class="detail-label" style="color:#fff;background:linear-gradient(90deg,#ff0080,#00e5ff,#88ff00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Perfect!</div><div class="detail-val">${judgeStats.perfectEx}</div></div>
                     <div class="detail-item"><div class="detail-label" style="color:#FFE000;">Perfect</div><div class="detail-val">${judgeStats.perfect}</div></div>
                     <div class="detail-item"><div class="detail-label" style="color:#00F2FF;">Great</div><div class="detail-val">${judgeStats.great}</div></div>
@@ -1746,12 +2375,16 @@
                     <div class="detail-item"><div class="detail-label" style="color:#FF2D78;">Oh...</div><div class="detail-val">${judgeStats.oh}</div></div>
                     <div class="detail-item"><div class="detail-label" style="color:#555566;">No...</div><div class="detail-val">${judgeStats.miss}</div></div>
                 </div>
-                ${rankingHtml}
+                <div class="result-ranking">${rankingHtml}</div>
                 <div id="google-login-btn-result" style="margin-top:15px; display:flex; justify-content:center; min-height:40px;"></div>
-                <button class="btn-common" onclick="location.href='index.html'" style="margin-top:20px;">CONTINUE</button>
+                <div class="result-actions"><button class="btn-common" onclick="location.href='select.html'">CONTINUE</button></div>
+                </div>
             `;
 
             resultOverlay.style.display = 'flex';
+            void resultOverlay.offsetWidth;
+            resultOverlay.classList.add('result-show');
+            startResultCountUp(secureScore, finalRate);
 
             if (!userProfile && typeof google !== 'undefined') {
                 google.accounts.id.renderButton(

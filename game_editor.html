@@ -1,1421 +1,2609 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <title>WEB BEAT : EDITOR (Ultimate V19 - Sync Fix)</title>
-    <style>
-        :root { --bg: #121212; --panel: #1e1e1e; --accent: #00e5ff; --text: #eee; --msg-color: #d084ff; }
-        body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; display: flex; height: 100vh; overflow: hidden; user-select: none; }
-        
-        #sidebar { 
-            width: 320px; min-width: 320px; background: var(--panel); padding: 15px; 
-            border-right: 1px solid #333; display: flex; flex-direction: column; gap: 12px; 
-            z-index: 20; box-shadow: 2px 0 15px rgba(0,0,0,0.7); overflow-y: auto; max-height: 100vh;
-        }
-        #sidebar::-webkit-scrollbar { width: 8px; }
-        #sidebar::-webkit-scrollbar-thumb { background: #444; border-radius: 4px; }
-        
-        h2 { margin: 0 0 10px 0; color: var(--accent); border-bottom: 2px solid var(--accent); padding-bottom: 5px; font-size: 20px; text-shadow: 0 0 10px rgba(0, 229, 255, 0.3); }
-        .control-group { display: flex; flex-direction: column; gap: 6px; background: #2a2a2a; padding: 10px; border-radius: 6px; border: 1px solid #333; flex-shrink: 0; }
-        .group-title { font-size: 11px; font-weight: bold; color: #aaa; text-transform: uppercase; margin-bottom: 4px; }
-        
-        input, select, button { padding: 6px; background: #111; border: 1px solid #444; color: #fff; border-radius: 4px; font-size: 11px; }
-        input[type="range"] { padding: 0; cursor: pointer; accent-color: var(--accent); }
-        button { cursor: pointer; font-weight: bold; transition: 0.2s; text-transform: uppercase; }
-        button:hover { background: #444; filter: brightness(1.2); }
-        button.primary { background: var(--accent); color: #000; border: none; box-shadow: 0 0 10px rgba(0, 229, 255, 0.2); }
-        button.test-btn { background: #ff0055; color: white; border: none; font-size: 14px; padding: 12px; box-shadow: 0 0 15px rgba(255, 0, 85, 0.3); }
-        
-        .row { display: flex; gap: 5px; align-items: center; } .row > * { flex: 1; }
-        .val-label { font-size: 12px; color: var(--accent); font-weight: bold; width: 40px; text-align: right; }
-        .checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; background: #222; padding: 8px; border-radius: 4px; }
-        input[type="file"] { display: none; }
-        .file-label { display: block; padding: 8px; background: #333; text-align: center; border-radius: 4px; cursor: pointer; border: 1px dashed #666; font-size: 12px; }
+<meta charset="UTF-8">
+<title>WEB BEAT : EDITOR v20 — Line Choreography</title>
+<style>
+/* ═══════════════════════════════════════════════════════
+   ROOT & RESET
+═══════════════════════════════════════════════════════ */
+:root {
+  --bg:#0d0d0d; --panel:#161616; --panel2:#1c1c1c; --border:#2a2a2a;
+  --accent:#00e5ff; --accent2:#ff2d78; --gold:#ffd700;
+  --text:#ddd; --text-dim:#666;
+  --msg-color:#d084ff;
+  --lane0:#ff4081; --lane1:#00e676; --lane2:#29b6f6; --lane3:#ffa726;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',sans-serif;
+  display:flex;height:100vh;overflow:hidden;user-select:none;}
 
-        #editor-view { flex: 1; display: flex; flex-direction: column; position: relative; }
-        #editor-container { flex: 1; overflow-y: scroll; background: #0a0a0a; display: flex; justify-content: center; position: relative; }
-        #canvas-layer { position: relative; width: 400px; background: transparent; }
-        #gridCanvas { position: sticky; top: 0; display: block; background: #000; box-shadow: 0 0 30px rgba(0,0,0,0.5); cursor: crosshair; }
-        #play-head { position: absolute; left: 0; width: 100%; height: 2px; background: #ff0055; z-index: 5; display: none; pointer-events: none; box-shadow: 0 0 10px #ff0055; will-change: transform; }
-        .lane-header { display: flex; width: 400px; margin: 0 auto; background: #222; font-weight: bold; font-size: 12px; text-align: center; border-bottom: 2px solid #444; }
-        .lane-header div { flex: 1; padding: 8px 0; border-right: 1px solid #333; color: #888; }
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR
+═══════════════════════════════════════════════════════ */
+#sidebar{
+  width:300px;min-width:300px;background:var(--panel);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  z-index:20;box-shadow:3px 0 20px rgba(0,0,0,0.7);
+  overflow:hidden;
+  transition:width 0.28s cubic-bezier(0.4,0,0.2,1),
+             min-width 0.28s cubic-bezier(0.4,0,0.2,1);
+  position:relative;
+}
+#sidebar.collapsed{width:0;min-width:0;}
 
-        #game-view { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 50; display: none; flex-direction: row; align-items: stretch; justify-content: center; }
-        #game-canvas-container { position: relative; width: 400px; height: 100%; border-left: 2px solid #333; border-right: 2px solid #333; overflow: hidden; flex-shrink: 0; background: #000; }
-        canvas.game { display: block; width: 100%; height: 100%; }
-        
-        #game-hud { position: absolute; top: 20px; left: 20px; right: 20px; display: flex; justify-content: space-between; pointer-events: none; z-index: 60; }
-        .hud-item { flex: 1; }
-        .hud-text { font-family: 'Impact', sans-serif; font-size: 32px; color: #fff; text-shadow: 0 0 10px rgba(255,255,255,0.5); letter-spacing: 1px; }
-        .hud-sub { font-size: 12px; color: #888; font-weight: bold; }
-        #g-avg-box { position: absolute; bottom: 120px; width: 100%; text-align: center; pointer-events: none; }
-        #g-avg { font-family: 'Consolas', monospace; font-size: 14px; font-weight: bold; color: #888; text-shadow: 0 0 2px #000; }
-        #auto-indicator { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Impact'; font-size: 80px; color: rgba(123, 31, 162, 0.3); pointer-events: none; display: none; z-index: 55; }
-        #finish-effect { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; pointer-events: none; z-index: 80; }
+#sidebar-toggle{
+  position:absolute;right:-18px;top:50%;transform:translateY(-50%);
+  width:18px;height:60px;
+  background:var(--panel);border:1px solid var(--border);
+  border-left:none;border-radius:0 6px 6px 0;
+  cursor:pointer;z-index:30;display:flex;align-items:center;justify-content:center;
+  color:var(--accent);font-size:12px;
+  transition:background 0.2s;
+}
+#sidebar-toggle:hover{background:#222;}
 
-        #guide-message {
-            position: absolute; top: 35%; left: 50%; transform: translateX(-50%);
-            width: 100%; text-align: center; pointer-events: none; z-index: 70;
-            font-family: 'Impact', sans-serif; font-size: 48px; color: #fff;
-            text-shadow: 0 0 20px var(--msg-color), 0 0 40px var(--msg-color);
-            opacity: 0; transition: opacity 0.2s, transform 0.2s;
-            white-space: nowrap;
-        }
-        .msg-active { opacity: 1 !important; transform: translateX(-50%) scale(1.1) !important; }
+#sidebar-inner{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:12px;display:flex;flex-direction:column;gap:10px;
+  min-width:300px;
+}
+#sidebar-inner::-webkit-scrollbar{width:6px;}
+#sidebar-inner::-webkit-scrollbar-thumb{background:#333;border-radius:3px;}
 
-        .side-warn-col { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.2s; background: transparent; }
-        .chevron { width: 60px; height: 60px; border-top: 12px solid currentColor; border-right: 12px solid currentColor; transform: rotate(-45deg); margin: 20px 0; }
-        .warn-up { opacity: 1; } .warn-up .chevron { color: #ff0055; filter: drop-shadow(0 0 20px #ff0055); animation: chevUp 0.3s infinite; } .warn-up .warn-label { color: #ff0055; text-shadow: 0 0 20px #ff0055; }
-        .warn-down { opacity: 1; } .warn-down .chevron { color: #00e5ff; transform: rotate(135deg); filter: drop-shadow(0 0 20px #00e5ff); animation: chevDown 0.5s infinite; } .warn-down .warn-label { color: #00e5ff; text-shadow: 0 0 20px #00e5ff; }
-        .warn-label { font-family: 'Impact', sans-serif; font-size: 40px; margin: 30px 0; letter-spacing: 4px; text-align: center; line-height: 1.2; }
-        @keyframes chevUp { 0% { transform: translateY(30px) rotate(-45deg); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(-30px) rotate(-45deg); opacity:0; } }
-        @keyframes chevDown { 0% { transform: translateY(-30px) rotate(135deg); opacity:0; } 50% { opacity:1; } 100% { transform: translateY(30px) rotate(135deg); opacity:0; } }
+/* ── 탭 버튼 ── */
+.tab-bar{display:flex;gap:4px;flex-shrink:0;padding:0 2px;}
+.tab-btn{
+  flex:1;padding:7px 4px;font-size:10px;font-weight:700;
+  border:1px solid #333;border-radius:5px 5px 0 0;
+  background:#111;color:#666;cursor:pointer;transition:0.2s;
+  text-transform:uppercase;letter-spacing:0.5px;
+}
+.tab-btn.active{background:var(--panel2);color:var(--accent);border-color:var(--accent);border-bottom-color:var(--panel2);}
+.tab-pane{display:none;flex-direction:column;gap:10px;flex:1;}
+.tab-pane.active{display:flex;}
 
-        #test-controls { position: absolute; bottom: 50px; left: 50%; transform: translateX(-50%); width: 400px; padding: 0; background: rgba(20, 20, 20, 0.95); border: 1px solid #444; border-radius: 8px; z-index: 200; display: none; flex-direction: column; box-shadow: 0 0 20px rgba(0,0,0,0.8); overflow: hidden; }
-        #drag-handle { width: 100%; height: 25px; background: linear-gradient(90deg, #333, #444); cursor: grab; display: flex; justify-content: center; align-items: center; border-bottom: 1px solid #555; }
-        .ctrl-body { padding: 10px; display: flex; flex-direction: column; gap: 5px; }
-        #test-controls input[type=range] { width: 100%; height: 5px; accent-color: #00e5ff; cursor: pointer; }
-        .ctrl-row { display: flex; justify-content: space-between; align-items: center; }
-        #time-display { font-family: 'Consolas', monospace; color: #fff; font-size: 14px; }
-        .btn-group button { background: #333; border: 1px solid #555; color: #fff; padding: 5px 10px; cursor: pointer; font-size: 12px; border-radius: 4px; }
-        #test-msg { position: absolute; bottom: 20px; color: #555; font-size: 12px; animation: blink 2s infinite; pointer-events: none;}
-        @keyframes blink { 50% { opacity: 0.3; } }
+h2{color:var(--accent);border-bottom:2px solid var(--accent);padding-bottom:5px;
+  font-size:17px;text-shadow:0 0 8px rgba(0,229,255,0.3);margin-bottom:4px;}
 
-        #result-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.95); z-index: 300; display: none; flex-direction: column; align-items: center; justify-content: center; }
-        .res-rank { font-family: 'Impact', sans-serif; font-size: 120px; color: #fff; text-shadow: 0 0 20px currentColor; margin-bottom: 20px; }
-        .res-info { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px 40px; font-size: 24px; font-weight: bold; margin-bottom: 40px; }
-        .btn-close { margin-top: 40px; padding: 15px 40px; font-size: 18px; background: #fff; color: #000; border: none; border-radius: 30px; cursor: pointer; font-weight: 900; }
+.cg{display:flex;flex-direction:column;gap:6px;background:var(--panel2);
+  padding:10px;border-radius:6px;border:1px solid var(--border);flex-shrink:0;}
+.gt{font-size:10px;font-weight:700;color:#888;text-transform:uppercase;margin-bottom:2px;}
 
-        #loading-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 500; display: none; flex-direction: column; justify-content: center; align-items: center; color: #00e5ff; }
-        .loading-text { font-family: 'Impact'; font-size: 40px; margin-bottom: 20px; animation: blink 1s infinite; }
-        .btn-start-game { padding: 15px 50px; font-size: 24px; font-weight: bold; background: #ff0055; color: white; border: none; border-radius: 50px; cursor: pointer; display: none; }
-        
-        .mode-active { border: 2px solid #fff !important; filter: brightness(1.2); }
-    </style>
+input,select,button{padding:5px;background:#111;border:1px solid #333;
+  color:#fff;border-radius:4px;font-size:11px;}
+input[type=range]{padding:0;cursor:pointer;accent-color:var(--accent);}
+button{cursor:pointer;font-weight:700;transition:0.18s;text-transform:uppercase;}
+button:hover{background:#333;filter:brightness(1.15);}
+button.primary{background:var(--accent);color:#000;border:none;}
+button.danger{background:#ff0055;color:#fff;border:none;}
+
+.row{display:flex;gap:5px;align-items:center;} .row>*{flex:1;}
+.val{font-size:11px;color:var(--accent);font-weight:700;width:38px;text-align:right;}
+.fl{display:block;padding:7px;background:#222;text-align:center;border-radius:4px;
+  cursor:pointer;border:1px dashed #444;font-size:11px;}
+input[type=file]{display:none;}
+
+.mode-active{border:2px solid #fff!important;filter:brightness(1.2);}
+
+/* ═══════════════════════════════════════════════════════
+   LINE EDITOR PANEL
+═══════════════════════════════════════════════════════ */
+.lane-selector{display:flex;gap:4px;}
+.lane-sel-btn{
+  flex:1;padding:8px 4px;border-radius:5px;border:2px solid transparent;
+  font-size:10px;font-weight:900;cursor:pointer;transition:0.18s;
+  background:#111;
+}
+.lane-sel-btn[data-lane="0"]{color:var(--lane0);}
+.lane-sel-btn[data-lane="1"]{color:var(--lane1);}
+.lane-sel-btn[data-lane="2"]{color:var(--lane2);}
+.lane-sel-btn[data-lane="3"]{color:var(--lane3);}
+.lane-sel-btn.active[data-lane="0"]{border-color:var(--lane0);background:rgba(255,64,129,0.12);}
+.lane-sel-btn.active[data-lane="1"]{border-color:var(--lane1);background:rgba(0,230,118,0.12);}
+.lane-sel-btn.active[data-lane="2"]{border-color:var(--lane2);background:rgba(41,182,246,0.12);}
+.lane-sel-btn.active[data-lane="3"]{border-color:var(--lane3);background:rgba(255,167,38,0.12);}
+
+.kf-list{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
+.kf-list::-webkit-scrollbar{width:4px;}
+.kf-list::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+.kf-item{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 7px;border-radius:4px;border:1px solid #2a2a2a;
+  background:#111;font-size:10px;cursor:pointer;transition:0.15s;
+}
+.kf-item:hover{border-color:#444;}
+.kf-item.selected{border-color:var(--accent)!important;background:rgba(0,229,255,0.06);}
+.kf-time{color:var(--accent);font-weight:700;width:50px;flex-shrink:0;font-family:monospace;}
+.kf-vals{flex:1;color:#aaa;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.kf-del{background:none;border:none;color:#444;cursor:pointer;font-size:14px;
+  padding:0 2px;line-height:1;transition:color 0.15s;}
+.kf-del:hover{color:#ff0055;}
+
+.easing-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
+.easing-btn{
+  padding:6px;font-size:9px;border:1px solid #333;border-radius:4px;
+  background:#111;color:#999;cursor:pointer;transition:0.15s;text-align:center;
+}
+.easing-btn:hover{border-color:#555;color:#ddd;}
+.easing-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
+
+.coord-display{
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;
+}
+.coord-box{
+  background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;
+  padding:6px;text-align:center;
+}
+.coord-label{font-size:9px;color:#555;font-family:monospace;margin-bottom:2px;}
+.coord-val{font-size:14px;font-weight:700;font-family:monospace;color:var(--accent);}
+
+/* Beat Pulse 설정 */
+.pulse-cfg{display:flex;flex-direction:column;gap:5px;}
+.pulse-row{display:flex;gap:5px;align-items:center;}
+
+/* ═══════════════════════════════════════════════════════
+   EDITOR VIEW
+═══════════════════════════════════════════════════════ */
+#editor-view{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;}
+.lane-header{display:flex;width:400px;margin:0 auto;font-weight:700;font-size:11px;
+  text-align:center;border-bottom:2px solid #222;background:#111;flex-shrink:0;}
+.lane-header div{flex:1;padding:7px 0;border-right:1px solid #222;}
+.lane-header div:nth-child(1){color:var(--lane0);}
+.lane-header div:nth-child(2){color:var(--lane1);}
+.lane-header div:nth-child(3){color:var(--lane2);}
+.lane-header div:nth-child(4){color:var(--lane3);}
+
+#editor-container{flex:1;overflow-y:scroll;background:#050505;
+  display:flex;justify-content:center;position:relative;}
+#editor-container::-webkit-scrollbar{width:8px;}
+#editor-container::-webkit-scrollbar-thumb{background:#222;border-radius:4px;}
+#canvas-layer{position:relative;width:400px;}
+#gridCanvas{position:sticky;top:0;display:block;background:#000;cursor:crosshair;}
+#play-head{position:absolute;left:0;width:100%;height:2px;background:#ff0055;
+  z-index:5;display:none;pointer-events:none;box-shadow:0 0 8px #ff0055;will-change:transform;}
+
+/* ═══════════════════════════════════════════════════════
+   GAME VIEW  (Phigros-style)
+═══════════════════════════════════════════════════════ */
+#game-view{
+  position:fixed;
+  inset:0;
+  width:100vw;
+  height:100dvh;
+  background:#000;
+  z-index:50;
+  display:none;
+  flex-direction:row;
+  align-items:stretch;
+  justify-content:center;
+}
+#game-canvas-container{
+  position:absolute;
+  inset:0;
+  background:#000;
+  overflow:hidden;
+}
+
+#gameCanvas{
+  display:block;
+}
+
+#game-hud{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+  z-index:60;
+}
+
+.hud-item{
+  position:absolute;
+}
+
+.hud-rate{
+  top:16px;
+  left:20px;
+  text-align:left;
+}
+
+.hud-score{
+  top:16px;
+  right:20px;
+  text-align:right;
+}
+
+.hud-combo{
+  left:50%;
+  top:48%;
+  transform:translate(-50%, -50%);
+  text-align:center;
+  opacity:0.12;
+}
+
+.hud-text{
+  font-size:30px;
+  color:#fff;
+  text-shadow:0 0 8px rgba(255,255,255,0.4);
+  font-weight:900;
+  font-family:monospace;
+}
+
+.hud-sub{
+  font-size:10px;
+  color:#666;
+  font-weight:700;
+  letter-spacing:1px;
+}
+
+.hud-combo .hud-sub{
+  display:none;
+}
+
+.hud-combo .hud-text{
+  font-size:150px;
+  color:#fff;
+  text-shadow:0 0 30px rgba(255,255,255,0.25);
+  line-height:1;
+}
+#g-avg-box{position:absolute;bottom:110px;width:100%;text-align:center;pointer-events:none;}
+#g-avg{font-family:monospace;font-size:13px;font-weight:700;color:#666;}
+#auto-indicator{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  font-size:70px;color:rgba(123,31,162,0.25);pointer-events:none;display:none;z-index:55;font-weight:900;}
+#guide-message{position:absolute;top:35%;left:50%;transform:translateX(-50%);
+  width:100%;text-align:center;pointer-events:none;z-index:70;
+  font-size:44px;font-weight:900;color:#fff;
+  text-shadow:0 0 18px var(--msg-color),0 0 36px var(--msg-color);
+  opacity:0;transition:opacity 0.2s,transform 0.2s;white-space:nowrap;}
+.msg-active{opacity:1!important;transform:translateX(-50%) scale(1.08)!important;}
+#result-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.95);
+  z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;}
+#loading-screen{position:absolute;inset:0;background:#000;z-index:500;
+  display:none;flex-direction:column;justify-content:center;align-items:center;color:var(--accent);}
+.loading-text{font-size:36px;font-weight:900;margin-bottom:18px;animation:blink 1s infinite;}
+.btn-start-game{padding:14px 48px;font-size:22px;font-weight:900;background:#ff0055;
+  color:#fff;border:none;border-radius:50px;cursor:pointer;display:none;}
+
+/* 변속 경고 */
+.side-warn-col{flex:1;display:flex;flex-direction:column;justify-content:center;
+  align-items:center;opacity:0;transition:opacity 0.2s;}
+.chevron{width:50px;height:50px;border-top:10px solid currentColor;border-right:10px solid currentColor;
+  transform:rotate(-45deg);margin:16px 0;}
+.warn-up{opacity:1;} .warn-up .chevron{color:#ff0055;filter:drop-shadow(0 0 16px #ff0055);animation:chevUp 0.3s infinite;}
+.warn-up .warn-label{color:#ff0055;text-shadow:0 0 16px #ff0055;}
+.warn-down{opacity:1;} .warn-down .chevron{color:var(--accent);transform:rotate(135deg);filter:drop-shadow(0 0 16px var(--accent));animation:chevDown 0.5s infinite;}
+.warn-down .warn-label{color:var(--accent);text-shadow:0 0 16px var(--accent);}
+.warn-label{font-size:32px;font-weight:900;margin:24px 0;letter-spacing:4px;text-align:center;line-height:1.2;}
+
+/* 테스트 컨트롤 팝업 */
+#test-controls{position:absolute;bottom:44px;left:50%;transform:translateX(-50%);
+  width:380px;background:rgba(16,16,16,0.96);border:1px solid #333;
+  border-radius:8px;z-index:200;display:none;flex-direction:column;
+  box-shadow:0 0 24px rgba(0,0,0,0.8);overflow:hidden;}
+#drag-handle{width:100%;height:22px;background:linear-gradient(90deg,#252525,#333);
+  cursor:grab;display:flex;justify-content:center;align-items:center;border-bottom:1px solid #3a3a3a;}
+.ctrl-body{padding:10px;display:flex;flex-direction:column;gap:5px;}
+#test-controls input[type=range]{width:100%;height:5px;accent-color:var(--accent);}
+.ctrl-row{display:flex;justify-content:space-between;align-items:center;}
+#time-display{font-family:monospace;color:#fff;font-size:13px;}
+.btn-group button{background:#252525;border:1px solid #444;color:#fff;
+  padding:4px 10px;cursor:pointer;font-size:11px;border-radius:4px;}
+#test-msg{position:absolute;bottom:14px;left:50%;transform:translateX(-50%);
+  color:#444;font-size:11px;animation:blink 2s infinite;pointer-events:none;}
+
+@keyframes blink{50%{opacity:0.25;}}
+@keyframes chevUp{0%{transform:translateY(24px) rotate(-45deg);opacity:0;}50%{opacity:1;}100%{transform:translateY(-24px) rotate(-45deg);opacity:0;}}
+@keyframes chevDown{0%{transform:translateY(-24px) rotate(135deg);opacity:0;}50%{opacity:1;}100%{transform:translateY(24px) rotate(135deg);opacity:0;}}
+
+/* 판정 텍스트 */
+.judge-perfect{color:#00e5ff;} .judge-great{color:#00ff88;}
+.judge-okay{color:#ffdd00;} .judge-miss{color:#ff4444;}
+</style>
 </head>
 <body>
 
-    <div id="loading-screen">
-        <div class="loading-text" id="loading-msg">LOADING DATA...</div>
-        <button id="btn-start-auto" class="btn-start-game" onclick="startAutoPlay()">CLICK TO START</button>
+<!-- ════ LOADING ════ -->
+<div id="loading-screen">
+  <div class="loading-text" id="loading-msg">LOADING DATA...</div>
+  <button id="btn-start-auto" class="btn-start-game" onclick="startAutoPlay()">CLICK TO START</button>
+</div>
+
+<!-- ════ SIDEBAR ════ -->
+<div id="sidebar">
+  <button id="sidebar-toggle" onclick="toggleSidebar()" title="패널 접기/펼치기">◀</button>
+  <div id="sidebar-inner">
+    <button onclick="location.href='index.html'"
+      style="background:#1a1a1a;color:#666;font-size:10px;border:1px solid #2a2a2a;">🏠 GO TO SELECT</button>
+    <h2>🎹 EDITOR v20</h2>
+
+    <!-- ── 탭 ── -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('note')" id="tab-note">CHART</button>
+      <button class="tab-btn" onclick="switchTab('line')" id="tab-line">LINE</button>
     </div>
 
-    <div id="sidebar">
-        <button onclick="location.href='index.html'" style="width:100%; background:#333; margin-bottom:10px; color:#aaa; font-size:11px;">🏠 GO TO SELECT</button>
+    <!-- ══════ CHART TAB ══════ -->
+    <div class="tab-pane active" id="pane-note">
 
-        <h2>🎹 EDITOR v19.0</h2>
-        <div class="control-group">
-            <div class="group-title">1. Files</div>
-            <label class="file-label" for="audioFile">🎵 Load Audio (MP3)</label>
-            <input type="file" id="audioFile" accept="audio/*">
-            <label class="file-label" for="mapJsonFile" style="margin-top:5px;">📂 Load Map (JSON)</label>
-            <input type="file" id="mapJsonFile" accept=".json">
+      <div class="cg">
+        <div class="gt">1. Files</div>
+        <label class="fl" for="audioFile">🎵 Load Audio (MP3)</label>
+        <input type="file" id="audioFile" accept="audio/*">
+        <label class="fl" for="mapJsonFile" style="margin-top:4px;">📂 Load Map (JSON)</label>
+        <input type="file" id="mapJsonFile" accept=".json">
+      </div>
+
+      <div class="cg">
+        <div class="gt">2. Map Settings</div>
+        <div class="row">
+          <input type="number" id="bpm" value="130" placeholder="BPM">
+          <div style="display:flex;align-items:center;gap:2px;flex:1;">
+            <input type="number" id="beat-num" value="4" min="1" max="32" style="text-align:center;">
+            <span style="color:#555;">/</span>
+            <select id="beat-denom" style="text-align:center;">
+              <option value="4">4</option><option value="8">8</option>
+              <option value="2">2</option><option value="16">16</option>
+            </select>
+          </div>
         </div>
-        
-        <div class="control-group">
-            <div class="group-title">2. Map Settings</div>
-            <div class="row">
-                <input type="number" id="bpm" value="130" placeholder="BPM">
-                <div style="display:flex; align-items:center; gap:2px; flex:1;">
-                    <input type="number" id="beat-num" value="4" min="1" max="32" style="text-align:center;">
-                    <span style="color:#888;">/</span>
-                    <select id="beat-denom" style="text-align:center;">
-                        <option value="4">4</option>
-                        <option value="8">8</option>
-                        <option value="2">2</option>
-                        <option value="16">16</option>
-                    </select>
-                </div>
-            </div>
-            <div class="row" style="margin-top:5px;">
-                <input type="number" id="offset" value="0" placeholder="Offset (ms)">
-            </div>
+        <input type="number" id="offset" value="0" placeholder="Offset (ms)" style="margin-top:4px;">
+      </div>
+
+      <div class="cg">
+        <div class="gt">3. Edit View</div>
+        <div class="row"><span>Zoom</span>
+          <input type="range" id="zoom" min="200" max="1000" step="50" value="400">
         </div>
-
-        <div class="control-group">
-            <div class="group-title">3. Edit View</div>
-            <div class="row"><span>Zoom:</span><input type="range" id="zoom" min="200" max="1000" step="50" value="400"></div>
-            <div class="row"><span>Split:</span><input type="number" id="split" value="16" min="1" max="64" style="width: 60px; text-align: center;"></div>
-            <button onclick="addMeasures(4)" style="width:100%; margin-top:5px;">+ Add 4 Bars</button>
+        <div class="row"><span>Split</span>
+          <input type="number" id="split" value="16" min="1" max="64" style="width:55px;text-align:center;">
         </div>
+        <button onclick="addMeasures(4)" style="margin-top:3px;">+ Add 4 Bars</button>
+      </div>
 
-        <div class="control-group">
-            <div class="group-title">4. Edit Modes</div>
-            
-            <button id="btn-mode-note" class="mode-active" onclick="setEditMode('NOTE')" style="width:100%; margin-bottom:5px; background:#444; color:#fff;">
-                🎹 NOTE MODE
-            </button>
+      <div class="cg">
+        <div class="gt">4. Edit Mode</div>
+        <button id="btn-mode-note" class="mode-active" onclick="setEditMode('NOTE')"
+          style="width:100%;background:#252525;color:#fff;margin-bottom:4px;">🎹 NOTE MODE</button>
 
-            <div style="border:1px solid #ffd700; padding:5px; border-radius:4px; margin-bottom:5px;">
-                <div class="row" style="margin-bottom:3px;">
-                    <span style="color:#ffd700; font-size:11px; font-weight:bold;">⚡ SPEED</span>
-                    <input type="number" id="speed-mult-input" value="2.0" step="0.1" style="width:50px; text-align:center;">
-                </div>
-                <button id="btn-mode-speed" onclick="setEditMode('SPEED')" style="width:100%; background:#444; color:#ffd700;">
-                    SET SPEED TRICK
-                </button>
-            </div>
-
-            <div style="border:1px solid #d084ff; padding:5px; border-radius:4px;">
-                <div class="row" style="margin-bottom:3px;">
-                    <span style="color:#d084ff; font-size:11px; font-weight:bold;">💬 MSG</span>
-                    <input type="text" id="msg-text-input" value="WATCH OUT!" style="width:100%;" placeholder="Message text...">
-                </div>
-                <button id="btn-mode-msg" onclick="setEditMode('MSG')" style="width:100%; background:#444; color:#d084ff;">
-                    SET GUIDE MESSAGE
-                </button>
-            </div>
-            <div style="font-size:10px; color:#888; margin-top:5px; text-align:center;">* Click Grid to Place / Drag for Duration</div>
+        <div style="border:1px solid var(--gold);padding:5px;border-radius:4px;margin-bottom:4px;">
+          <div class="row" style="margin-bottom:3px;">
+            <span style="color:var(--gold);font-size:10px;font-weight:700;">⚡ SPEED</span>
+            <input type="number" id="speed-mult-input" value="2.0" step="0.1" style="width:50px;text-align:center;">
+          </div>
+          <button id="btn-mode-speed" onclick="setEditMode('SPEED')"
+            style="width:100%;background:#252525;color:var(--gold);">SET SPEED TRICK</button>
         </div>
 
-        <hr style="width:100%; border-color:#333; margin: 5px 0;">
-        <div class="control-group">
-            <button id="btn-record" style="background:#444; color:#aaa; border:1px solid #666; margin-bottom:5px;">🔴 RECORD: OFF</button>
-            <button id="btn-play" class="primary">▶ EDIT PLAY (Space)</button>
-            <button id="btn-stop">⏹ STOP</button>
+        <div style="border:1px solid var(--msg-color);padding:5px;border-radius:4px;">
+          <div class="row" style="margin-bottom:3px;">
+            <span style="color:var(--msg-color);font-size:10px;font-weight:700;">💬 MSG</span>
+            <input type="text" id="msg-text-input" value="WATCH OUT!" style="width:100%;">
+          </div>
+          <button id="btn-mode-msg" onclick="setEditMode('MSG')"
+            style="width:100%;background:#252525;color:var(--msg-color);">SET GUIDE MESSAGE</button>
         </div>
-        <div class="control-group">
-            <div class="group-title">5. Test Play</div>
-            <div class="row"><span>Speed:</span><input type="range" id="test-speed" min="1" max="20" step="0.5" value="5.0"><span id="speed-val" class="val-label">x5.0</span></div>
-            
-            <label class="checkbox-label" style="margin-top:5px;">
-                <input type="checkbox" id="chk-auto">
-                <span style="font-size:12px; font-weight:bold; color:#d084ff;">🤖 Enable Auto Play</span>
-            </label>
+        <div style="font-size:9px;color:#444;text-align:center;margin-top:3px;">Click=Place · Drag=Duration · RClick=Delete</div>
+      </div>
 
-            <button id="btn-test" class="test-btn" style="margin-top:5px;">🎮 GAME START (Enter)</button>
+      <div class="cg">
+        <button id="btn-record" style="background:#252525;color:#555;border:1px solid #333;margin-bottom:4px;">🔴 RECORD: OFF</button>
+        <button id="btn-play" class="primary">▶ EDIT PLAY (Space)</button>
+        <button id="btn-stop" style="margin-top:3px;">⏹ STOP</button>
+      </div>
+
+      <div class="cg">
+        <div class="gt">5. Test Play</div>
+        <div class="row">
+          <span>Speed</span>
+          <input type="range" id="test-speed" min="1" max="20" step="0.5" value="5.0">
+          <span id="speed-val" class="val">x5.0</span>
         </div>
-        
-        <button id="btn-export" style="background:#28a745; color:white; margin-top:10px; margin-bottom:10px; padding:12px; border:none; flex-shrink: 0;">💾 EXPORT JSON</button>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer;
+          background:#111;padding:7px;border-radius:4px;margin-top:4px;">
+          <input type="checkbox" id="chk-auto">
+          <span style="font-size:11px;font-weight:700;color:var(--msg-color);">🤖 Auto Play</span>
+        </label>
+        <button id="btn-test" class="danger" style="margin-top:4px;padding:11px;font-size:13px;">🎮 GAME START (Enter)</button>
+      </div>
+
+      <button id="btn-export" style="background:#1a6b2a;color:#fff;padding:11px;
+        border:none;flex-shrink:0;border-radius:4px;margin-top:4px;">💾 EXPORT JSON</button>
+    </div><!-- /pane-note -->
+
+    <!-- ══════ LINE TAB ══════ -->
+    <div class="tab-pane" id="pane-line">
+      <div class="cg">
+        <div class="gt">Select Lane</div>
+        <div class="lane-selector">
+          <button class="lane-sel-btn active" data-lane="0" onclick="selectLineLane(0)">L1</button>
+          <button class="lane-sel-btn" data-lane="1" onclick="selectLineLane(1)">L2</button>
+          <button class="lane-sel-btn" data-lane="2" onclick="selectLineLane(2)">L3</button>
+          <button class="lane-sel-btn" data-lane="3" onclick="selectLineLane(3)">L4</button>
+        </div>
+      </div>
+
+      <!-- 현재 라인 좌표 실시간 표시 -->
+      <div class="cg">
+        <div class="gt">Live Coordinates</div>
+        <div class="coord-display">
+          <div class="coord-box">
+            <div class="coord-label">X</div>
+            <div class="coord-val" id="coord-x">0.50</div>
+          </div>
+          <div class="coord-box">
+            <div class="coord-label">Y</div>
+            <div class="coord-val" id="coord-y">0.85</div>
+          </div>
+          <div class="coord-box">
+            <div class="coord-label">°</div>
+            <div class="coord-val" id="coord-a">0°</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 키프레임 추가 -->
+      <div class="cg">
+        <div class="gt" id="kf-edit-banner" style="color:var(--accent);">Add Keyframe (NEW)</div>
+        <div id="kf-edit-actions" style="display:none;gap:4px;margin-bottom:6px;">
+          <button onclick="deselectKf()" style="flex:1;font-size:9px;background:#222;color:#aaa;">＋ New (deselect)</button>
+          <button onclick="deleteSelectedKf()" style="flex:1;font-size:9px;background:rgba(255,0,85,0.15);border:1px solid #ff0055;color:#ff5577;">🗑 Delete</button>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:5px;">
+          <div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;">X (0~1)</div>
+            <input type="number" id="kf-x" value="0.5" step="0.01" min="0" max="1" style="width:100%;text-align:center;">
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;">Y (0~1)</div>
+            <input type="number" id="kf-y" value="0.85" step="0.01" min="0" max="1" style="width:100%;text-align:center;">
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;">Angle°</div>
+            <input type="number" id="kf-angle" value="0" step="1" min="-180" max="180" style="width:100%;text-align:center;">
+          </div>
+        </div>
+
+        <div style="font-size:9px;color:#555;margin-bottom:3px;">Transition</div>
+        <div class="easing-grid">
+          <button class="easing-btn active" onclick="selectEasing('linear')" id="ease-linear">▶ Linear</button>
+          <button class="easing-btn" onclick="selectEasing('step')" id="ease-step">⬛ Step</button>
+          <button class="easing-btn" onclick="selectEasing('ease-in')" id="ease-in">◀◀ Ease In</button>
+          <button class="easing-btn" onclick="selectEasing('ease-out')" id="ease-out">▶▶ Ease Out</button>
+          <button class="easing-btn" onclick="selectEasing('ease-inout')" id="ease-inout">◀▶ Ease InOut</button>
+          <button class="easing-btn" onclick="selectEasing('circ')" id="ease-circ">○ Circular</button>
+          <button class="easing-btn" onclick="selectEasing('custom')" id="ease-custom" style="grid-column:1/3;">✎ Custom Curve (EQ)</button>
+        </div>
+
+        <!-- 커스텀 속도 곡선 에디터 -->
+        <div id="curve-editor-box" style="display:none;margin-top:6px;">
+          <div style="font-size:9px;color:#555;margin-bottom:3px;display:flex;justify-content:space-between;">
+            <span>Speed Curve — 클릭:점추가 · 드래그:이동 · 우클릭:삭제</span>
+            <span style="color:#666;cursor:pointer;text-decoration:underline;" onclick="resetCurve()">↺ reset</span>
+          </div>
+          <canvas id="curve-canvas" width="276" height="120"
+            style="width:100%;height:120px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;cursor:crosshair;display:block;"></canvas>
+          <div style="font-size:8px;color:#444;text-align:center;margin-top:2px;">가로=진행시간 · 세로=속도 (높을수록 빠르게 이동, 넓이=총 이동량)</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <span style="font-size:9px;color:#555;width:50px;">Duration</span>
+          <input type="number" id="kf-dur" min="0" step="50" value="500"
+            style="flex:1;width:100%;text-align:right;">
+          <span id="kf-dur-val" style="font-size:10px;color:var(--accent);width:52px;text-align:right;">500ms</span>
+        </div>
+
+        <button id="btn-mode-line" onclick="setEditMode('LINE')"
+          style="width:100%;margin-top:5px;background:rgba(0,229,255,0.15);
+          border:1px solid var(--accent);color:var(--accent);">📍 PLACE MODE — 그리드 클릭으로 배치</button>
+        <div style="font-size:9px;color:#444;text-align:center;margin-top:4px;">
+          클릭한 <b>레인 칸</b>에 키프레임 생성 · <b>아래로 드래그=Duration</b><br>리스트/그리드 클릭 시 선택·수정 · 우클릭/Del 삭제
+        </div>
+      </div>
+
+      <!-- 키프레임 리스트 -->
+      <div class="cg" style="flex:1;min-height:0;">
+        <div class="gt" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Keyframes</span>
+          <button onclick="clearAllKeyframes()" style="background:none;border:none;color:#444;
+            font-size:10px;cursor:pointer;padding:0;">✕ Clear All</button>
+        </div>
+        <div class="kf-list" id="kf-list"></div>
+      </div>
+
+      <!-- Beat Pulse -->
+      <div class="cg">
+        <div class="gt">Beat Pulse (Thump)</div>
+        <div class="pulse-cfg">
+          <div class="pulse-row">
+            <span style="font-size:10px;color:#888;width:55px;">Intensity</span>
+            <input type="range" id="pulse-intensity" min="0" max="30" step="1" value="8">
+            <span id="pulse-int-val" style="font-size:10px;color:var(--accent);width:30px;text-align:right;">8</span>
+          </div>
+          <div class="pulse-row">
+            <span style="font-size:10px;color:#888;width:55px;">Decay</span>
+            <input type="range" id="pulse-decay" min="50" max="800" step="10" value="150">
+            <span id="pulse-dec-val" style="font-size:10px;color:var(--accent);width:38px;text-align:right;">150ms</span>
+          </div>
+          <div style="display:flex;gap:4px;margin-top:3px;">
+            <button id="btn-mode-pulse" onclick="setEditMode('PULSE')" style="flex:1;background:rgba(255,64,129,0.15);
+              border:1px solid #ff4081;color:#ff4081;font-size:10px;">📍 BEAT 배치</button>
+            <button id="btn-mode-stop" onclick="setEditMode('STOP')" style="flex:1;background:rgba(100,100,100,0.15);
+              border:1px solid #555;color:#888;font-size:10px;">📍 STOP 배치</button>
+          </div>
+          <div style="font-size:9px;color:#444;text-align:center;margin-top:3px;">클릭한 레인 칸에 펄스/정지 트리거 생성</div>
+        </div>
+      </div>
+
+    </div><!-- /pane-line -->
+
+  </div><!-- /sidebar-inner -->
+</div><!-- /sidebar -->
+
+<!-- ════ EDITOR VIEW ════ -->
+<div id="editor-view">
+  <div class="lane-header">
+    <div>D &nbsp; L1</div><div>F &nbsp; L2</div><div>J &nbsp; L3</div><div>K &nbsp; L4</div>
+  </div>
+  <div id="editor-container">
+    <div id="canvas-layer">
+      <div id="play-head"></div>
+      <canvas id="gridCanvas" width="400" height="2400"></canvas>
     </div>
-    
-    <div id="editor-view">
-        <div class="lane-header"><div>D</div><div>F</div><div>J</div><div>K</div></div>
-        <div id="editor-container">
-            <div id="canvas-layer">
-                <div id="play-head"></div>
-                <canvas id="gridCanvas" width="400" height="2400"></canvas>
-            </div>
+  </div>
+</div>
+
+<!-- ════ GAME VIEW ════ -->
+<div id="game-view">
+  <div id="warn-left" class="side-warn-col">
+    <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+    <div class="warn-label">SPEED<br>UP</div>
+    <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+  </div>
+
+  <div id="game-canvas-container">
+    <canvas id="gameCanvas"></canvas>
+    <div id="guide-message"></div>
+    <div id="game-hud">
+        <div class="hud-item hud-rate">
+            <span class="hud-sub">RATE</span><br>
+            <span id="g-rate" class="hud-text">100%</span>
+        </div>
+
+        <div class="hud-item hud-score">
+            <span class="hud-sub">SCORE</span><br>
+            <span id="g-score" class="hud-text">000000</span>
+        </div>
+
+        <div class="hud-item hud-combo">
+            <span class="hud-sub">COMBO</span><br>
+            <span id="g-combo" class="hud-text">0</span>
         </div>
     </div>
-    
-    <div id="game-view">
-        <div id="warn-left" class="side-warn-col">
-            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
-            <div class="warn-label">SPEED<br>UP</div>
-            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
-        </div>
+    <div id="auto-indicator">AUTO</div>
+    <div id="result-overlay"></div>
+  </div>
 
-        <div id="game-canvas-container">
-            <canvas id="gameCanvas" class="game"></canvas>
-            <div id="finish-effect"></div>
-            
-            <div id="guide-message"></div>
+  <div id="warn-right" class="side-warn-col">
+    <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+    <div class="warn-label">SPEED<br>UP</div>
+    <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
+  </div>
 
-            <div id="game-hud">
-                <div class="hud-item" style="text-align:left"><span class="hud-sub">RATE</span><br><span id="g-rate" class="hud-text">100%</span></div>
-                <div class="hud-item" style="text-align:center"><span class="hud-sub">SCORE</span><br><span id="g-score" class="hud-text">000000</span></div>
-                <div class="hud-item" style="text-align:right"><span class="hud-sub">COMBO</span><br><span id="g-combo" class="hud-text">0</span></div>
-            </div>
-            <div id="g-avg-box"><div id="g-avg">AVG: 0.0ms</div></div>
-            <div id="auto-indicator">AUTO PLAY</div>
-            <div id="result-overlay"></div>
+  <div id="test-controls">
+    <div id="drag-handle" onmousedown="startDrag(event)"><span style="color:#555;font-size:16px;">⠿</span></div>
+    <div class="ctrl-body">
+      <input type="range" id="seek-bar" value="0" min="0" step="0.01" style="margin-bottom:6px;">
+      <div class="ctrl-row" style="margin-bottom:6px;">
+        <span id="time-display">00:00</span>
+        <div class="btn-group">
+          <button onclick="rewindTest()">⏮ RESET</button>
+          <button onclick="togglePauseTest()" id="btn-pause">⏸ PAUSE</button>
         </div>
-
-        <div id="warn-right" class="side-warn-col">
-            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
-            <div class="warn-label">SPEED<br>UP</div>
-            <div class="chevron"></div><div class="chevron"></div><div class="chevron"></div>
-        </div>
-
-        <div id="test-controls">
-            <div id="drag-handle" onmousedown="startDrag(event)"><span></span></div>
-            <div class="ctrl-body">
-                <input type="range" id="seek-bar" value="0" min="0" step="0.01" style="width:100%; margin-bottom: 8px;">
-                <div class="ctrl-row" style="margin-bottom: 8px;">
-                    <span id="time-display">00:00</span>
-                    <div class="btn-group">
-                        <button onclick="rewindTest()">⏮ RESET</button>
-                        <button onclick="togglePauseTest()" id="btn-pause">⏸ PAUSE</button>
-                    </div>
-                </div>
-                <div class="ctrl-row" style="border-top: 1px solid #444; padding-top: 8px;">
-                    <span style="font-size:12px; color:#aaa; width:40px;">SPEED</span>
-                    <input type="range" id="rate-slider" min="0.25" max="2.0" step="0.05" value="1.0" style="flex:1; margin: 0 10px;">
-                    <span id="rate-val" style="font-size:12px; font-weight:bold; color:#00e5ff; width:35px; text-align:right;">1.0x</span>
-                </div>
-            </div>
-        </div>
-        <div id="test-msg">[ESC] Back to Editor</div>
+      </div>
+      <div class="ctrl-row" style="border-top:1px solid #2a2a2a;padding-top:7px;">
+        <span style="font-size:10px;color:#666;width:38px;">SPEED</span>
+        <input type="range" id="rate-slider" min="0.25" max="2.0" step="0.05" value="1.0" style="flex:1;margin:0 8px;">
+        <span id="rate-val" style="font-size:11px;font-weight:700;color:var(--accent);width:34px;text-align:right;">1.0x</span>
+      </div>
     </div>
+  </div>
+  <div id="test-msg">[ESC] Back to Editor</div>
+</div>
 
-    <script>
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive', sampleRate: 44100 });
-        const soundBuffers = {};
-        const SFX_FIXED_TRIM = 0; 
+<script>
+// ═══════════════════════════════════════════════════════════════
+//  CONSTANTS & GLOBALS
+// ═══════════════════════════════════════════════════════════════
+const BASE_RES = 192;
+const LANE_COUNT = 4;
+const LANE_W = 100;
+const CANVAS_W = 800;
+// Muted, desaturated lane colors — less eye-straining
+const LANE_COLORS = ['#b84060','#2a9558','#3d8fb0','#b07830'];
 
-        function warmUpAudio() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            const oscillator = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            gain.gain.value = 0.001; 
-            oscillator.connect(gain);
-            gain.connect(audioCtx.destination);
-            oscillator.start();
+// -- audio --
+const audioCtx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive',sampleRate:44100});
+const soundBuffers = {};
+function warmUp(){if(audioCtx.state==='suspended')audioCtx.resume();}
+async function loadSfx(name,url){
+  try{const r=await fetch(url);const ab=await r.arrayBuffer();
+    soundBuffers[name]=await audioCtx.decodeAudioData(ab);}catch(e){}}
+['hit','hold_start','hold_end','fc','ap','glitch'].forEach(n=>loadSfx(n,`sfx/${n}.mp3`));
+function playSfx(name){
+  if(!soundBuffers[name])return;
+  const src=audioCtx.createBufferSource();src.buffer=soundBuffers[name];
+  const g=audioCtx.createGain();g.gain.value=0.7;
+  src.connect(g);g.connect(audioCtx.destination);src.start(audioCtx.currentTime);}
+
+let audio=new Audio();
+let bpm=130,offset=0,beatNum=4,beatDenom=4;
+let measures=[],speedEvents=[],msgEvents=[];
+let measureHeight=400;
+let isEditPlaying=false,editAnimId,isRecording=false;
+let gameState='IDLE',startTimestamp=0;
+const START_DELAY=2000;
+
+// ── DOM refs ──
+const gridCanvas=document.getElementById('gridCanvas');
+const gridCtx=gridCanvas.getContext('2d');
+const playHead=document.getElementById('play-head');
+const editorContainer=document.getElementById('editor-container');
+const splitInput=document.getElementById('split');
+const zoomSlider=document.getElementById('zoom');
+const speedSlider=document.getElementById('test-speed');
+const speedVal=document.getElementById('speed-val');
+const offsetInput=document.getElementById('offset');
+const bpmInput=document.getElementById('bpm');
+const speedMultInput=document.getElementById('speed-mult-input');
+const msgTextInput=document.getElementById('msg-text-input');
+const gameView=document.getElementById('game-view');
+const gameCanvas=document.getElementById('gameCanvas');
+const gameCtx=gameCanvas.getContext('2d');
+const resultOverlay=document.getElementById('result-overlay');
+const autoIndicator=document.getElementById('auto-indicator');
+const guideMsgEl=document.getElementById('guide-message');
+const warnLeft=document.getElementById('warn-left');
+const warnRight=document.getElementById('warn-right');
+const seekBar=document.getElementById('seek-bar');
+const timeDisplay=document.getElementById('time-display');
+const pauseBtn=document.getElementById('btn-pause');
+const rateSlider=document.getElementById('rate-slider');
+const rateValEl=document.getElementById('rate-val');
+const btnModeNote=document.getElementById('btn-mode-note');
+const btnModeSpeed=document.getElementById('btn-mode-speed');
+const btnModeMsg=document.getElementById('btn-mode-msg');
+
+// Game canvas sizing (full viewport)
+const GEAR_W = 400;
+let GW = window.innerWidth;
+let GH = window.innerHeight;
+let GEAR_X = (GW - GEAR_W) / 2;
+let HIT_LINE_Y = GH * 0.85;
+
+function resizeGameCanvas(){
+  GW = window.innerWidth;
+  GH = window.innerHeight;
+  GEAR_X = (GW - GEAR_W) / 2;
+  HIT_LINE_Y = GH * 0.85;
+
+  gameCanvas.width = GW;
+  gameCanvas.height = GH;
+
+  const container = document.getElementById('game-canvas-container');
+  container.style.width = GW + 'px';
+  container.style.height = GH + 'px';
+
+  if(typeof isGameTesting !== 'undefined' && isGameTesting){
+    let currentTime = 0;
+    if(gameState === 'PLAYING' && audio.currentTime > 0) {
+      currentTime = audio.currentTime * 1000;
+    } else {
+      currentTime = (Date.now() - startTimestamp) - START_DELAY;
+    }
+    drawGameScreen(currentTime);
+  }
+}
+
+window.addEventListener('resize', resizeGameCanvas);
+document.addEventListener('fullscreenchange', resizeGameCanvas);
+
+// URL params
+const urlParams=new URLSearchParams(window.location.search);
+const songParam=urlParams.get('song');
+const diffParam=urlParams.get('diff');
+const speedParam=urlParams.get('speed');
+
+// Init measures
+for(let i=0;i<50;i++) measures.push({index:i,notes:[]});
+
+// ═══════════════════════════════════════════════════════════════
+//  SIDEBAR COLLAPSE
+// ═══════════════════════════════════════════════════════════════
+let sidebarOpen=true;
+function toggleSidebar(){
+  sidebarOpen=!sidebarOpen;
+  const sb=document.getElementById('sidebar');
+  const btn=document.getElementById('sidebar-toggle');
+  sb.classList.toggle('collapsed',!sidebarOpen);
+  btn.textContent=sidebarOpen?'◀':'▶';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════════════
+function switchTab(tab){
+  ['note','line'].forEach(t=>{
+    document.getElementById('tab-'+t).classList.toggle('active',t===tab);
+    document.getElementById('pane-'+t).classList.toggle('active',t===tab);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EDIT MODE
+// ═══════════════════════════════════════════════════════════════
+let editMode='NOTE';
+function setEditMode(m){
+  editMode=m;
+  const allModeBtns=['btn-mode-note','btn-mode-speed','btn-mode-msg','btn-mode-line','btn-mode-pulse','btn-mode-stop'];
+  allModeBtns.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('mode-active');});
+  const map={NOTE:'btn-mode-note',SPEED:'btn-mode-speed',MSG:'btn-mode-msg',LINE:'btn-mode-line',PULSE:'btn-mode-pulse',STOP:'btn-mode-stop'};
+  const el=document.getElementById(map[m]);if(el)el.classList.add('mode-active');
+  if(m==='LINE'||m==='PULSE'||m==='STOP') switchTab('line');
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  LINE CHOREOGRAPHY SYSTEM
+// ═══════════════════════════════════════════════════════════════
+let lineEvents = [[],[],[],[]];
+let pulseEvents = [[],[],[],[]];
+let selectedLineLane = 0;
+let selectedEasing = 'linear';
+let selectedKfIdx = -1;
+
+// ── 커스텀 곡선 작업 상태 ──
+let workCurve = DEFAULT_CURVE_TEMPLATE();
+function resetCurve(){
+  const kf=getSelectedKf();
+  if(kf&&kf.easing==='custom'){ pushHistory(); kf.curve=DEFAULT_CURVE_TEMPLATE(); workCurve=kf.curve; }
+  else workCurve=DEFAULT_CURVE_TEMPLATE();
+  drawCurveEditor();drawGrid();
+}
+function getSelectedKf(){
+  if(selectedKfIdx<0) return null;
+  return (lineEvents[selectedLineLane]||[])[selectedKfIdx]||null;
+}
+function loadKfToInputs(kf){
+  document.getElementById('kf-x').value=kf.x;
+  document.getElementById('kf-y').value=kf.y;
+  document.getElementById('kf-angle').value=kf.angle;
+  document.getElementById('kf-dur').value=kf.duration;
+  document.getElementById('kf-dur-val').innerText=kf.duration+'ms';
+  selectedEasing=kf.easing||'linear';
+  document.querySelectorAll('.easing-btn').forEach(b=>b.classList.remove('active'));
+  const eb=document.getElementById('ease-'+selectedEasing); if(eb)eb.classList.add('active');
+  const isCustom=selectedEasing==='custom';
+  document.getElementById('curve-editor-box').style.display=isCustom?'block':'none';
+  if(isCustom){ if(!kf.curve)kf.curve=cloneCurve(workCurve); workCurve=kf.curve; drawCurveEditor(); }
+}
+function updateEditBanner(){
+  const banner=document.getElementById('kf-edit-banner');
+  const actions=document.getElementById('kf-edit-actions');
+  const kf=getSelectedKf();
+  if(kf){
+    banner.textContent=`Editing KF #${selectedKfIdx+1} (L${selectedLineLane+1})`;
+    banner.style.color='#ffd700';
+    actions.style.display='flex';
+  }else{
+    banner.textContent='Add Keyframe (NEW)';
+    banner.style.color='var(--accent)';
+    actions.style.display='none';
+  }
+}
+function selectKf(idx){
+  selectedKfIdx=idx;
+  const kf=getSelectedKf();
+  if(kf) loadKfToInputs(kf);
+  updateEditBanner();
+  renderKfList();drawGrid();
+}
+function deselectKf(){
+  selectedKfIdx=-1;
+  document.getElementById('curve-editor-box').style.display=(selectedEasing==='custom')?'block':'none';
+  updateEditBanner();
+  renderKfList();drawGrid();
+}
+function deleteSelectedKf(){
+  const kf=getSelectedKf(); if(!kf)return;
+  pushHistory();
+  lineEvents[selectedLineLane].splice(selectedKfIdx,1);
+  selectedKfIdx=-1;
+  updateEditBanner();renderKfList();drawGrid();
+}
+// 입력창 → 선택된 키프레임 실시간 반영
+function commitInputsToKf(){
+  const kf=getSelectedKf(); if(!kf)return false;
+  kf.x=parseFloat(document.getElementById('kf-x').value)||0;
+  kf.y=parseFloat(document.getElementById('kf-y').value)||0;
+  kf.angle=parseFloat(document.getElementById('kf-angle').value)||0;
+  kf.duration=parseInt(document.getElementById('kf-dur').value)||0;
+  kf.easing=selectedEasing;
+  renderKfList();drawGrid();
+  return true;
+}
+// 박스선택 등으로 묶음 삭제
+function deleteSelection(){
+  if(!selection.length)return;
+  pushHistory();
+  selection.forEach(s=>{
+    if(s.type==='note'){
+      measures.forEach(m=>{const i=m.notes.indexOf(s.ref);if(i!==-1)m.notes.splice(i,1);});
+    }else if(s.type==='speed'){const i=speedEvents.indexOf(s.ref);if(i!==-1)speedEvents.splice(i,1);}
+    else if(s.type==='msg'){const i=msgEvents.indexOf(s.ref);if(i!==-1)msgEvents.splice(i,1);}
+    else if(s.type==='line'){for(let l=0;l<4;l++){const i=lineEvents[l].indexOf(s.ref);if(i!==-1)lineEvents[l].splice(i,1);}}
+    else if(s.type==='pulse'){for(let l=0;l<4;l++){const i=pulseEvents[l].indexOf(s.ref);if(i!==-1)pulseEvents[l].splice(i,1);}}
+  });
+  clearSelection();
+  renderKfList();drawGrid();
+}
+
+const DEFAULT_LINE = [
+  {x:0.125,y:0.85,angle:0},
+  {x:0.375,y:0.85,angle:0},
+  {x:0.625,y:0.85,angle:0},
+  {x:0.875,y:0.85,angle:0},
+];
+
+function selectLineLane(lane){
+  selectedLineLane=lane;
+  selectedKfIdx=-1;
+  document.querySelectorAll('.lane-sel-btn').forEach(b=>
+    b.classList.toggle('active',parseInt(b.dataset.lane)===lane));
+  updateEditBanner();
+  renderKfList();
+}
+
+function selectEasing(e){
+  selectedEasing=e;
+  document.querySelectorAll('.easing-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('ease-'+e).classList.add('active');
+  document.getElementById('curve-editor-box').style.display=(e==='custom')?'block':'none';
+  const kf=getSelectedKf();
+  if(kf){
+    pushHistory();
+    kf.easing=e;
+    if(e==='custom'&&!kf.curve) kf.curve=cloneCurve(workCurve);
+    if(e==='custom') workCurve=kf.curve;
+    renderKfList();drawGrid();
+  }
+  if(e==='custom') drawCurveEditor();
+}
+
+function evTimeMs(ev){
+  if(ev.measureIdx!==undefined){
+    const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+    return ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm;
+  }
+  return ev.time||0;
+}
+
+function placeLineKeyframe(lane,mIdx,pos192){
+  const x=parseFloat(document.getElementById('kf-x').value);
+  const y=parseFloat(document.getElementById('kf-y').value);
+  const angle=parseFloat(document.getElementById('kf-angle').value)||0;
+  const dur=parseInt(document.getElementById('kf-dur').value)||500;
+  const existIdx=lineEvents[lane].findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<10);
+  if(existIdx!==-1){
+    // 기존 키프레임 → 선택(수정모드). 삭제는 우클릭/Del.
+    selectedLineLane=lane; syncLaneButtons(lane);
+    selectKf(existIdx);
+    return lineEvents[lane][existIdx];
+  }
+  const kf={measureIdx:mIdx,pos:pos192,
+    x:isNaN(x)?0:x, y:isNaN(y)?0:y, angle, easing:selectedEasing, duration:dur};
+  if(selectedEasing==='custom') kf.curve=cloneCurve(workCurve);
+  pushHistory();
+  _lastPlaceWasNew=true;
+  lineEvents[lane].push(kf);
+  lineEvents[lane].sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  playSfx('hit');
+  selectedLineLane=lane;
+  selectedKfIdx=lineEvents[lane].indexOf(kf);
+  syncLaneButtons(lane);
+  updateEditBanner();
+  renderKfList();drawGrid();
+  return kf;
+}
+function syncLaneButtons(lane){
+  document.querySelectorAll('.lane-sel-btn').forEach(b=>
+    b.classList.toggle('active',parseInt(b.dataset.lane)===lane));
+}
+
+function placePulse(lane,mIdx,pos192,type){
+  const intensity=parseInt(document.getElementById('pulse-intensity').value)||8;
+  const decay=parseInt(document.getElementById('pulse-decay').value)||150;
+  const existIdx=pulseEvents[lane].findIndex(p=>p.measureIdx===mIdx&&Math.abs(p.pos-pos192)<10);
+  if(existIdx!==-1){
+    pulseEvents[lane].splice(existIdx,1);
+  }else{
+    pulseEvents[lane].push({measureIdx:mIdx,pos:pos192,type,intensity,decay});
+    pulseEvents[lane].sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  }
+  selectedLineLane=lane;
+  document.querySelectorAll('.lane-sel-btn').forEach(b=>
+    b.classList.toggle('active',parseInt(b.dataset.lane)===lane));
+  drawGrid();
+}
+
+function addKeyframe(){
+  const msPerMeasure=(60000/bpm)*(4/beatDenom)*beatNum;
+  const scrollY=editorContainer.scrollTop;
+  let chartMs;
+  if(isEditPlaying) chartMs=(audio.currentTime*1000)-offset;
+  else chartMs=((scrollY+editorContainer.clientHeight/2)/measureHeight)*msPerMeasure;
+  chartMs=Math.max(0,chartMs);
+
+  const x=parseFloat(document.getElementById('kf-x').value)||0;
+  const y=parseFloat(document.getElementById('kf-y').value)||0;   
+  const angle=parseFloat(document.getElementById('kf-angle').value)||0;
+  const dur=parseInt(document.getElementById('kf-dur').value)||500;
+
+  const kf={time:Math.round(chartMs),x,y,angle,easing:selectedEasing,duration:dur};
+  lineEvents[selectedLineLane].push(kf);
+  lineEvents[selectedLineLane].sort((a,b)=>a.time-b.time);
+  renderKfList();
+  drawGrid();
+}
+
+function addPulseEvent(type){
+  const msPerMeasure=(60000/bpm)*(4/beatDenom)*beatNum;
+  const scrollY=editorContainer.scrollTop;
+  let chartMs;
+  if(isEditPlaying) chartMs=(audio.currentTime*1000)-offset;
+  else chartMs=((scrollY+editorContainer.clientHeight/2)/measureHeight)*msPerMeasure;
+  chartMs=Math.max(0,chartMs);
+
+  const intensity=parseInt(document.getElementById('pulse-intensity').value)||8;
+  const decay=parseInt(document.getElementById('pulse-decay').value)||150;
+  pulseEvents[selectedLineLane].push({time:Math.round(chartMs),type,intensity,decay});
+  pulseEvents[selectedLineLane].sort((a,b)=>a.time-b.time);
+}
+
+function deleteKeyframe(lane,idx){
+  lineEvents[lane].splice(idx,1);
+  if(selectedLineLane===lane) renderKfList();
+  drawGrid();
+}
+
+function clearAllKeyframes(){
+  lineEvents[selectedLineLane]=[];
+  pulseEvents[selectedLineLane]=[];
+  renderKfList();
+  drawGrid();
+}
+
+function renderKfList(){
+  const list=document.getElementById('kf-list');
+  const events=lineEvents[selectedLineLane];
+  list.innerHTML='';
+  if(events.length===0){
+    list.innerHTML='<div style="color:#333;font-size:10px;text-align:center;padding:10px;">No keyframes</div>';
+    return;
+  }
+  events.forEach((kf,i)=>{
+    const div=document.createElement('div');
+    div.className='kf-item'+(i===selectedKfIdx?' selected':'');
+    const t=(evTimeMs(kf)/1000).toFixed(2)+'s';
+    div.innerHTML=`
+      <span class="kf-time">${t}</span>
+      <span class="kf-vals">x:${kf.x.toFixed(2)} y:${kf.y.toFixed(2)} ∠${kf.angle}° [${kf.easing}]</span>
+      <button class="kf-del" onclick="deleteKeyframe(${selectedLineLane},${i})">✕</button>`;
+    div.onclick=(e)=>{if(e.target.classList.contains('kf-del'))return;selectKf(i);};
+    list.appendChild(div);
+  });
+}
+
+function applyEasing(t,type,kf){
+  switch(type){
+    case 'step': return t>=1?1:0;
+    case 'ease-in': return t*t*t;
+    case 'ease-out': return 1-Math.pow(1-t,3);
+    case 'ease-inout': return t<0.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+    // 부드러운 원형 ease-in-out (기존 어색한 ease-in-circ 대체)
+    case 'circ': return t<0.5
+      ? (1-Math.sqrt(1-Math.pow(2*t,2)))/2
+      : (Math.sqrt(1-Math.pow(-2*t+2,2))+1)/2;
+    case 'custom': return evalSpeedCurve((kf&&kf.curve)?kf.curve:DEFAULT_CURVE, t);
+    default: return t;
+  }
+}
+
+// ── 커스텀 속도 곡선: 점들을 부드럽게 통과 (Catmull-Rom) ──
+const DEFAULT_CURVE = [{x:0,y:0},{x:1,y:1}];
+function DEFAULT_CURVE_TEMPLATE(){ return [{x:0,y:0},{x:1,y:1}]; }
+function cloneCurve(c){ return c.map(p=>({x:p.x,y:p.y})); }
+function clamp01(v){return v<0?0:v>1?1:v;}
+function catmull(p0,p1,p2,p3,t){
+  const t2=t*t,t3=t2*t;
+  return 0.5*((2*p1)+(-p0+p2)*t+(2*p0-5*p1+4*p2-p3)*t2+(-p0+3*p1-3*p2+p3)*t3);
+}
+function evalCurve(pts,t){
+  if(!pts||pts.length<2) return t;
+  const p=[...pts].sort((a,b)=>a.x-b.x);
+  t=clamp01(t);
+  if(t<=p[0].x) return clamp01(p[0].y);
+  if(t>=p[p.length-1].x) return clamp01(p[p.length-1].y);
+  let i=0; while(i<p.length-1 && p[i+1].x<t) i++;
+  const p0=p[i-1]||p[i], p1=p[i], p2=p[i+1], p3=p[i+2]||p[i+1];
+  const seg=p2.x-p1.x;
+  const lt=seg<=0?0:(t-p1.x)/seg;
+  return clamp01(catmull(p0.y,p1.y,p2.y,p3.y,lt));
+}
+
+// 속도 곡선 적분: Y축이 속도, 0~t 구간 넓이 / 0~1 전체 넓이 = 진행도
+function evalSpeedCurve(pts,t){
+  if(!pts||pts.length<2) return t;
+  t=clamp01(t);
+  const STEPS=120;
+  let total=0, partial=0;
+  for(let i=0;i<STEPS;i++){
+    const ta=i/STEPS, tb=(i+1)/STEPS;
+    const vm=Math.max(0,evalCurve(pts,(ta+tb)/2));
+    const dw=(tb-ta)*vm;
+    total+=dw;
+    if(tb<=t) partial+=dw;
+    else if(ta<t) partial+=(t-ta)*vm;
+  }
+  if(total<=0) return t;
+  return clamp01(partial/total);
+}
+
+function getLineState(lane,chartMs){
+  const def = DEFAULT_LINE[lane];
+  const events = lineEvents[lane];
+  
+  // 기본 시작 위치
+  let currentX = def.x;
+  let currentY = def.y;
+  let currentAngle = def.angle;
+
+  if(!events || events.length === 0) return { x: currentX, y: currentY, angle: currentAngle };
+
+  // 모든 이벤트를 시간순으로 훑으면서 이동량을 누적 (만큼 이동하기)
+  for(let i=0; i<events.length; i++){
+    const ev = events[i];
+    const startT = evTimeMs(ev);
+
+    // 아직 시작할 시간이 안 된 이벤트면 계산 중단
+    if(chartMs < startT) break; 
+
+    // 진행률 (0.0 ~ 1.0) 계산
+    let t = (chartMs - startT) / Math.max(1, ev.duration);
+    if(t > 1) t = 1; // 시간이 다 지났으면 100% 이동한 상태로 고정
+
+    // 보간법 적용
+    const et = applyEasing(t, ev.easing, ev);
+
+    // ev.x, ev.y, ev.angle을 절대 위치가 아니라 '더할 이동량'으로 사용
+    currentX += ev.x * et;
+    currentY += ev.y * et;
+    currentAngle += ev.angle * et;
+  }
+
+  return { x: currentX, y: currentY, angle: currentAngle };
+}
+
+function getPulseMagnitude(lane,chartMs){
+  const events=pulseEvents[lane];
+  if(!events||!events.length) return 0;
+  let p=null;
+  for(let i=events.length-1;i>=0;i--){
+    if(evTimeMs(events[i])<=chartMs){p=events[i];break;}
+  }
+  if(!p||p.type==='stop') return 0;
+  const beatLen=60000/bpm;
+  const phase=(chartMs-evTimeMs(p))%beatLen;
+  const d=p.decay;
+  if(phase>d) return 0;
+  const u=phase/d;
+  // 빠른 어택(앞 12%) + 부드러운 제곱 감쇠 = 자연스러운 "둠칫"
+  let env;
+  if(u<0.12){ env=u/0.12; }
+  else{ const k=(u-0.12)/0.88; env=Math.pow(1-k,2); }
+  return p.intensity*env;
+}
+
+function updateCoordDisplay(chartMs){
+  const st=getLineState(selectedLineLane,chartMs);
+  document.getElementById('coord-x').textContent=st.x.toFixed(3);
+  document.getElementById('coord-y').textContent=st.y.toFixed(3);
+  document.getElementById('coord-a').textContent=Math.round(st.angle)+'°';
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GRID DRAW
+// ═══════════════════════════════════════════════════════════════
+function drawGrid(){
+  gridCtx.fillStyle='#000';
+  gridCtx.fillRect(0,0,gridCanvas.width,gridCanvas.height);
+
+  const split=parseInt(splitInput.value)||16;
+  const cellH=measureHeight/split;
+  const scrollY=editorContainer.scrollTop;
+  const startMI=Math.max(0,Math.floor(scrollY/measureHeight));
+  const endMI=Math.min(measures.length-1,Math.ceil((scrollY+gridCanvas.height)/measureHeight));
+
+  for(let i=startMI;i<=endMI;i++){
+    const drawY=i*measureHeight-scrollY;
+    for(let j=0;j<split;j++){
+      const ly=drawY+j*cellH;
+      gridCtx.strokeStyle=j===0?'#555':(j%(split/4)===0?'#333':'#1a1a1a');
+      gridCtx.lineWidth=j===0?1.5:1;
+      gridCtx.beginPath();gridCtx.moveTo(0,ly);gridCtx.lineTo(400,ly);gridCtx.stroke();
+    }
+    gridCtx.fillStyle='#333';gridCtx.font='11px monospace';
+    gridCtx.fillText(i+1,3,drawY+14);
+    for(let k=1;k<4;k++){
+      gridCtx.strokeStyle='#222';gridCtx.lineWidth=1;
+      gridCtx.beginPath();gridCtx.moveTo(k*100,drawY);gridCtx.lineTo(k*100,drawY+measureHeight);gridCtx.stroke();
+    }
+    // 노트존 / lineEvent존 구분선 (각 레인 오른쪽 24px 지점)
+    for(let k=0;k<4;k++){
+      const divX=k*100+76;
+      gridCtx.strokeStyle='rgba(80,80,80,0.35)';gridCtx.lineWidth=1;
+      gridCtx.setLineDash([2,4]);
+      gridCtx.beginPath();gridCtx.moveTo(divX,drawY);gridCtx.lineTo(divX,drawY+measureHeight);gridCtx.stroke();
+      gridCtx.setLineDash([]);
+    }
+  }
+
+  const ns=Math.max(0,startMI-20);
+  for(let i=ns;i<=endMI;i++){
+    const m=measures[i];const drawY=i*measureHeight-scrollY;
+    m.notes.forEach(n=>{
+      const ny=drawY+(n.pos/BASE_RES)*measureHeight;
+      const visH=10;
+      let tailY=n.len>0?ny+(n.len/BASE_RES)*measureHeight:ny+visH;
+      if(tailY<0||ny>gridCanvas.height)return;
+      // 노트 존: 레인 왼쪽 74px (오른쪽 24px은 lineEvent 전용 구역)
+      const nx=n.lane*100+2, nw=72;
+      if(n.len>0){
+        gridCtx.fillStyle=LANE_COLORS[n.lane];gridCtx.globalAlpha=0.35;
+        gridCtx.fillRect(nx+8,ny+visH/2,nw-16,tailY-ny);
+        gridCtx.globalAlpha=1;
+      }
+      gridCtx.fillStyle=LANE_COLORS[n.lane];
+      gridCtx.fillRect(nx,ny,nw,visH);
+      gridCtx.fillStyle='rgba(255,255,255,0.45)';
+      gridCtx.fillRect(nx,ny,nw,3);
+    });
+  }
+
+  msgEvents.forEach(ev=>{
+    if(ev.measureIdx<startMI||ev.measureIdx>endMI)return;
+    const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
+    if(ev.len>0){
+      gridCtx.fillStyle='rgba(208,132,255,0.15)';
+      gridCtx.fillRect(0,y,400,(ev.len/BASE_RES)*measureHeight);
+    }
+    gridCtx.strokeStyle='#d084ff';gridCtx.lineWidth=2;
+    gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(400,y);gridCtx.stroke();
+    gridCtx.fillStyle='#d084ff';gridCtx.font='bold 11px Arial';
+    gridCtx.fillText('💬 '+ev.text,28,y-4);
+  });
+
+  speedEvents.forEach(ev=>{
+    if(ev.measureIdx<startMI||ev.measureIdx>endMI)return;
+    const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
+    gridCtx.strokeStyle='#ffd700';gridCtx.lineWidth=2;
+    gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(400,y);gridCtx.stroke();
+    gridCtx.fillStyle='#ffd700';gridCtx.font='bold 11px Arial';
+    gridCtx.fillText('⚡ x'+ev.mult,8,y-4);
+  });
+
+  lineEvents.forEach((events,lane)=>{
+    const laneX0=lane*100, laneX1=laneX0+100;
+    // lineEvent 전용 구역: 레인 오른쪽 22px (laneX1-24 ~ laneX1-2)
+    const evZoneX=laneX1-24, evZoneW=22;
+    const evCX=evZoneX+evZoneW/2; // 이벤트 존 중앙 x
+    events.forEach(kf=>{
+      const mIdx=evTimeMs(kf)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      const dim=(lane!==selectedLineLane);
+      const isSel=(lane===selectedLineLane && lineEvents[selectedLineLane][selectedKfIdx]===kf);
+      gridCtx.globalAlpha=dim?0.4:1;
+      // Duration 밴드: 이벤트 전용 구역 안에만 그림
+      if(kf.duration>0){
+        const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+        const bandH=(kf.duration/mpm)*measureHeight;
+        gridCtx.fillStyle=LANE_COLORS[lane];gridCtx.globalAlpha=dim?0.15:0.35;
+        gridCtx.fillRect(evZoneX,y,evZoneW,bandH);
+        gridCtx.globalAlpha=dim?0.4:1;
+        gridCtx.strokeStyle=LANE_COLORS[lane];gridCtx.lineWidth=1.5;
+        gridCtx.setLineDash([2,2]);
+        gridCtx.beginPath();gridCtx.moveTo(evZoneX,y+bandH);gridCtx.lineTo(evZoneX+evZoneW,y+bandH);gridCtx.stroke();
+        gridCtx.setLineDash([]);
+      }
+      // 트리거 라인: 이벤트 존 폭만큼
+      gridCtx.strokeStyle=isSel?'#fff':LANE_COLORS[lane];gridCtx.lineWidth=isSel?3:(dim?1.5:2.5);
+      gridCtx.setLineDash([3,2]);
+      gridCtx.beginPath();gridCtx.moveTo(evZoneX,y);gridCtx.lineTo(evZoneX+evZoneW,y);gridCtx.stroke();
+      gridCtx.setLineDash([]);
+      // 다이아몬드 마커: 이벤트 존 중앙
+      const cx=evCX;
+      gridCtx.fillStyle=isSel?'#fff':LANE_COLORS[lane];
+      gridCtx.beginPath();
+      gridCtx.moveTo(cx,y-5);gridCtx.lineTo(cx+5,y);
+      gridCtx.lineTo(cx,y+5);gridCtx.lineTo(cx-5,y);
+      gridCtx.closePath();gridCtx.fill();
+      if(kf.angle!==0){
+        gridCtx.save();gridCtx.translate(cx,y);gridCtx.rotate(kf.angle*Math.PI/180);
+        gridCtx.strokeStyle='#fff';gridCtx.lineWidth=1.5;
+        gridCtx.beginPath();gridCtx.moveTo(-8,0);gridCtx.lineTo(8,0);gridCtx.stroke();
+        gridCtx.restore();
+      }
+      // 좌표 텍스트: 이벤트 존 왼쪽 바깥에 표시 (노트 위로 올라가지 않게 우측 정렬)
+      gridCtx.fillStyle=dim?'#666':LANE_COLORS[lane];
+      gridCtx.font='8px monospace';gridCtx.textAlign='right';
+      gridCtx.fillText(`${kf.x.toFixed(2)},${kf.y.toFixed(2)}`,evZoneX-2,y-2);
+      gridCtx.textAlign='start';
+      gridCtx.globalAlpha=1;
+    });
+  });
+
+  pulseEvents.forEach((events,lane)=>{
+    const laneX0=lane*100, laneX1=laneX0+100;
+    // pulse도 이벤트 전용 구역(우측 22px) 안에 표시
+    const cx=laneX1-13;
+    events.forEach(pe=>{
+      const mIdx=evTimeMs(pe)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      if(pe.type==='beat'){
+        gridCtx.fillStyle=LANE_COLORS[lane];
+        gridCtx.beginPath();gridCtx.arc(cx,y,5,0,Math.PI*2);gridCtx.fill();
+        gridCtx.fillStyle='#000';gridCtx.font='bold 8px monospace';gridCtx.fillText('♪',cx-3,y+3);
+      }else{
+        gridCtx.strokeStyle='#888';gridCtx.lineWidth=2;
+        gridCtx.strokeRect(cx-5,y-5,10,10);
+        gridCtx.fillStyle='#888';gridCtx.font='bold 8px monospace';gridCtx.fillText('■',cx-3,y+3);
+      }
+    });
+  });
+
+  if(selection.length>0){
+    selection.forEach(s=>{
+      const el=enumerateModeElements().find(e=>e.ref===s.ref);
+      if(!el)return;
+      const y=el.y-scrollY;
+      if(y<-20||y>gridCanvas.height+20)return;
+      gridCtx.strokeStyle='#fff';gridCtx.lineWidth=2;
+      gridCtx.setLineDash([3,2]);
+      let w=44,h=16;
+      if(el.type==='speed'||el.type==='msg'){
+        gridCtx.strokeRect(2,y-7,396,14);
+      }else{
+        gridCtx.strokeRect(el.cx-w/2,y-h/2,w,h);
+      }
+      gridCtx.setLineDash([]);
+    });
+  }
+
+  if(isBoxSelecting&&boxStart&&boxEnd){
+    const x0=Math.min(boxStart.x,boxEnd.x), x1=Math.max(boxStart.x,boxEnd.x);
+    const y0=Math.min(boxStart.absY,boxEnd.absY)-scrollY, y1=Math.max(boxStart.absY,boxEnd.absY)-scrollY;
+    gridCtx.fillStyle='rgba(0,229,255,0.12)';
+    gridCtx.fillRect(x0,y0,x1-x0,y1-y0);
+    gridCtx.strokeStyle='#00e5ff';gridCtx.lineWidth=1.5;
+    gridCtx.setLineDash([5,3]);
+    gridCtx.strokeRect(x0,y0,x1-x0,y1-y0);
+    gridCtx.setLineDash([]);
+  }
+
+  const msPerM=(60000/bpm)*(4/beatDenom)*beatNum;
+  const centerMs=((scrollY+editorContainer.clientHeight/2)/measureHeight)*msPerM;
+  updateCoordDisplay(Math.max(0,centerMs));
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  EDITOR RESIZE / SCROLL
+// ═══════════════════════════════════════════════════════════════
+function resizeEditor(){
+  document.getElementById('canvas-layer').style.height=(measures.length*measureHeight)+'px';
+  gridCanvas.height=window.innerHeight+measureHeight;
+  gridCanvas.width=400;
+}
+function addMeasures(n){
+  const s=measures.length;
+  for(let i=0;i<n;i++) measures.push({index:s+i,notes:[]});
+  resizeEditor();drawGrid();
+}
+editorContainer.addEventListener('scroll',()=>requestAnimationFrame(drawGrid));
+
+// ═══════════════════════════════════════════════════════════════
+//  MOUSE INTERACTION (GRID)
+// ═══════════════════════════════════════════════════════════════
+let dragTarget=null,isDragging=false,startY=0;
+let lineDragKf=null, lineDragStartY=0;  // 라인 키프레임 duration 드래그
+
+// ═══════════════════════════════════════════════════════════════
+//  UNDO / REDO  + 박스 선택 시스템
+// ═══════════════════════════════════════════════════════════════
+let undoStack=[], redoStack=[];
+const HISTORY_LIMIT=100;
+
+function snapshot(){
+  return JSON.stringify({
+    measures: measures.map(m=>({index:m.index,notes:m.notes.map(n=>({...n}))})),
+    speedEvents: speedEvents.map(e=>({...e})),
+    msgEvents: msgEvents.map(e=>({...e})),
+    lineEvents: lineEvents.map(arr=>arr.map(e=>({...e}))),
+    pulseEvents: pulseEvents.map(arr=>arr.map(e=>({...e}))),
+  });
+}
+function pushHistory(){
+  undoStack.push(snapshot());
+  if(undoStack.length>HISTORY_LIMIT) undoStack.shift();
+  redoStack.length=0;
+}
+function restoreSnapshot(snap){
+  const d=JSON.parse(snap);
+  measures=d.measures.map(m=>({index:m.index,notes:m.notes.map(n=>({...n}))}));
+  speedEvents=d.speedEvents;
+  msgEvents=d.msgEvents;
+  lineEvents=d.lineEvents;
+  pulseEvents=d.pulseEvents;
+  clearSelection();
+  resizeEditor();renderKfList();drawGrid();
+}
+function doUndo(){
+  if(!undoStack.length)return;
+  redoStack.push(snapshot());
+  restoreSnapshot(undoStack.pop());
+}
+function doRedo(){
+  if(!redoStack.length)return;
+  undoStack.push(snapshot());
+  restoreSnapshot(redoStack.pop());
+}
+
+let selection=[];
+let isBoxSelecting=false;
+let boxStart=null, boxEnd=null;
+let isMovingSel=false;
+let moveStart=null;
+let moveOrigin=null;
+
+function clearSelection(){ selection=[]; }
+
+function yToMeasurePos(absY){
+  const split=parseInt(splitInput.value)||16;
+  const mIdx=Math.floor(absY/measureHeight);
+  const relY=(absY%measureHeight)/measureHeight;
+  const pos192=Math.round(Math.round(relY*split)*(BASE_RES/split));
+  return {mIdx,pos192};
+}
+function measurePosToY(mIdx,pos192){ return mIdx*measureHeight+(pos192/BASE_RES)*measureHeight; }
+function elemY(el){ return measurePosToY(el.measureIdx!==undefined?el.measureIdx:el._mIdx, el.pos); }
+
+function enumerateModeElements(){
+  const out=[];
+  if(editMode==='NOTE'){
+    measures.forEach(m=>m.notes.forEach(n=>{
+      const cx=n.lane*100+50;
+      const y=measurePosToY(m.index,n.pos);
+      out.push({type:'note', ref:n, owner:m, cx, y});
+    }));
+  } else if(editMode==='SPEED'){
+    speedEvents.forEach(ev=>{ if(ev.measureIdx===undefined)return;
+      out.push({type:'speed', ref:ev, cx:200, y:measurePosToY(ev.measureIdx,ev.pos)});
+    });
+  } else if(editMode==='MSG'){
+    msgEvents.forEach(ev=>{ if(ev.measureIdx===undefined)return;
+      out.push({type:'msg', ref:ev, cx:200, y:measurePosToY(ev.measureIdx,ev.pos)});
+    });
+  } else if(editMode==='LINE'){
+    lineEvents.forEach((arr,lane)=>arr.forEach(kf=>{
+      out.push({type:'line', ref:kf, lane, cx:lane*100+50, y:measurePosToY(kf.measureIdx,kf.pos)});
+    }));
+  } else if(editMode==='PULSE'||editMode==='STOP'){
+    pulseEvents.forEach((arr,lane)=>arr.forEach(pe=>{
+      out.push({type:'pulse', ref:pe, lane, cx:lane*100+18, y:measurePosToY(pe.measureIdx,pe.pos)});
+    }));
+  }
+  return out;
+}
+
+function inBox(x,y,b1,b2){
+  const x0=Math.min(b1.x,b2.x), x1=Math.max(b1.x,b2.x);
+  const y0=Math.min(b1.absY,b2.absY), y1=Math.max(b1.absY,b2.absY);
+  return x>=x0&&x<=x1&&y>=y0&&y<=y1;
+}
+function hitSelected(x,absY){
+  return selection.some(s=>{
+    const el=enumerateModeElements().find(e=>e.ref===s.ref);
+    if(!el)return false;
+    return Math.abs(el.cx-x)<48 && Math.abs(el.y-absY)<14;
+  });
+}
+
+gridCanvas.addEventListener('mousedown',e=>{
+  if(e.button!==0)return;
+  const rect=gridCanvas.getBoundingClientRect();
+  const absY=(e.clientY-rect.top)+editorContainer.scrollTop;
+  const x=e.clientX-rect.left;
+  const lane=Math.min(3,Math.max(0,Math.floor(x/LANE_W)));
+  const mIdx=Math.floor(absY/measureHeight);
+
+  if(selection.length>0 && !e.shiftKey && hitSelected(x,absY)){
+    pushHistory();
+    isMovingSel=true;
+    moveStart={x,absY};
+    moveOrigin=selection.map(s=>({
+      ref:s.ref, type:s.type,
+      mIdx:s.ref.measureIdx, pos:s.ref.pos,
+      lane: (s.type==='note') ? s.ref.lane : s.lane
+    }));
+    return;
+  }
+
+  if(e.shiftKey){
+    isBoxSelecting=true;
+    boxStart={x,absY};
+    boxEnd={x,absY};
+    selection=[];
+    drawGrid();
+    return;
+  }
+
+  if(selection.length>0 && !hitSelected(x,absY)){
+    clearSelection();
+    drawGrid();
+  }
+
+  if(mIdx>=measures.length){
+    for(let i=measures.length;i<=mIdx+5;i++) measures.push({index:i,notes:[]});
+    resizeEditor();
+  }
+
+  const split=parseInt(splitInput.value)||16;
+  const relY=(absY%measureHeight)/measureHeight;
+  const snapIdx=Math.round(relY*split);
+  const pos192=Math.round(snapIdx*(BASE_RES/split));
+  if(pos192>=BASE_RES)return;
+
+  if(editMode==='LINE'){
+    const kf=placeLineKeyframe(lane,mIdx,pos192);
+    if(kf){ lineDragKf=kf; lineDragStartY=absY; }
+    return;
+  }
+  if(editMode==='PULSE'){ pushHistory(); placePulse(lane,mIdx,pos192,'beat'); return; }
+  if(editMode==='STOP'){ pushHistory(); placePulse(lane,mIdx,pos192,'stop'); return; }
+
+  if(editMode==='SPEED'){
+    pushHistory();
+    const ei=speedEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);
+    if(ei!==-1) speedEvents.splice(ei,1);
+    else{
+      speedEvents.push({time:0,mult:parseFloat(speedMultInput.value),measureIdx:mIdx,pos:pos192});
+      speedEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
+    }
+    drawGrid();return;
+  }
+
+  if(editMode==='MSG'){
+    const ei=msgEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);
+    if(ei!==-1){pushHistory();dragTarget=msgEvents[ei];isDragging=true;startY=mIdx*measureHeight+(dragTarget.pos/BASE_RES)*measureHeight;}
+    else{
+      pushHistory();
+      const nm={time:0,measureIdx:mIdx,pos:pos192,len:0,text:msgTextInput.value||'MESSAGE'};
+      msgEvents.push(nm);msgEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
+      dragTarget=nm;isDragging=true;startY=absY;
+    }
+    drawGrid();return;
+  }
+
+  const m=measures[mIdx];
+  const ei=m.notes.findIndex(n=>n.lane===lane&&Math.abs(n.pos-pos192)<2);
+  if(ei===-1){
+    pushHistory();
+    const nn={lane,pos:pos192,len:0};
+    m.notes.push(nn);dragTarget=nn;isDragging=true;startY=absY;playSfx('hit');
+  }else{
+    pushHistory();
+    dragTarget=m.notes[ei];isDragging=true;
+    startY=mIdx*measureHeight+(dragTarget.pos/BASE_RES)*measureHeight;
+  }
+  drawGrid();
+});
+
+window.addEventListener('mousemove',e=>{
+  const rect=gridCanvas.getBoundingClientRect();
+  const curAbsY=(e.clientY-rect.top)+editorContainer.scrollTop;
+  const curX=e.clientX-rect.left;
+
+  if(isBoxSelecting){
+    boxEnd={x:curX,absY:curAbsY};
+    drawGrid();
+    return;
+  }
+
+  if(isMovingSel){
+    const startMP=yToMeasurePos(moveStart.absY);
+    const curMP=yToMeasurePos(curAbsY);
+    const dMeasure=curMP.mIdx-startMP.mIdx;
+    const dPos=curMP.pos192-startMP.pos192;
+    const startLane=Math.min(3,Math.max(0,Math.floor(moveStart.x/LANE_W)));
+    const curLane=Math.min(3,Math.max(0,Math.floor(curX/LANE_W)));
+    const dLane=curLane-startLane;
+
+    moveOrigin.forEach(o=>{
+      const ref=o.ref;
+      let totalPos=o.mIdx*BASE_RES+o.pos + dMeasure*BASE_RES + dPos;
+      if(totalPos<0)totalPos=0;
+      ref.measureIdx=Math.floor(totalPos/BASE_RES);
+      ref.pos=Math.round(totalPos%BASE_RES);
+      if(o.type==='note'){
+        ref.lane=Math.min(3,Math.max(0,o.lane+dLane));
+      } else if(o.type==='line'||o.type==='pulse'){
+        ref._newLane=Math.min(3,Math.max(0,o.lane+dLane));
+      }
+    });
+    drawGrid();
+    return;
+  }
+
+  // 라인 키프레임 Duration 드래그 (롱노트처럼)
+  if(lineDragKf){
+    const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+    const distPx=Math.max(0,curAbsY-lineDragStartY);
+    const durMs=Math.round((distPx/measureHeight)*mpm);
+    if(durMs>40){
+      lineDragKf.duration=durMs;
+      document.getElementById('kf-dur').value=durMs;
+      document.getElementById('kf-dur-val').innerText=durMs+'ms';
+      renderKfList();
+    }
+    drawGrid();
+    return;
+  }
+
+  if(!isDragging||!dragTarget)return;
+  const dist=Math.max(0,curAbsY-startY);
+  dragTarget.len=Math.round((dist/measureHeight)*BASE_RES);
+  drawGrid();
+});
+
+window.addEventListener('mouseup',()=>{
+  if(isBoxSelecting){
+    isBoxSelecting=false;
+    if(boxStart&&boxEnd){
+      const els=enumerateModeElements();
+      selection=els.filter(el=>inBox(el.cx,el.y,boxStart,boxEnd))
+                   .map(el=>({type:el.type, ref:el.ref, lane:el.lane}));
+    }
+    boxStart=boxEnd=null;
+    drawGrid();
+    return;
+  }
+  if(isMovingSel){
+    isMovingSel=false;
+    relocateLaneItems(lineEvents);
+    relocateLaneItems(pulseEvents);
+    moveStart=moveOrigin=null;
+    speedEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
+    msgEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
+    lineEvents.forEach(arr=>arr.sort((a,b)=>evTimeMs(a)-evTimeMs(b)));
+    pulseEvents.forEach(arr=>arr.sort((a,b)=>evTimeMs(a)-evTimeMs(b)));
+    renderKfList();drawGrid();
+    return;
+  }
+  if(lineDragKf){ lineDragKf=null; drawGrid(); return; }
+  isDragging=false;dragTarget=null;
+});
+
+function relocateLaneItems(arrays){
+  for(let lane=0;lane<4;lane++){
+    for(let i=arrays[lane].length-1;i>=0;i--){
+      const it=arrays[lane][i];
+      if(it._newLane!==undefined){
+        const tgt=it._newLane; delete it._newLane;
+        if(tgt!==lane){ arrays[lane].splice(i,1); arrays[tgt].push(it); }
+      }
+    }
+  }
+}
+
+gridCanvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  const rect=gridCanvas.getBoundingClientRect();
+  const absY=(e.clientY-rect.top)+editorContainer.scrollTop;
+  const x=e.clientX-rect.left;
+  const lane=Math.min(3,Math.max(0,Math.floor(x/LANE_W)));
+  const mIdx=Math.floor(absY/measureHeight);
+  if(mIdx>=measures.length)return;
+  const split=parseInt(splitInput.value)||16;
+  const pos192=Math.round(Math.round(((absY%measureHeight)/measureHeight)*split)*(BASE_RES/split));
+
+  if(editMode==='LINE'){
+    const i=lineEvents[lane].findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<12);
+    if(i!==-1){pushHistory();lineEvents[lane].splice(i,1);renderKfList();}
+  }
+  else if(editMode==='PULSE'||editMode==='STOP'){
+    const i=pulseEvents[lane].findIndex(p=>p.measureIdx===mIdx&&Math.abs(p.pos-pos192)<12);
+    if(i!==-1){pushHistory();pulseEvents[lane].splice(i,1);}
+  }
+  else if(editMode==='SPEED'){const i=speedEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);if(i!==-1){pushHistory();speedEvents.splice(i,1);}}
+  else if(editMode==='MSG'){const i=msgEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);if(i!==-1){pushHistory();msgEvents.splice(i,1);}}
+  else{const i=measures[mIdx].notes.findIndex(n=>n.lane===lane&&Math.abs(n.pos-pos192)<5);if(i!==-1){pushHistory();measures[mIdx].notes.splice(i,1);}}
+  drawGrid();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  FILE I/O
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('audioFile').addEventListener('change',e=>{
+  if(e.target.files[0]){audio.src=URL.createObjectURL(e.target.files[0]);
+    document.querySelector('label[for="audioFile"]').innerText='🎵 '+e.target.files[0].name;}});
+
+document.getElementById('mapJsonFile').addEventListener('change',e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    try{
+      const data=JSON.parse(ev.target.result);
+      parseChartData(data);resizeEditor();drawGrid();
+      if(data.bpm)bpmInput.value=data.bpm;
+      if(data.offset!=null)offsetInput.value=data.offset;
+      document.querySelector('label[for="mapJsonFile"]').innerText='📂 '+f.name;
+      alert('로드 완료!');
+    }catch(err){alert('Load Error: '+err);}
+  };r.readAsText(f);
+});
+
+function parseChartData(data){
+  if(data.bpm)bpm=data.bpm;
+  if(data.offset!=null)offset=data.offset;else offset=0;
+  if(data.beat){beatNum=data.beat;document.getElementById('beat-num').value=beatNum;}
+  if(data.beatDenom){beatDenom=data.beatDenom;document.getElementById('beat-denom').value=beatDenom;}
+
+  const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+
+  speedEvents=data.speedEvents?data.speedEvents.map(ev=>{
+    if(ev.measureIdx===undefined){
+      const mi=Math.floor(ev.time/mpm);
+      const p=((ev.time%mpm)/mpm)*BASE_RES;
+      return{...ev,measureIdx:mi,pos:Math.round(p)};
+    }return ev;
+  }):[];
+
+  msgEvents=data.msgEvents?data.msgEvents.map(ev=>{
+    if(ev.measureIdx===undefined){
+      const mi=Math.floor(ev.time/mpm);
+      const p=((ev.time%mpm)/mpm)*BASE_RES;
+      return{...ev,measureIdx:mi,pos:Math.round(p)};
+    }return ev;
+  }):[];
+
+  lineEvents=data.lineEvents||[[],[],[],[]];
+  pulseEvents=data.pulseEvents||[[],[],[],[]];
+  renderKfList();
+
+  measures=[];
+  if(data.measures){
+    const maxI=data.measures[data.measures.length-1].index;
+    for(let i=0;i<=maxI+5;i++) measures.push({index:i,notes:[]});
+    data.measures.forEach(m=>{
+      const ratio=BASE_RES/(m.split||32);
+      if(measures[m.index]){
+        measures[m.index].notes=m.notes.map(n=>({
+          lane:n.lane,pos:Math.round(n.pos*ratio),len:Math.round((n.len||0)*ratio)
+        }));
+      }
+    });
+  }
+}
+
+document.getElementById('btn-export').addEventListener('click',()=>{
+  const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+  const fse=speedEvents.map(ev=>({
+    time:Math.round(ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm),
+    mult:ev.mult,measureIdx:ev.measureIdx,pos:ev.pos
+  }));
+  const fme=msgEvents.map(ev=>({
+    time:Math.round(ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm),
+    len:ev.len,text:ev.text,measureIdx:ev.measureIdx,pos:ev.pos
+  }));
+  const data={
+    title:'Custom Chart',bpm,offset,beat:beatNum,beatDenom,
+    speedEvents:fse,msgEvents:fme,
+    lineEvents,pulseEvents,
+    measures:measures.filter(m=>m.notes.length>0).map(m=>({...m,split:BASE_RES}))
+  };
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));
+  a.download='chart.json';a.click();
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  EDIT PLAY
+// ═══════════════════════════════════════════════════════════════
+const recBtn=document.getElementById('btn-record');
+recBtn.addEventListener('click',()=>{
+  isRecording=!isRecording;
+  recBtn.innerText=isRecording?'🔴 RECORD: ON':'🔴 RECORD: OFF';
+  recBtn.style.background=isRecording?'#ff0000':'#252525';
+  recBtn.style.color=isRecording?'#fff':'#555';
+});
+
+document.getElementById('bpm').addEventListener('change',e=>bpm=parseFloat(e.target.value));
+offsetInput.addEventListener('input',e=>{offset=parseInt(e.target.value)||0;});
+splitInput.addEventListener('input',drawGrid);
+zoomSlider.addEventListener('input',e=>{measureHeight=parseInt(e.target.value);resizeEditor();drawGrid();});
+speedSlider.addEventListener('input',e=>{baseNoteSpeed=parseFloat(e.target.value);speedVal.innerText='x'+baseNoteSpeed.toFixed(1);});
+document.getElementById('beat-num').addEventListener('change',e=>beatNum=parseInt(e.target.value)||4);
+document.getElementById('beat-denom').addEventListener('change',e=>beatDenom=parseInt(e.target.value)||4);
+document.getElementById('kf-dur').addEventListener('input',e=>{
+  const v = Math.max(0, parseInt(e.target.value) || 0);
+  e.target.value = v;
+  document.getElementById('kf-dur-val').innerText = v + 'ms';
+});
+
+// ── 선택된 키프레임 입력창 실시간 반영 ──
+let _kfInputHistoryGuard=false;
+['kf-x','kf-y','kf-angle','kf-dur'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('focus',()=>{ if(getSelectedKf()){pushHistory();_kfInputHistoryGuard=true;} });
+  el.addEventListener('blur',()=>{ _kfInputHistoryGuard=false; });
+  el.addEventListener('input',()=>{ if(getSelectedKf()) commitInputsToKf(); });
+});
+
+// ═══════════════════════════════════════════════════════════════
+//  CURVE EDITOR (커스텀 속도 곡선)
+// ═══════════════════════════════════════════════════════════════
+const curveCanvas=document.getElementById('curve-canvas');
+const curveCtx=curveCanvas.getContext('2d');
+const CC_PAD=10;
+let curveDragIdx=-1;
+
+function curveToCanvas(p){
+  const w=curveCanvas.width-CC_PAD*2, h=curveCanvas.height-CC_PAD*2;
+  return {cx:CC_PAD+p.x*w, cy:CC_PAD+(1-p.y)*h};
+}
+function canvasToCurve(cx,cy){
+  const w=curveCanvas.width-CC_PAD*2, h=curveCanvas.height-CC_PAD*2;
+  return {x:clamp01((cx-CC_PAD)/w), y:clamp01(1-(cy-CC_PAD)/h)};
+}
+function drawCurveEditor(){
+  if(!curveCanvas)return;
+  const W=curveCanvas.width,H=curveCanvas.height;
+  curveCtx.clearRect(0,0,W,H);
+  curveCtx.fillStyle='#0a0a0a';curveCtx.fillRect(0,0,W,H);
+  // grid
+  curveCtx.strokeStyle='#1c1c1c';curveCtx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const gx=CC_PAD+(W-CC_PAD*2)*i/4, gy=CC_PAD+(H-CC_PAD*2)*i/4;
+    curveCtx.beginPath();curveCtx.moveTo(gx,CC_PAD);curveCtx.lineTo(gx,H-CC_PAD);curveCtx.stroke();
+    curveCtx.beginPath();curveCtx.moveTo(CC_PAD,gy);curveCtx.lineTo(W-CC_PAD,gy);curveCtx.stroke();
+  }
+  // 기준선: y=0.5 (일정 속도 = linear와 동일)
+  curveCtx.strokeStyle='#2a3a2a';curveCtx.setLineDash([4,4]);
+  const mid=curveToCanvas({x:0,y:0.5}), midR=curveToCanvas({x:1,y:0.5});
+  curveCtx.beginPath();curveCtx.moveTo(mid.cx,mid.cy);curveCtx.lineTo(midR.cx,midR.cy);curveCtx.stroke();
+  curveCtx.setLineDash([]);
+  // Y축 레이블
+  curveCtx.fillStyle='#333';curveCtx.font='8px monospace';curveCtx.textAlign='right';
+  curveCtx.fillText('FAST',CC_PAD-1,CC_PAD+6);
+  curveCtx.fillText('SLOW',CC_PAD-1,H-CC_PAD+2);
+  curveCtx.textAlign='left';
+  // 속도 곡선 아래 영역 채우기 (넓이 = 이동량 시각화)
+  const pts=workCurve;
+  curveCtx.fillStyle='rgba(0,229,255,0.07)';
+  curveCtx.beginPath();
+  const bot=curveToCanvas({x:0,y:0});
+  curveCtx.moveTo(bot.cx,bot.cy);
+  for(let i=0;i<=60;i++){
+    const t=i/60; const y=evalCurve(pts,t); const c=curveToCanvas({x:t,y});
+    curveCtx.lineTo(c.cx,c.cy);
+  }
+  const botR=curveToCanvas({x:1,y:0});
+  curveCtx.lineTo(botR.cx,botR.cy);
+  curveCtx.closePath();curveCtx.fill();
+  // curve line
+  curveCtx.strokeStyle='#00e5ff';curveCtx.lineWidth=2;curveCtx.beginPath();
+  for(let i=0;i<=60;i++){
+    const t=i/60; const y=evalCurve(pts,t); const c=curveToCanvas({x:t,y});
+    if(i===0)curveCtx.moveTo(c.cx,c.cy);else curveCtx.lineTo(c.cx,c.cy);
+  }
+  curveCtx.stroke();
+  // control points
+  const sorted=[...pts].sort((p,q)=>p.x-q.x);
+  sorted.forEach(p=>{
+    const c=curveToCanvas(p);
+    curveCtx.fillStyle='#fff';curveCtx.strokeStyle='#00e5ff';curveCtx.lineWidth=2;
+    curveCtx.beginPath();curveCtx.arc(c.cx,c.cy,4,0,Math.PI*2);curveCtx.fill();curveCtx.stroke();
+  });
+}
+function curveHitTest(cx,cy){
+  for(let i=0;i<workCurve.length;i++){
+    const c=curveToCanvas(workCurve[i]);
+    if(Math.hypot(c.cx-cx,c.cy-cy)<9) return i;
+  }
+  return -1;
+}
+function ensureCurveTarget(){
+  // 선택된 custom 키프레임이 있으면 그 curve를, 없으면 workCurve(템플릿) 편집
+  const kf=getSelectedKf();
+  if(kf&&kf.easing==='custom'){ if(!kf.curve)kf.curve=cloneCurve(workCurve); workCurve=kf.curve; }
+}
+if(curveCanvas){
+  curveCanvas.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    const r=curveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(curveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(curveCanvas.height/r.height);
+    ensureCurveTarget();
+    if(e.button===2)return; // 우클릭은 contextmenu에서 처리
+    pushHistory();
+    let idx=curveHitTest(cx,cy);
+    if(idx===-1){
+      const np=canvasToCurve(cx,cy);
+      workCurve.push(np);
+      workCurve.sort((a,b)=>a.x-b.x);
+      idx=workCurve.indexOf(np);
+    }
+    curveDragIdx=idx;
+    drawCurveEditor();drawGrid();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(curveDragIdx===-1)return;
+    const r=curveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(curveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(curveCanvas.height/r.height);
+    const np=canvasToCurve(cx,cy);
+    const p=workCurve[curveDragIdx];
+    // 양 끝점은 x 고정(0 / 1), 중간점은 자유
+    const isFirst=curveDragIdx===0, isLast=curveDragIdx===workCurve.length-1;
+    if(isFirst) np.x=0; else if(isLast) np.x=1;
+    p.x=np.x; p.y=np.y;
+    workCurve.sort((a,b)=>a.x-b.x);
+    curveDragIdx=workCurve.indexOf(p);
+    drawCurveEditor();drawGrid();
+  });
+  window.addEventListener('mouseup',()=>{ curveDragIdx=-1; });
+  curveCanvas.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    const r=curveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(curveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(curveCanvas.height/r.height);
+    ensureCurveTarget();
+    const idx=curveHitTest(cx,cy);
+    if(idx>0&&idx<workCurve.length-1){ // 끝점은 삭제 불가
+      pushHistory();
+      workCurve.splice(idx,1);
+      drawCurveEditor();drawGrid();
+    }
+  });
+}
+
+document.getElementById('pulse-intensity').addEventListener('input',e=>{document.getElementById('pulse-int-val').innerText=e.target.value;});
+document.getElementById('pulse-decay').addEventListener('input',e=>{document.getElementById('pulse-dec-val').innerText=e.target.value+'ms';});
+
+document.getElementById('btn-play').addEventListener('click',toggleEditPlay);
+document.getElementById('btn-stop').addEventListener('click',stopEditPlay);
+
+function toggleEditPlay(){
+  if(!audio.src&&!songParam)return alert('MP3를 먼저 불러오세요.');
+  if(isEditPlaying)stopEditPlay();
+  else{
+    warmUp();
+    offset=parseInt(offsetInput.value)||0;
+    audio.play().then(()=>{
+      isEditPlaying=true;playHead.style.display='block';editLoop();
+    }).catch(e=>alert('재생 오류: '+e.message));
+  }
+}
+
+function stopEditPlay(){
+  audio.pause();audio.currentTime=0;isEditPlaying=false;
+  cancelAnimationFrame(editAnimId);
+  playHead.style.display='none';playHead.style.transform='translateY(0px)';
+  editorContainer.scrollTop=0;
+}
+
+function updatePlayHeadPos(){
+  const chartMs=audio.currentTime*1000-offset;
+  const mpm=(60/bpm)*(4/beatDenom)*beatNum*1000;
+  const y=Math.max(0,(chartMs/mpm)*measureHeight);
+  playHead.style.transform=`translateY(${y}px)`;
+  return y;
+}
+function editLoop(){
+  if(!isEditPlaying)return;
+  const y=updatePlayHeadPos();
+  if(y>editorContainer.scrollTop+window.innerHeight/2)
+    editorContainer.scrollTop=y-window.innerHeight/2;
+  drawGrid();
+  editAnimId=requestAnimationFrame(editLoop);
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  GAME ENGINE
+// ═══════════════════════════════════════════════════════════════
+let isGameTesting=false,gameFinished=false,isAutoMode=false;
+resizeGameCanvas();
+let gameNotes=[],activeNotes=[],particles=[],recentHits=[],judgments=[];
+let activeKeys=[false,false,false,false];
+let combo=0,maxCombo=0,totalHits=0,totalRateSum=0,totalOffsetDiff=0,score=0;
+let gameAnimId,baseNoteSpeed=5.0,scorePerHit=0;
+let lastNoteEndTime=0,totalMaxHits=0;
+let judgeStats={perfect:0,great:0,okay:0,oh:0,miss:0};
+let forceFinishTimer=null;
+let isPaused=false;
+let speedMap=[];
+
+let lineStates=[...DEFAULT_LINE.map(l=>({...l}))];
+let linePulsePhase=[0,0,0,0];
+
+function buildSpeedMap(events){
+  speedMap=[];
+  const sorted=[...events].sort((a,b)=>a.time-b.time);
+  speedMap.push({time:-999999,vPos:0,mult:1.0});
+  sorted.forEach(ev=>{
+    const prev=speedMap[speedMap.length-1];
+    speedMap.push({time:ev.time,vPos:prev.vPos+(ev.time-prev.time)*prev.mult,mult:ev.mult,warned:false});
+  });
+}
+function getVisualPos(time){
+  let ev=speedMap[0];
+  for(let i=1;i<speedMap.length;i++){if(speedMap[i].time>time)break;ev=speedMap[i];}
+  return ev.vPos+(time-ev.time)*ev.mult;
+}
+
+function startTestMode(auto){
+  if(!audio.src&&!songParam)return alert('MP3 Missing!');
+  warmUp();
+  if(isNaN(bpm)||bpm<=0)bpm=130;
+  if(speedParam) baseNoteSpeed=parseFloat(speedParam);
+  else baseNoteSpeed=parseFloat(speedSlider.value);
+
+  isAutoMode=auto;
+  autoIndicator.style.display=isAutoMode?'block':'none';
+  document.getElementById('test-controls').style.display='flex';
+  audio.playbackRate=1.0;rateSlider.value=1.0;rateValEl.innerText='1.00x';
+
+  gameNotes=[];totalMaxHits=0;lastNoteEndTime=0;
+  judgeStats={perfect:0,great:0,okay:0,oh:0,miss:0};
+  let mapOffset=parseInt(offsetInput.value)||0;
+  if(songParam)mapOffset=offset;
+
+  const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+  measures.forEach(m=>m.notes.forEach(n=>{
+    const t=(m.index*mpm)+(n.pos/BASE_RES)*mpm;
+    const dur=(n.len/BASE_RES)*mpm;
+    const nt=t+mapOffset;const ne=nt+dur;
+    if(ne>lastNoteEndTime)lastNoteEndTime=ne;
+    gameNotes.push({time:nt,endTime:ne,lane:n.lane,len:n.len,hit:false,holding:false,finished:false,audioPlayed:false});
+    totalMaxHits++;if(n.len>0)totalMaxHits++;
+  }));
+  gameNotes.sort((a,b)=>a.time-b.time);
+  scorePerHit=totalMaxHits>0?1000000/totalMaxHits:0;
+
+  const pse=speedEvents.map(ev=>({...ev,time:Math.round(ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm+mapOffset)}));
+  buildSpeedMap(pse);
+
+  window.activeMsgEvents=msgEvents.map(ev=>{
+    const st=ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm+mapOffset;
+    const dur=(ev.len/BASE_RES)*mpm;
+    return{...ev,time:Math.round(st),endTime:Math.round(st+dur)};
+  });
+
+  window.runtimeLineEvents=lineEvents.map(evArr=>evArr.map(kf=>({...kf})));
+  window.runtimePulseEvents=pulseEvents.map(evArr=>evArr.map(pe=>({...pe})));
+
+  seekBar.max=Math.max(audio.duration||0,(lastNoteEndTime/1000)+10);
+  seekBar.value=0;isPaused=false;pauseBtn.innerText='⏸ PAUSE';
+
+  warnLeft.className='side-warn-col';warnRight.className='side-warn-col';
+  guideMsgEl.className='';guideMsgEl.innerText='';
+
+  stopEditPlay();
+  gameView.style.display='flex';
+  resultOverlay.style.display='none';
+  resizeGameCanvas();
+  if(!songParam)document.getElementById('sidebar').style.display='none';
+
+  activeNotes=[];particles=[];recentHits=[];judgments=[];
+  activeKeys=[false,false,false,false];
+  combo=0;maxCombo=0;totalHits=0;totalRateSum=0;totalOffsetDiff=0;score=0;
+  lineStates=DEFAULT_LINE.map(l=>({...l}));
+  linePulsePhase=[0,0,0,0];
+  updateGameHUD();
+
+  isGameTesting=true;gameFinished=false;
+  gameState='COUNTDOWN';startTimestamp=Date.now();
+  audio.currentTime=0;
+  if(forceFinishTimer)clearTimeout(forceFinishTimer);
+  gameLoop();
+}
+
+function stopTestMode(){
+  isGameTesting=false;audio.pause();audio.currentTime=0;
+  cancelAnimationFrame(gameAnimId);
+  if(forceFinishTimer)clearTimeout(forceFinishTimer);
+  if(songParam)window.location.href='index.html';
+  else{gameView.style.display='none';document.getElementById('sidebar').style.display='flex';}
+}
+
+function finishGame(){
+  if(!isGameTesting||gameFinished)return;
+  gameFinished=true;
+  if(forceFinishTimer)clearTimeout(forceFinishTimer);
+  audio.pause();setTimeout(showResult,500);
+}
+
+function gameLoop(){
+  if(!isGameTesting||gameFinished)return;
+  gameAnimId=requestAnimationFrame(gameLoop);
+  if(isPaused)return;
+
+  const now=Date.now();let currentTime=-9999;
+
+  if(gameState==='COUNTDOWN'){
+    currentTime=(now-startTimestamp)-START_DELAY;
+    if(now-startTimestamp>=START_DELAY){
+      gameState='WAIT_AUDIO';
+      audio.play().catch(e=>console.error('Play Fail',e));
+    }
+  }else if(gameState==='WAIT_AUDIO'||gameState==='PLAYING'){
+    if(audio.currentTime>0)gameState='PLAYING';
+    if(audio.ended||audio.paused) currentTime=parseFloat(seekBar.value)*1000;
+    else{
+      currentTime=audio.currentTime*1000;
+      if(!isDraggingPopup&&!isPaused){
+        seekBar.value=audio.currentTime;
+        const mm=Math.floor(audio.currentTime/60).toString().padStart(2,'0');
+        const ss=Math.floor(audio.currentTime%60).toString().padStart(2,'0');
+        timeDisplay.innerText=`${mm}:${ss}`;
+      }
+    }
+  }
+
+  if(currentTime>(lastNoteEndTime+2000)&&audio.ended&&parseFloat(seekBar.value)>=seekBar.max)
+    finishGame();
+
+  if(window.activeMsgEvents){
+    const am=window.activeMsgEvents.find(ev=>currentTime>=ev.time&&currentTime<=(ev.len>0?ev.endTime:ev.time+1000));
+    if(am){if(guideMsgEl.innerText!==am.text){guideMsgEl.innerText=am.text;guideMsgEl.classList.add('msg-active');}}
+    else guideMsgEl.classList.remove('msg-active');
+  }
+
+    const mpm = (60000/bpm) * (4/beatDenom) * beatNum;
+    const warnLead = Math.min(mpm, 1400);
+    const warnClusterMs = 900;
+
+    const nextEv = speedMap.find(ev=>ev.time>currentTime && !ev.warned);
+
+    if(nextEv && nextEv.time - currentTime <= warnLead){
+    let cm = 1;
+    for(let i=0;i<speedMap.length;i++){
+        if(speedMap[i].time <= currentTime) cm = speedMap[i].mult;
+        else break;
+    }
+
+    const cluster = speedMap.filter(ev=>
+        ev.time >= nextEv.time &&
+        ev.time <= nextEv.time + warnClusterMs
+    );
+
+    cluster.forEach(ev=>ev.warned = true);
+
+    const finalEv = cluster[cluster.length - 1] || nextEv;
+    showSpeedWarning(finalEv.mult, cm);
+    }
+
+  if(window.runtimeLineEvents){
+    lineStates=window.runtimeLineEvents.map((evArr,lane)=>getLineState(lane,currentTime));
+    linePulsePhase=window.runtimePulseEvents.map((evArr,lane)=>getPulseMagnitude(lane,currentTime));
+  }
+
+  let pending=gameNotes.filter(n=>!n.finished&&n.time-2000<currentTime&&!activeNotes.includes(n));
+  activeNotes=activeNotes.concat(pending);
+
+  if(isAutoMode){
+    activeNotes.forEach(n=>{
+      if(!n.audioPlayed&&currentTime>=n.time-120){n.audioPlayed=true;playSfx(n.len>0?'hold_start':'hit');}
+      if(!n.hit&&currentTime>=n.time){
+        n.hit=true;n.holding=true;if(n.len===0)n.finished=true;
+        activeKeys[n.lane]=true;createParticles(n.lane);
+        combo++;totalHits++;score+=scorePerHit;totalRateSum+=100;judgeStats.perfect++;
+        updateGameHUD();showJudge('PERFECT',n.lane,'#00e5ff');
+        if(n.len===0)setTimeout(()=>{activeKeys[n.lane]=false;},60);
+      }
+      if(n.hit&&n.len>0&&!n.finished){
+        activeKeys[n.lane]=true;
+        if(currentTime>=n.endTime){
+          n.finished=true;activeKeys[n.lane]=false;
+          totalHits++;score+=scorePerHit;totalRateSum+=100;
+          combo++;judgeStats.perfect++;createParticles(n.lane);updateGameHUD();playSfx('hold_end');
         }
+      }
+    });
+  }
 
-        async function loadSound(name, url) {
-            try {
-                const response = await fetch(url);
-                const arrayBuffer = await response.arrayBuffer();
-                const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
-                soundBuffers[name] = audioBuffer;
-            } catch (e) { console.warn(`Sound error: ${url}`); }
+  for(let i=0;i<activeNotes.length;i++){
+    const n=activeNotes[i];
+    const cvy=getVisualPos(currentTime);const gs=0.1*baseNoteSpeed;
+    const nPos=getVisualPos(n.time);
+    const endPos=n.len>0?getVisualPos(n.endTime):nPos;
+    let tailY=HIT_LINE_Y-(endPos-cvy)*gs;
+    if(n.len===0)tailY=HIT_LINE_Y-(nPos-cvy)*gs;
+    if(tailY>GH&&!n.finished){
+      n.finished=true;
+      if(!n.hit){n.hit=true;combo=0;totalHits++;judgeStats.miss++;
+        if(n.len>0)totalHits++;updateGameHUD();showJudge('MISS',n.lane,'#ff4444');}
+    }
+    if(!isAutoMode&&!n.hit&&!n.finished&&currentTime>n.time+250){
+      n.hit=true;n.finished=true;combo=0;totalHits++;judgeStats.miss++;
+      if(n.len>0)totalHits++;updateGameHUD();showJudge('MISS',n.lane,'#ff4444');
+    }
+    if(!isAutoMode&&n.hit&&n.len>0&&!n.finished&&activeKeys[n.lane]&&currentTime>=n.endTime){
+      n.finished=true;totalHits++;totalRateSum+=100;score+=scorePerHit;
+      combo++;judgeStats.perfect++;updateGameHUD();createParticles(n.lane);playSfx('hold_end');
+    }
+  }
+  activeNotes=activeNotes.filter(n=>!n.finished);
+
+  drawGameScreen(currentTime);
+}
+
+// ─── PHIGROS-STYLE GAME RENDERER (refined, no trapezoid panels) ───
+function drawGameScreen(ct){
+  // 이전 프레임의 클리핑 경로가 남아있을 경우를 대비해 초기화
+  gameCtx.restore();gameCtx.save();
+  gameCtx.setTransform(1,0,0,1,0,0);
+
+  // Deep dark background with subtle gradient
+  const bgGrad=gameCtx.createLinearGradient(0,0,0,GH);
+  bgGrad.addColorStop(0,'#080610');bgGrad.addColorStop(1,'#020204');
+  gameCtx.fillStyle=bgGrad;gameCtx.fillRect(0,0,GW,GH);
+
+  const cvy=getVisualPos(ct);const gs=0.1*baseNoteSpeed;
+  const laneHalf=44;
+
+// ── Render each lane: just the judgment line + notes ──
+  for(let lane=0;lane<4;lane++){
+    const st=lineStates[lane];
+    const pulse=linePulsePhase[lane]||0;
+    const px = GEAR_X + st.x * GEAR_W;
+    const py = st.y * GH;
+    const ang=(st.angle*Math.PI)/180;
+    const col=LANE_COLORS[lane];
+
+    gameCtx.save();
+    gameCtx.translate(px,py);
+    gameCtx.rotate(ang);
+    gameCtx.translate(0,pulse);
+
+    // Subtle key-press glow beam (low opacity, short)
+    if(activeKeys[lane]){
+      const bg=gameCtx.createLinearGradient(0,0,0,-180);
+      bg.addColorStop(0,hexA(col,0.18));
+      bg.addColorStop(1,hexA(col,0));
+      gameCtx.fillStyle=bg;
+      gameCtx.fillRect(-laneHalf,-180,laneHalf*2,180);
+    }
+
+    // Judgment line — thin, precise
+    gameCtx.shadowBlur=activeKeys[lane]?10:3;
+    gameCtx.shadowColor=col;
+    gameCtx.strokeStyle=col;
+    gameCtx.lineWidth=activeKeys[lane]?2.2:1.4;
+    gameCtx.globalAlpha=activeKeys[lane]?0.95:0.7;
+    gameCtx.beginPath();
+    gameCtx.moveTo(-laneHalf,0);gameCtx.lineTo(laneHalf,0);
+    gameCtx.stroke();
+
+    // Center dot — small
+    gameCtx.fillStyle=col;
+    gameCtx.globalAlpha=1;
+    gameCtx.shadowBlur=activeKeys[lane]?8:2;
+    gameCtx.beginPath();
+    gameCtx.arc(0,0,activeKeys[lane]?3.5:2,0,Math.PI*2);
+    gameCtx.fill();
+    gameCtx.shadowBlur=0;
+
+    // 회전된 좌표계 기준으로 노트가 화면 밖 어디서든 보이도록 충분히 큰 limit 사용
+    // 회전 각도에 무관하게 화면 대각선의 3배 이상 확보
+    const safeLimit = Math.sqrt(GW * GW + GH * GH) * 3;
+
+    // Notes approaching along this line
+    const visibleNotes=gameNotes.filter(n=>n.lane===lane&&!n.finished
+      &&n.endTime>ct-800&&n.time<ct+6000);
+    visibleNotes.forEach(n=>{
+      const nPos=getVisualPos(n.time);
+      const endPos=n.len>0?getVisualPos(n.endTime):nPos;
+      const headDist=(nPos-cvy)*gs;
+      const headLocalY=-headDist;
+      if(n.len>0){
+        const endDist=(endPos-cvy)*gs;
+        const endLocalY=-endDist;
+        const drawHeadY=(n.hit&&!isPaused)?0:headLocalY;
+        const top=Math.min(drawHeadY,endLocalY), bot=Math.max(drawHeadY,endLocalY);
+        // safeLimit를 충분히 크게 잡아 회전 시에도 롱노트 몸통이 끊기지 않도록 함
+        const clTop=Math.max(-safeLimit,top), clBot=Math.min(60,bot);
+        if(clBot>clTop){
+          // Hold body — thin strip, low opacity
+          gameCtx.fillStyle=col;gameCtx.globalAlpha=0.15;
+          gameCtx.fillRect(-laneHalf+12,clTop,(laneHalf-12)*2,clBot-clTop);
+          // Hold edge lines
+          gameCtx.globalAlpha=0.35;
+          gameCtx.fillRect(-laneHalf+12,clTop,1.5,clBot-clTop);
+          gameCtx.fillRect(laneHalf-13.5,clTop,1.5,clBot-clTop);
+          gameCtx.globalAlpha=1;
         }
-        
-        loadSound('hit', 'sfx/hit.mp3');
-        loadSound('hold_start', 'sfx/hold_start.mp3');
-        loadSound('hold_end', 'sfx/hold_end.mp3');
-        loadSound('fc', 'sfx/full_combo.wav');
-        loadSound('ap', 'sfx/all_perfect.mp3');
-        loadSound('glitch', 'sfx/glitch.wav');
-
-        function playSfx(name, time = 0) {
-            if (!soundBuffers[name]) return;
-            const source = audioCtx.createBufferSource();
-            source.buffer = soundBuffers[name];
-            const gainNode = audioCtx.createGain();
-            gainNode.gain.value = 0.7;
-            source.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            source.start(time > 0 ? time : audioCtx.currentTime, SFX_FIXED_TRIM); 
-        }
-
-        let audio = new Audio();
-        let bpm = 130, offset = 0;
-        let beatNum = 4, beatDenom = 4;
-        let measures = []; 
-        let speedEvents = []; 
-        let msgEvents = []; 
-        let measureHeight = 400; 
-        
-        const BASE_RES = 192; 
-        const LANE_COUNT = 4, CANVAS_WIDTH = 400, LANE_WIDTH = 100;
-        
-        const gridCanvas = document.getElementById('gridCanvas');
-        const gridCtx = gridCanvas.getContext('2d');
-        const playHead = document.getElementById('play-head');
-        const editorContainer = document.getElementById('editor-container');
-        const splitInput = document.getElementById('split');
-        const zoomSlider = document.getElementById('zoom');
-        const speedSlider = document.getElementById('test-speed');
-        const speedVal = document.getElementById('speed-val');
-        const offsetInput = document.getElementById('offset');
-        const bpmInput = document.getElementById('bpm');
-
-        let editMode = 'NOTE'; 
-        const speedMultInput = document.getElementById('speed-mult-input');
-        const msgTextInput = document.getElementById('msg-text-input');
-        
-        const btnModeNote = document.getElementById('btn-mode-note');
-        const btnModeSpeed = document.getElementById('btn-mode-speed');
-        const btnModeMsg = document.getElementById('btn-mode-msg');
-
-        for(let i=0; i<50; i++) measures.push({index: i, notes: []});
-        resizeEditor(); drawGrid();
-
-        editorContainer.addEventListener('scroll', () => { requestAnimationFrame(drawGrid); });
-        document.getElementById('beat-num').addEventListener('change', e => beatNum = parseInt(e.target.value) || 4);
-        document.getElementById('beat-denom').addEventListener('change', e => beatDenom = parseInt(e.target.value) || 4);
-
-        const gameView = document.getElementById('game-view');
-        const gameCanvas = document.getElementById('gameCanvas');
-        const gameCtx = gameCanvas.getContext('2d');
-        const resultOverlay = document.getElementById('result-overlay');
-        const autoIndicator = document.getElementById('auto-indicator'); 
-        const recBtn = document.getElementById('btn-record');
-        const finishEffect = document.getElementById('finish-effect');
-        const guideMsgEl = document.getElementById('guide-message');
-        
-        const warnLeft = document.getElementById('warn-left');
-        const warnRight = document.getElementById('warn-right');
-
-        gameCanvas.width = 400;
-        gameCanvas.height = window.innerHeight;
-        const HIT_LINE_Y = window.innerHeight * 0.85; 
-        const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
-        
-        let isGameTesting = false, gameFinished = false;
-        let isAutoMode = false; 
-        let gameNotes = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
-        let activeKeys = [false, false, false, false];
-        let combo = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, totalOffsetDiff = 0, score = 0;
-        let gameAnimId, baseNoteSpeed = 5.0; 
-        let currentNoteSpeed = 5.0;          
-        let scorePerHit = 0; 
-        let startTimestamp = 0;
-        const START_DELAY = 2000; 
-        let lastNoteEndTime = 0; 
-        let totalMaxHits = 0;
-        let judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 };
-        let forceFinishTimer = null; 
-        let isRecording = false; 
-
-        let isPaused = false;
-        const seekBar = document.getElementById('seek-bar');
-        const timeDisplay = document.getElementById('time-display');
-        const pauseBtn = document.getElementById('btn-pause');
-        const rateSlider = document.getElementById('rate-slider');
-        const rateVal = document.getElementById('rate-val');
-
-        const urlParams = new URLSearchParams(window.location.search);
-        const songParam = urlParams.get('song');
-        const diffParam = urlParams.get('diff');
-        const speedParam = urlParams.get('speed');
-
-        if (songParam && diffParam) {
-            document.getElementById('sidebar').style.display = 'none';
-            document.getElementById('editor-view').style.display = 'none';
-            document.getElementById('loading-screen').style.display = 'flex';
-            loadGameData(songParam, diffParam);
-        }
-
-        function setEditMode(mode) {
-            editMode = mode;
-            btnModeNote.classList.remove('mode-active');
-            btnModeSpeed.classList.remove('mode-active');
-            btnModeMsg.classList.remove('mode-active');
-            if(mode === 'NOTE') btnModeNote.classList.add('mode-active');
-            if(mode === 'SPEED') btnModeSpeed.classList.add('mode-active');
-            if(mode === 'MSG') btnModeMsg.classList.add('mode-active');
-        }
-
-        async function loadGameData(song, diff) {
-            const loadingMsg = document.getElementById('loading-msg');
-            const startBtn = document.getElementById('btn-start-auto');
-            try {
-                loadingMsg.innerText = `LOADING CHART: ${diff}...`;
-                const chartRes = await fetch(`Maps/${song}/${diff}.json`);
-                if(!chartRes.ok) throw new Error("Chart not found");
-                const chartData = await chartRes.json();
-                parseChartData(chartData);
-
-                loadingMsg.innerText = "LOADING AUDIO...";
-                const audioRes = await fetch(`Maps/${song}/audio.mp3`);
-                if(!audioRes.ok) throw new Error("Audio fetch failed");
-                const audioBlob = await audioRes.blob();
-                const audioUrl = URL.createObjectURL(audioBlob);
-                audio.src = audioUrl;
-                audio.load();
-                audio.oncanplaythrough = () => { 
-                    loadingMsg.style.display = 'none'; 
-                    startBtn.style.display = 'block'; 
-                };
-            } catch (err) {
-                alert(`Error: ${err.message}\nPlease run with Live Server!`);
-                window.location.href = "index.html"; 
-            }
-        }
-
-        function parseChartData(data) {
-            if(data.bpm) bpm = data.bpm;
-            if(data.offset !== undefined) offset = data.offset; else offset = 0;
-            if(data.beat) { beatNum = data.beat; document.getElementById('beat-num').value = beatNum; }
-            if(data.beatDenom) { beatDenom = data.beatDenom; document.getElementById('beat-denom').value = beatDenom; } 
-            
-            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
-
-            if(data.speedEvents) {
-                speedEvents = data.speedEvents.map(ev => {
-                    if (ev.measureIdx === undefined) {
-                        const mIdx = Math.floor(ev.time / msPerMeasure);
-                        const p = ((ev.time % msPerMeasure) / msPerMeasure) * BASE_RES;
-                        return { ...ev, measureIdx: mIdx, pos: Math.round(p) };
-                    }
-                    return ev;
-                });
-            } else speedEvents = [];
-
-            if(data.msgEvents) {
-                msgEvents = data.msgEvents.map(ev => {
-                    if (ev.measureIdx === undefined) {
-                        const mIdx = Math.floor(ev.time / msPerMeasure);
-                        const p = ((ev.time % msPerMeasure) / msPerMeasure) * BASE_RES;
-                        return { ...ev, measureIdx: mIdx, pos: Math.round(p) };
-                    }
-                    return ev;
-                });
-            } else msgEvents = [];
-
-            measures = []; 
-            if(data.measures) {
-                const maxIdx = data.measures[data.measures.length-1].index;
-                for(let i=0; i<=maxIdx + 5; i++) measures.push({index: i, notes: []});
-                data.measures.forEach(m => {
-                    const ratio = BASE_RES / (m.split || 32); 
-                    if(measures[m.index]) {
-                        measures[m.index].notes = m.notes.map(n => ({
-                            lane: n.lane,
-                            pos: Math.round(n.pos * ratio), 
-                            len: Math.round((n.len || 0) * ratio) 
-                        }));
-                    }
-                });
-            }
-        }
-
-        function startAutoPlay() { 
-            warmUpAudio(); 
-            document.getElementById('loading-screen').style.display = 'none'; 
-            startTestMode(false); 
-        }
-
-        let dragTarget = null; 
-        let isDragging = false;
-        let startY = 0;
-
-        document.getElementById('audioFile').addEventListener('change', e => { if(e.target.files[0]) { audio.src = URL.createObjectURL(e.target.files[0]); document.querySelector('label[for="audioFile"]').innerText = "🎵 " + e.target.files[0].name; } });
-        document.getElementById('mapJsonFile').addEventListener('change', e => {
-            const file = e.target.files[0];
-            if(!file) return;
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    parseChartData(data);
-                    resizeEditor(); drawGrid();
-                    if(data.bpm) bpmInput.value = data.bpm;
-                    if(data.offset) offsetInput.value = data.offset;
-                    document.querySelector('label[for="mapJsonFile"]').innerText = "📂 " + file.name;
-                    alert("로드 완료!");
-                } catch(err) { alert("Load Error: " + err); }
-            };
-            reader.readAsText(file);
-        });
-
-        recBtn.addEventListener('click', () => {
-            isRecording = !isRecording;
-            if(isRecording) {
-                recBtn.innerText = "🔴 RECORD: ON";
-                recBtn.style.background = "#ff0000"; recBtn.style.color = "#fff"; recBtn.style.boxShadow = "0 0 15px rgba(255,0,0,0.5)";
-            } else {
-                recBtn.innerText = "🔴 RECORD: OFF";
-                recBtn.style.background = "#444"; recBtn.style.color = "#aaa"; recBtn.style.boxShadow = "none";
-            }
-        });
-
-        document.getElementById('bpm').addEventListener('change', e => bpm = parseFloat(e.target.value));
-        offsetInput.addEventListener('input', e => { offset = parseInt(e.target.value) || 0; if(!isEditPlaying && audio.currentTime > 0) updatePlayHeadPos(); });
-        splitInput.addEventListener('input', drawGrid);
-        zoomSlider.addEventListener('input', e => { measureHeight = parseInt(e.target.value); resizeEditor(); drawGrid(); if(!isEditPlaying && audio.currentTime > 0) updatePlayHeadPos(); });
-        speedSlider.addEventListener('input', e => { baseNoteSpeed = parseFloat(e.target.value); speedVal.innerText = "x" + baseNoteSpeed.toFixed(1); });
-
-        document.getElementById('btn-export').addEventListener('click', () => { 
-            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
-            
-            const finalSpeedEvents = speedEvents.map(ev => ({
-                time: Math.round((ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure),
-                mult: ev.mult, measureIdx: ev.measureIdx, pos: ev.pos
-            }));
-
-            const finalMsgEvents = msgEvents.map(ev => ({
-                time: Math.round((ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure),
-                len: ev.len, text: ev.text, measureIdx: ev.measureIdx, pos: ev.pos
-            }));
-
-            const data = { 
-                title: "Custom Chart", 
-                bpm, offset, beat: beatNum, beatDenom: beatDenom, 
-                speedEvents: finalSpeedEvents,
-                msgEvents: finalMsgEvents,
-                measures: measures.filter(m => m.notes.length > 0).map(m => ({ ...m, split: BASE_RES })) 
-            }; 
-            const a = document.createElement('a'); 
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); 
-            a.download = 'chart.json'; a.click(); 
-        });
-
-        gridCanvas.addEventListener('mousedown', e => {
-            if(e.button !== 0) return;
-            const rect = gridCanvas.getBoundingClientRect();
-            const clientY = e.clientY - rect.top;
-            const absoluteY = clientY + editorContainer.scrollTop; 
-            const x = e.clientX - rect.left;
-            const lane = Math.floor(x / LANE_WIDTH);
-            const measureIdx = Math.floor(absoluteY / measureHeight);
-            
-            if(measureIdx >= measures.length) {
-                for(let i=measures.length; i<=measureIdx + 5; i++) measures.push({index:i, notes:[]});
-                resizeEditor();
-            }
-
-            const split = parseInt(splitInput.value) || 16;
-            const relativeY = (absoluteY % measureHeight) / measureHeight;
-            const snapIdx = Math.round(relativeY * split);
-            const pos192 = Math.round(snapIdx * (BASE_RES / split));
-            if (pos192 >= BASE_RES) return; 
-
-            if (editMode === 'SPEED') {
-                const existIdx = speedEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
-                if(existIdx !== -1) {
-                    speedEvents.splice(existIdx, 1);
-                } else {
-                    const mult = parseFloat(speedMultInput.value);
-                    speedEvents.push({ time: 0, mult: mult, measureIdx: measureIdx, pos: pos192 });
-                    speedEvents.sort((a,b) => (a.measureIdx - b.measureIdx) || (a.pos - b.pos)); 
-                }
-                drawGrid();
-                return;
-            }
-
-            if (editMode === 'MSG') {
-                const existIdx = msgEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
-                if (existIdx !== -1) {
-                    dragTarget = msgEvents[existIdx];
-                    isDragging = true;
-                    startY = (measureIdx * measureHeight) + (dragTarget.pos / BASE_RES) * measureHeight;
-                } else {
-                    const text = msgTextInput.value || "MESSAGE";
-                    const newMsg = { time: 0, measureIdx: measureIdx, pos: pos192, len: 0, text: text };
-                    msgEvents.push(newMsg);
-                    msgEvents.sort((a,b) => (a.measureIdx - b.measureIdx) || (a.pos - b.pos));
-                    dragTarget = newMsg;
-                    isDragging = true;
-                    startY = absoluteY;
-                }
-                drawGrid();
-                return;
-            }
-
-            const m = measures[measureIdx];
-            const existingIdx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 2);
-
-            if(existingIdx === -1) {
-                const newNote = { lane, pos: pos192, len: 0 };
-                m.notes.push(newNote); dragTarget = newNote; isDragging = true; startY = absoluteY; playSfx('hit'); 
-            } else {
-                dragTarget = m.notes[existingIdx]; isDragging = true;
-                startY = (measureIdx * measureHeight) + (dragTarget.pos / BASE_RES) * measureHeight;
-            }
-            drawGrid();
-        });
-
-        window.addEventListener('mousemove', e => {
-            if(!isDragging || !dragTarget) return;
-            const rect = gridCanvas.getBoundingClientRect();
-            const currentAbsY = (e.clientY - rect.top) + editorContainer.scrollTop;
-            const distPx = Math.max(0, currentAbsY - startY);
-            dragTarget.len = Math.round((distPx / measureHeight) * BASE_RES);
-            drawGrid();
-        });
-
-        window.addEventListener('mouseup', () => { isDragging = false; dragTarget = null; });
-
-        gridCanvas.addEventListener('contextmenu', e => {
-            e.preventDefault();
-            const rect = gridCanvas.getBoundingClientRect();
-            const clientY = e.clientY - rect.top;
-            const absoluteY = clientY + editorContainer.scrollTop;
-            const x = e.clientX - rect.left;
-            const lane = Math.floor(x / LANE_WIDTH);
-            const measureIdx = Math.floor(absoluteY / measureHeight);
-            if(measureIdx >= measures.length) return;
-            
-            const split = parseInt(splitInput.value) || 16;
-            const relativeY = (absoluteY % measureHeight) / measureHeight;
-            const pos192 = Math.round(Math.round(relativeY * split) * (BASE_RES / split));
-            
-            if(editMode === 'SPEED') {
-                const evIdx = speedEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
-                if(evIdx !== -1) speedEvents.splice(evIdx, 1);
-            } 
-            else if(editMode === 'MSG') {
-                const msgIdx = msgEvents.findIndex(ev => ev.measureIdx === measureIdx && Math.abs(ev.pos - pos192) < 10);
-                if(msgIdx !== -1) msgEvents.splice(msgIdx, 1);
-            }
-            else { 
-                const m = measures[measureIdx];
-                const idx = m.notes.findIndex(n => n.lane === lane && Math.abs(n.pos - pos192) < 5);
-                if(idx !== -1) m.notes.splice(idx, 1);
-            }
-            drawGrid();
-        });
-
-        function resizeEditor() { 
-            const totalHeight = measures.length * measureHeight;
-            const layer = document.getElementById('canvas-layer');
-            layer.style.height = totalHeight + "px";
-            gridCanvas.height = window.innerHeight + measureHeight; 
-            gridCanvas.width = 400;
-        }
-        function addMeasures(n) { const start = measures.length; for(let i=0; i<n; i++) measures.push({index: start+i, notes:[]}); resizeEditor(); drawGrid(); }
-
-        document.getElementById('btn-play').addEventListener('click', toggleEditPlay);
-        document.getElementById('btn-stop').addEventListener('click', stopEditPlay);
-
-        function toggleEditPlay() {
-            if (!audio.src && !songParam) return alert("먼저 MP3 파일을 불러와주세요.");
-            if (isEditPlaying) { stopEditPlay(); } 
-            else {
-                warmUpAudio(); 
-                offset = parseInt(offsetInput.value) || 0;
-                audio.play().then(() => {
-                    isEditPlaying = true;
-                    playHead.style.display = 'block';
-                    editLoop();
-                }).catch(e => { console.error(e); alert("재생 오류: " + e.message); });
-            }
-        }
-
-        function stopEditPlay() {
-            audio.pause();
-            audio.currentTime = 0;
-            isEditPlaying = false;
-            cancelAnimationFrame(editAnimId);
-            playHead.style.display = 'none';
-            playHead.style.transform = "translateY(0px)";
-            editorContainer.scrollTop = 0;
-        }
-
-        function updatePlayHeadPos() {
-            const currentMs = audio.currentTime * 1000;
-            const chartMs = currentMs - offset;
-            const msPerMeasure = (60 / bpm) * (4 / beatDenom) * beatNum * 1000;
-            const y = Math.max(0, (chartMs / msPerMeasure) * measureHeight);
-            playHead.style.transform = `translateY(${y}px)`;
-            return y;
-        }
-        
-        function editLoop() {
-            if(!isEditPlaying) return;
-            const y = updatePlayHeadPos();
-            if(y > editorContainer.scrollTop + (window.innerHeight/2)) {
-                editorContainer.scrollTop = y - (window.innerHeight/2);
-            }
-            editAnimId = requestAnimationFrame(editLoop);
-        }
-
-        function drawGrid() {
-            gridCtx.fillStyle = "#000"; 
-            gridCtx.fillRect(0, 0, gridCanvas.width, gridCanvas.height);
-
-            const split = parseInt(splitInput.value) || 16;
-            const cellH = measureHeight / split;
-            const scrollY = editorContainer.scrollTop;
-            
-            const startMeasureIdx = Math.max(0, Math.floor(scrollY / measureHeight));
-            const endMeasureIdx = Math.min(measures.length - 1, Math.ceil((scrollY + gridCanvas.height) / measureHeight));
-
-            for (let i = startMeasureIdx; i <= endMeasureIdx; i++) {
-                const m = measures[i];
-                const drawY = (i * measureHeight) - scrollY; 
-
-                gridCtx.lineWidth = 1;
-                for(let j=0; j<split; j++) {
-                    const ly = drawY + j*cellH;
-                    gridCtx.strokeStyle = (j===0) ? "#888" : (j%(split/4)===0 ? "#555" : "#222");
-                    gridCtx.beginPath(); gridCtx.moveTo(0, ly); gridCtx.lineTo(400, ly); gridCtx.stroke();
-                }
-                
-                gridCtx.fillStyle="#fff"; gridCtx.font="12px Arial"; gridCtx.fillText(i+1, 5, drawY+15);
-                gridCtx.strokeStyle="#444"; gridCtx.lineWidth=1;
-                for(let k=1; k<4; k++) { gridCtx.beginPath(); gridCtx.moveTo(k*100, drawY); gridCtx.lineTo(k*100, drawY + measureHeight); gridCtx.stroke(); }
-            }
-
-            const noteStartIdx = Math.max(0, startMeasureIdx - 20); 
-            for (let i = noteStartIdx; i <= endMeasureIdx; i++) {
-                const m = measures[i];
-                const drawY = (i * measureHeight) - scrollY; 
-
-                m.notes.forEach(n => {
-                    const ny = drawY + (n.pos / BASE_RES) * measureHeight;
-                    let tailY = ny;
-                    const visualH = 10;
-                    if(n.len > 0) tailY = ny + (n.len / BASE_RES) * measureHeight;
-                    else tailY = ny + visualH;
-
-                    if (tailY < 0 || ny > gridCanvas.height) return;
-
-                    if(n.len > 0) {
-                        gridCtx.fillStyle = COLORS[n.lane]; gridCtx.globalAlpha = 0.5;
-                        gridCtx.fillRect(n.lane*100+10, ny + visualH/2, 80, tailY - ny);
-                        gridCtx.globalAlpha = 1.0;
-                    }
-                    gridCtx.fillStyle = COLORS[n.lane]; 
-                    gridCtx.fillRect(n.lane*100+1, ny, 98, visualH);
-                });
-            }
-
-            msgEvents.forEach(ev => {
-                let mIdx = ev.measureIdx;
-                let pos = ev.pos;
-                if (mIdx >= startMeasureIdx && mIdx <= endMeasureIdx) {
-                    const y = (mIdx * measureHeight) + (pos / BASE_RES) * measureHeight - scrollY;
-                    let h = 5;
-                    if(ev.len > 0) h = (ev.len / BASE_RES) * measureHeight;
-
-                    if(ev.len > 0) {
-                        gridCtx.fillStyle = "rgba(208, 132, 255, 0.3)";
-                        gridCtx.fillRect(0, y, 400, h);
-                    }
-
-                    gridCtx.strokeStyle = "#d084ff";
-                    gridCtx.lineWidth = 3;
-                    gridCtx.beginPath(); gridCtx.moveTo(0, y); gridCtx.lineTo(400, y); gridCtx.stroke();
-                    
-                    gridCtx.fillStyle = "#d084ff";
-                    gridCtx.font = "bold 14px Arial";
-                    gridCtx.fillText(`💬 ${ev.text}`, 30, y - 5);
-                }
-            });
-
-            speedEvents.forEach(ev => {
-                let mIdx = ev.measureIdx;
-                let pos = ev.pos;
-                if (mIdx >= startMeasureIdx && mIdx <= endMeasureIdx) {
-                    const y = (mIdx * measureHeight) + (pos / BASE_RES) * measureHeight - scrollY;
-                    gridCtx.strokeStyle = "#ffd700";
-                    gridCtx.lineWidth = 3;
-                    gridCtx.beginPath(); gridCtx.moveTo(0, y); gridCtx.lineTo(400, y); gridCtx.stroke();
-                    gridCtx.fillStyle = "#ffd700";
-                    gridCtx.font = "bold 14px Arial";
-                    gridCtx.fillText(`⚡ x${ev.mult}`, 10, y - 5);
-                }
-            });
-        }
-
-        document.getElementById('btn-test').addEventListener('click', () => {
-            const isAuto = document.getElementById('chk-auto').checked;
-            startTestMode(isAuto);
-        });
-
-        rateSlider.addEventListener('input', e => {
-            const val = parseFloat(e.target.value);
-            audio.playbackRate = val; 
-            rateVal.innerText = val.toFixed(2) + "x";
-        });
-
-        let speedMap = [];
-        function buildSpeedMap(events) {
-            speedMap = [];
-            const sortedEvents = [...events].sort((a,b) => a.time - b.time);
-            
-            speedMap.push({ time: -999999, vPos: 0, mult: 1.0 });
-
-            sortedEvents.forEach(ev => {
-                const prev = speedMap[speedMap.length-1];
-                const dist = (ev.time - prev.time) * prev.mult;
-                speedMap.push({
-                    time: ev.time,
-                    vPos: prev.vPos + dist,
-                    mult: ev.mult,
-                    warned: false 
-                });
-            });
-        }
-
-        function getVisualPos(time) {
-            let ev = speedMap[0];
-            for(let i=1; i<speedMap.length; i++) {
-                if (speedMap[i].time > time) break;
-                ev = speedMap[i];
-            }
-            return ev.vPos + (time - ev.time) * ev.mult;
-        }
-        
-        function startTestMode(auto) {
-            if(!audio.src && !songParam) return alert("MP3 Missing!");
-            
-            // ★ [FIX] 노트 오프셋 계산: (맵 오프셋)만 적용
-            let mapOffset = parseInt(offsetInput.value) || 0;
-            if(songParam) {
-                // 게임 플레이 시에는 저장된 글로벌 오프셋도 적용할 수 있으나, 
-                // 에디터에서는 맵 오프셋만 적용하여 순수하게 파일 상태를 확인합니다.
-                mapOffset = offset;
-            }
-            
-            warmUpAudio(); 
-
-            if(isNaN(bpm) || bpm <= 0) bpm = 130;
-
-            if (speedParam) baseNoteSpeed = parseFloat(speedParam);
-            else baseNoteSpeed = parseFloat(speedSlider.value);
-
-            isAutoMode = auto;
-            if(autoIndicator) autoIndicator.style.display = isAutoMode ? 'block' : 'none';
-
-            document.getElementById('test-controls').style.display = 'flex';
-            audio.playbackRate = 1.0;
-            rateSlider.value = 1.0;
-            rateVal.innerText = "1.00x";
-
-            gameNotes = [];
-            totalMaxHits = 0; 
-            lastNoteEndTime = 0;
-            judgeStats = { perfect: 0, great: 0, okay: 0, oh: 0, miss: 0 }; 
-
-            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
-            measures.forEach(m => {
-                m.notes.forEach(n => {
-                    const time = (m.index * msPerMeasure) + (n.pos / BASE_RES) * msPerMeasure;
-                    const duration = (n.len / BASE_RES) * msPerMeasure;
-                    
-                    // ★ [핵심] 노트 시간 = (원래 시간 + 맵 오프셋)
-                    // START_DELAY는 여기서 더하지 않습니다. gameLoop에서 기준 시간을 2000ms 뺍니다.
-                    const noteTime = time + mapOffset;
-                    
-                    const noteEndTime = noteTime + duration;
-                    if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
-
-                    gameNotes.push({ 
-                        time: noteTime, endTime: noteEndTime, lane: n.lane, len: n.len, 
-                        hit: false, holding: false, finished: false, scheduled: false 
-                    });
-                    totalMaxHits++; 
-                    if(n.len > 0) totalMaxHits++; 
-                });
-            });
-            gameNotes.sort((a,b) => a.time - b.time);
-            scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
-
-            const playSpeedEvents = speedEvents.map(ev => {
-                const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
-                return { ...ev, time: Math.round(calculatedTime + mapOffset) };
-            });
-            buildSpeedMap(playSpeedEvents);
-
-            const playMsgEvents = msgEvents.map(ev => {
-                const startTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure + mapOffset;
-                const duration = (ev.len / BASE_RES) * msPerMeasure;
-                return { ...ev, time: Math.round(startTime), endTime: Math.round(startTime + duration), text: ev.text };
-            });
-            window.activeMsgEvents = playMsgEvents; 
-
-            const playLimit = Math.max(audio.duration || 0, (lastNoteEndTime / 1000) + 10);
-            seekBar.max = playLimit;
-            seekBar.value = 0;
-            isPaused = false;
-            pauseBtn.innerText = "⏸ PAUSE";
-
-            warnLeft.className = 'side-warn-col';
-            warnRight.className = 'side-warn-col';
-            guideMsgEl.className = ''; guideMsgEl.innerText = '';
-
-            stopEditPlay();
-            gameView.style.display = 'flex'; 
-            resultOverlay.style.display = 'none';
-            if(!songParam) document.getElementById('sidebar').style.display = 'none';
-            
-            activeNotes = []; particles = []; recentHits = []; judgments = []; activeKeys = [false,false,false,false];
-            combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; totalOffsetDiff = 0; score = 0;
-            updateGameHUD();
-            
-            isGameTesting = true; gameFinished = false;
-            
-            gameState = 'COUNTDOWN';
-            startTimestamp = Date.now();
-            gameStartTime = Date.now();
-            audio.currentTime = 0;
-
-            if (forceFinishTimer) clearTimeout(forceFinishTimer);
-
-            gameLoop();
-        }
-
-        function stopTestMode() {
-            isGameTesting = false; audio.pause(); audio.currentTime = 0;
-            cancelAnimationFrame(gameAnimId);
-            if (forceFinishTimer) clearTimeout(forceFinishTimer);
-            if (songParam) window.location.href = "index.html"; 
-            else { gameView.style.display = 'none'; document.getElementById('sidebar').style.display = 'flex'; }
-        }
-
-        function finishGame() {
-            if (!isGameTesting || gameFinished) return;
-            gameFinished = true;
-            if (forceFinishTimer) clearTimeout(forceFinishTimer);
-            audio.pause();
-            setTimeout(showResult, 500);
-        }
-
-        seekBar.addEventListener('input', (e) => {
-            const time = parseFloat(e.target.value);
-            if (time <= audio.duration) audio.currentTime = time;
-            else audio.currentTime = audio.duration; 
-            
-            const msTime = time * 1000;
-            resetNoteStates(msTime);
-            
-            activeNotes = gameNotes.filter(n => {
-                return (!n.finished || n.endTime > msTime) && (n.time - 2000 < msTime);
-            });
-
-            speedMap.forEach(ev => { ev.warned = (ev.time < msTime); });
-
-            const m = Math.floor(time / 60).toString().padStart(2,'0');
-            const s = Math.floor(time % 60).toString().padStart(2,'0');
-            timeDisplay.innerText = `${m}:${s}`;
-
-            if(isPaused) drawGameScreen(msTime);
-        });
-
-        function resetNoteStates(chartTime) {
-            gameNotes.forEach(n => {
-                if (n.endTime < chartTime) {
-                    n.finished = true; n.hit = true; n.audioPlayed = true; n.holding = false;
-                } else if (n.time > chartTime) {
-                    n.finished = false; n.hit = false; n.holding = false; n.audioPlayed = false;
-                } else if (n.len > 0 && n.time <= chartTime && n.endTime >= chartTime) {
-                    n.finished = false; n.hit = false; n.holding = false; n.audioPlayed = true;
-                } else {
-                    n.finished = false; n.hit = false; n.audioPlayed = false;
-                }
-            });
-            particles = []; judgments = []; activeKeys = [false, false, false, false];
-            guideMsgEl.className = ''; guideMsgEl.innerText = '';
-        }
-
-        function togglePauseTest() {
-            if(gameFinished) return;
-            isPaused = !isPaused;
-            if(isPaused) { audio.pause(); pauseBtn.innerText = "▶ PLAY"; } 
-            else { 
-                if (audio.currentTime < audio.duration) audio.play(); 
-                pauseBtn.innerText = "⏸ PAUSE"; 
-            }
-        }
-
-        function rewindTest() {
-            audio.currentTime = 0;
-            resetNoteStates(0);
-            activeNotes = []; 
-            currentNoteSpeed = baseNoteSpeed;
-            
-            combo = 0; score = 0; updateGameHUD();
-            if(isPaused) {
-                drawGameScreen(0);
-                seekBar.value = 0;
-                timeDisplay.innerText = "00:00";
-            }
-        }
-
-        const KEY_MAP = ['d', 'f', 'j', 'k'];
-        window.addEventListener('keydown', e => {
-            // ★ [FIX] 입력창(input)을 쓰고 있을 땐 단축키 무시 (띄어쓰기 허용)
-            if (e.target.tagName === 'INPUT') return;
-
-            if(e.code === 'Space') { 
-                e.preventDefault(); 
-                if (isGameTesting) togglePauseTest();
-                else if (!songParam) toggleEditPlay(); 
-            }
-            
-            if(e.code === 'Enter' && !isGameTesting && !songParam) {
-                const isAuto = document.getElementById('chk-auto').checked;
-                startTestMode(isAuto);
-            }
-            if(e.code === 'Escape' && isGameTesting && !songParam) stopTestMode();
-            
-            const laneIdx = KEY_MAP.indexOf(e.key.toLowerCase());
-
-            if(isGameTesting && !gameFinished && !isAutoMode && !isPaused) {
-                if(laneIdx !== -1 && !activeKeys[laneIdx]) { 
-                    activeKeys[laneIdx] = true; 
-                    checkHit(laneIdx); 
-                }
-            }
-
-            if (isEditPlaying && isRecording && laneIdx !== -1) {
-                // ... (레코딩 로직 유지) ...
-                const currentMs = audio.currentTime * 1000;
-                const chartMs = currentMs - offset;
-                const msPerMeasure = (60 / bpm) * (4 / beatDenom) * beatNum * 1000;
-                const totalMeasurePos = chartMs / msPerMeasure;
-                let mIdx = Math.floor(totalMeasurePos); 
-                
-                if(!measures[mIdx]) {
-                    for(let i=measures.length; i<=mIdx + 5; i++) measures.push({index:i, notes:[]});
-                    resizeEditor();
-                }
-
-                const split = parseInt(splitInput.value) || 16;
-                const rawRatio = totalMeasurePos - mIdx; 
-                const snappedRatio = Math.round(rawRatio * split) / split;
-                let pos192 = Math.round(snappedRatio * BASE_RES);
-
-                if (pos192 >= BASE_RES) { mIdx++; pos192 = 0; }
-
-                if (measures[mIdx]) {
-                    const exists = measures[mIdx].notes.some(n => n.lane === laneIdx && Math.abs(n.pos - pos192) < 2);
-                    if (!exists) {
-                        measures[mIdx].notes.push({ lane: laneIdx, pos: pos192, len: 0 });
-                        playSfx('hit'); drawGrid();
-                    }
-                }
-            }
-        });
-
-        window.addEventListener('keyup', e => {
-            if(isGameTesting && !gameFinished && !isAutoMode && !isPaused) {
-                const lane = KEY_MAP.indexOf(e.key.toLowerCase());
-                if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
-            }
-        });
-
-        let isDraggingPopup = false;
-        let dragOffsetX = 0, dragOffsetY = 0;
-        const testPopup = document.getElementById('test-controls');
-
-        function startDrag(e) {
-            isDraggingPopup = true;
-            const rect = testPopup.getBoundingClientRect();
-            dragOffsetX = e.clientX - rect.left;
-            dragOffsetY = e.clientY - rect.top;
-            testPopup.style.transform = 'none';
-            testPopup.style.left = rect.left + 'px';
-            testPopup.style.top = rect.top + 'px';
-            testPopup.style.bottom = 'auto'; 
-        }
-
-        window.addEventListener('mousemove', e => {
-            if (!isDraggingPopup) return;
-            testPopup.style.left = (e.clientX - dragOffsetX) + 'px';
-            testPopup.style.top = (e.clientY - dragOffsetY) + 'px';
-        });
-
-        window.addEventListener('mouseup', () => { isDraggingPopup = false; });
-
-        function drawGameScreen(currentTime) {
-            gameCtx.fillStyle = '#000'; gameCtx.fillRect(0, 0, 400, gameCanvas.height);
-            drawLaneBeams();
-            drawJudgmentLine();
-
-            const currentVisualY = getVisualPos(currentTime);
-            const GLOBAL_SCALE = 0.1 * baseNoteSpeed; 
-
-            // 노트 그리기 (기존 로직)
-            let visibleNotes = gameNotes.filter(n => !n.finished && n.endTime > currentTime - 1000 && n.time < currentTime + 5000);
-            for(let i=0; i<visibleNotes.length; i++) {
-                let n = visibleNotes[i];
-                const nPos = getVisualPos(n.time);
-                const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
-                const headY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
-                let tailY = headY;
-                if (n.len > 0) tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
-                if (tailY > gameCanvas.height || headY < -100) continue;
-                if (n.len > 0) {
-                    const drawHeadY = (n.hit && !isPaused) ? HIT_LINE_Y : headY; 
-                    const clippedHeadY = Math.min(gameCanvas.height, drawHeadY);
-                    const clippedTailY = Math.max(-100, tailY);
-                    const bodyH = clippedHeadY - clippedTailY;
-                    if (bodyH > 0) {
-                        gameCtx.fillStyle = "rgba(255, 255, 255, 0.5)";
-                        gameCtx.fillRect(n.lane * 100 + 10, clippedTailY, 80, bodyH);
-                    }
-                }
-                if ((!n.hit || isPaused) && headY > -50) {
-                    gameCtx.fillStyle = COLORS[n.lane]; 
-                    gameCtx.fillRect(n.lane * 100 + 5, headY - 12, 90, 24);
-                    gameCtx.fillStyle = "rgba(255,255,255,0.7)"; 
-                    gameCtx.fillRect(n.lane * 100 + 5, headY - 12, 90, 6);
-                }
-            }
-
-            // 변속 라인 그리기
-            speedMap.forEach(ev => {
-                if(ev.time > currentTime && ev.time < currentTime + 5000) {
-                    const evY = HIT_LINE_Y - (ev.vPos - currentVisualY) * GLOBAL_SCALE;
-                    if(evY > 0 && evY < gameCanvas.height) {
-                        gridCtx.strokeStyle = "#ffd700";
-                        gridCtx.lineWidth = 3;
-                        gridCtx.beginPath(); gridCtx.moveTo(0, evY); gridCtx.lineTo(400, evY); gridCtx.stroke();
-                        gridCtx.fillStyle = "#ffd700";
-                        gridCtx.font = "bold 14px Arial";
-                        gridCtx.fillText(`x${ev.mult}`, 10, evY - 5);
-                    }
-                }
-            });
-
-            if(!isPaused) {
-                drawParticles(); drawGameFX(); drawHitErrorBar();
-            }
-        }
-
-        function gameLoop() {
-            if(!isGameTesting || gameFinished) return;
-            gameAnimId = requestAnimationFrame(gameLoop);
-            
-            if(isPaused) return; 
-
-            const now = Date.now();
-            let currentTime = -9999;
-
-            // ★ [동기화 로직]
-            if (gameState === 'COUNTDOWN') {
-                // START_DELAY(2000ms) 동안은 currentTime이 음수(-2000 ~ 0)
-                currentTime = (now - startTimestamp) - START_DELAY; 
-                if (now - startTimestamp >= START_DELAY) {
-                    gameState = 'WAIT_AUDIO';
-                    audio.play().catch(e => console.error("Play Fail", e));
-                }
-            } else if (gameState === 'WAIT_AUDIO' || gameState === 'PLAYING') {
-                if (audio.currentTime > 0) gameState = 'PLAYING';
-                if (audio.ended || audio.paused) {
-                    currentTime = parseFloat(seekBar.value) * 1000;
-                } else {
-                    // ★ 음악 재생 중일 때 오디오 시간 기준 (0초부터 시작)
-                    currentTime = audio.currentTime * 1000;
-                    if(!isDraggingPopup && !isPaused) {
-                        seekBar.value = audio.currentTime;
-                        const m = Math.floor(audio.currentTime / 60).toString().padStart(2,'0');
-                        const s = Math.floor(audio.currentTime % 60).toString().padStart(2,'0');
-                        timeDisplay.innerText = `${m}:${s}`;
-                    }
-                }
-            }
-
-            if (currentTime > (lastNoteEndTime + 2000) && audio.ended && parseFloat(seekBar.value) >= seekBar.max) {
-                 finishGame();
-            }
-
-            // 안내 메시지 체크
-            if(window.activeMsgEvents) {
-                const activeMsg = window.activeMsgEvents.find(ev => 
-                    currentTime >= ev.time && currentTime <= (ev.len > 0 ? ev.endTime : ev.time + 1000)
-                );
-
-                if(activeMsg) {
-                    if(guideMsgEl.innerText !== activeMsg.text) {
-                        guideMsgEl.innerText = activeMsg.text;
-                        guideMsgEl.classList.add('msg-active');
-                    }
-                } else {
-                    guideMsgEl.classList.remove('msg-active');
-                }
-            }
-
-            // 변속 경고
-            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
-            let nextEvent = speedMap.find(ev => ev.time > currentTime);
-            if (nextEvent && !nextEvent.warned) {
-                let currentMult = 1.0;
-                for(let i=0; i<speedMap.length; i++) {
-                    if(speedMap[i].time <= currentTime) currentMult = speedMap[i].mult;
-                    else break;
-                }
-                if (nextEvent.time - currentTime <= msPerMeasure) {
-                    nextEvent.warned = true;
-                    showSpeedWarning(nextEvent.mult, currentMult);
-                }
-            }
-
-            let pendingNotes = gameNotes.filter(n => !n.finished && n.time - 2000 < currentTime && !activeNotes.includes(n));
-            activeNotes = activeNotes.concat(pendingNotes);
-
-            if (isAutoMode) {
-                activeNotes.forEach(n => {
-                    if (!n.audioPlayed && currentTime >= n.time - 120) {
-                        n.audioPlayed = true; 
-                        if(n.len > 0) playSfx('hold_start'); else playSfx('hit');
-                    }
-                    if (!n.hit && currentTime >= n.time) {
-                        n.hit = true; n.holding = true;
-                        if(n.len === 0) n.finished = true;
-                        activeKeys[n.lane] = true; 
-                        createParticles(n.lane);
-                        combo++; totalHits++; score += scorePerHit; totalRateSum += 100;
-                        judgeStats.perfect++; 
-                        updateGameHUD(); showJudge("PERFECT", n.lane, "#00e5ff");
-                        if(n.len === 0) setTimeout(() => { if(!n.holding) activeKeys[n.lane] = false; }, 50);
-                    }
-                    if (n.hit && n.len > 0 && !n.finished) {
-                        activeKeys[n.lane] = true;
-                        if (currentTime >= n.endTime) {
-                            n.finished = true; activeKeys[n.lane] = false;
-                            totalHits++; score += scorePerHit; totalRateSum += 100;
-                            combo++; judgeStats.perfect++;
-                            createParticles(n.lane); updateGameHUD(); playSfx('hold_end');
-                        }
-                    }
-                });
-            }
-
-            for(let i=0; i<activeNotes.length; i++) {
-                let n = activeNotes[i];
-                const nPos = getVisualPos(n.time);
-                const endPos = (n.len > 0) ? getVisualPos(n.endTime) : nPos;
-                const currentVisualY = getVisualPos(currentTime);
-                const GLOBAL_SCALE = 0.1 * baseNoteSpeed;
-                
-                let tailY = HIT_LINE_Y - (endPos - currentVisualY) * GLOBAL_SCALE;
-                if (n.len === 0) tailY = HIT_LINE_Y - (nPos - currentVisualY) * GLOBAL_SCALE;
-
-                if (tailY > gameCanvas.height) {
-                    if (!n.finished) {
-                        n.finished = true;
-                        if (!n.hit) { 
-                            n.hit = true; combo = 0; totalHits++; judgeStats.miss++; 
-                            if(n.len > 0) totalHits++; 
-                            updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
-                        }
-                    }
-                }
-                
-                if(!isAutoMode && !n.hit && !n.finished && currentTime > n.time + 250) { 
-                    n.hit = true; n.finished = true; combo = 0; totalHits++; 
-                    judgeStats.miss++; 
-                    if(n.len > 0) totalHits++; 
-                    updateGameHUD(); showJudge("MISS", n.lane, "#ff5555");
-                    checkFinish();
-                } 
-                if (!isAutoMode && n.hit && n.len > 0 && !n.finished) {
-                    if (activeKeys[n.lane]) {
-                        if (currentTime >= n.endTime) {
-                            n.finished = true; totalHits++; totalRateSum += 100; score += scorePerHit; 
-                            combo++; judgeStats.perfect++; updateGameHUD(); createParticles(n.lane);
-                            playSfx('hold_end'); checkFinish();
-                        }
-                    }
-                }
-            }
-            activeNotes = activeNotes.filter(n => !n.finished);
-
-            drawGameScreen(currentTime);
-        }
-
-        function showSpeedWarning(targetMult, currentMult) {
-            const left = document.getElementById('warn-left');
-            const right = document.getElementById('warn-right');
-            left.className = 'side-warn-col';
-            right.className = 'side-warn-col';
-            const isUp = targetMult > currentMult;
-            const cls = isUp ? 'warn-up' : 'warn-down';
-            const label = isUp ? "SPEED<br>UP" : "SLOW<br>DOWN";
-            const leftLabel = left.querySelector('.warn-label');
-            const rightLabel = right.querySelector('.warn-label');
-            if(leftLabel) leftLabel.innerHTML = label;
-            if(rightLabel) rightLabel.innerHTML = label;
-            requestAnimationFrame(() => {
-                left.classList.add(cls);
-                right.classList.add(cls);
-            });
-            setTimeout(() => {
-                left.className = 'side-warn-col';
-                right.className = 'side-warn-col';
-            }, 1500);
-        }
-
-        function checkFinish() { }
-
-        function checkHit(lane) {
-            let currentTime = 0;
-            if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
-            else currentTime = (Date.now() - startTimestamp) - START_DELAY;
-
-            const HIT_WINDOW = 150; 
-            const candidates = activeNotes.filter(n => n.lane === lane && !n.hit && !n.finished && Math.abs(currentTime - n.time) <= HIT_WINDOW);
-            if (candidates.length === 0) return;
-
-            const n = candidates.reduce((prev, curr) => Math.abs(currentTime - curr.time) < Math.abs(currentTime - prev.time) ? curr : prev);
-            const absDiff = Math.abs(currentTime - n.time);
-
-            n.hit = true; n.holding = true; if (n.len === 0) n.finished = true;
-            totalHits++; 
-            if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
-
-            let judge="MISS", clr="#888", rate=0;
-            if(absDiff <= 32) { judge="PERFECT"; clr="#00e5ff"; rate=100; judgeStats.perfect++; }
-            else if(absDiff <= 48) { judge="GREAT"; clr="#00ff00"; rate=90; judgeStats.great++; }
-            else if(absDiff <= 64) { judge="OKAY"; clr="#ffff00"; rate=50; judgeStats.okay++; }
-            
-            if(rate > 10) { combo++; if(combo > maxCombo) maxCombo = combo; score += (rate / 100) * scorePerHit; createParticles(lane); } 
-            else { combo = 0; }
-            
-            totalRateSum += rate; updateGameHUD(); showJudge(judge, lane, clr); 
-            recentHits.push({ diff: currentTime - n.time, color: clr, life: 600, maxLife: 600 });
-            if(n.finished) checkFinish();
-        }
-
-        function checkRelease(lane) {
-            const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
-            if (n) {
-                let currentTime = 0;
-                if (gameState === 'PLAYING' && audio.currentTime > 0) currentTime = audio.currentTime * 1000;
-                else currentTime = (Date.now() - startTimestamp) - START_DELAY;
-
-                const remaining = n.endTime - currentTime; 
-                const safeZone = Math.max(100, (n.endTime - n.time) * 0.2); 
-                
-                if (remaining > safeZone) { 
-                    n.finished = true; combo = 0; totalHits++; judgeStats.miss++; 
-                    updateGameHUD(); showJudge("BREAK", lane, "#555");
-                } else {
-                    n.finished = true; totalHits++; score += scorePerHit; totalRateSum += 100; 
-                    combo++; judgeStats.perfect++; 
-                    createParticles(lane); updateGameHUD(); showJudge("PERFECT", lane, "#00e5ff");
-                    playSfx('hold_end');
-                }
-                checkFinish();
-            }
-        }
-
-        function updateGameHUD() {
-            document.getElementById('g-combo').innerText = combo;
-            document.getElementById('g-score').innerText = Math.round(score).toString().padStart(6, '0');
-            const rate = totalHits > 0 ? (totalRateSum / (totalHits * 100)) * 100 : 100;
-            document.getElementById('g-rate').innerText = rate.toFixed(2) + "%";
-            const avg = totalHits > 0 ? (totalOffsetDiff/totalHits).toFixed(1) : "0.0";
-            document.getElementById('g-avg').innerText = `AVG: ${avg}ms`;
-        }
-        function showJudge(text, lane, color) { judgments.push({text, x: lane*100+50, y: HIT_LINE_Y-100, life: 40, maxLife: 40, color}); }
-        function drawGameFX() { for(let i=judgments.length-1; i>=0; i--) { const j = judgments[i]; gameCtx.save(); gameCtx.globalAlpha = j.life/j.maxLife; gameCtx.fillStyle = j.color; gameCtx.font="900 24px Arial"; gameCtx.textAlign="center"; gameCtx.fillText(j.text, j.x, j.y); gameCtx.restore(); j.life--; if(j.life<=0) judgments.splice(i,1); } }
-        function drawHitErrorBar() { const cx = 200, cy = HIT_LINE_Y + 50, width = 300; gameCtx.fillStyle = "rgba(50, 50, 50, 0.8)"; gameCtx.fillRect(cx - width/2, cy - 2, width, 4); gameCtx.fillStyle = "#fff"; gameCtx.fillRect(cx - 1, cy - 8, 2, 16); for(let i = recentHits.length - 1; i >= 0; i--) { const h = recentHits[i]; const px = (h.diff / 100) * (width / 2); let drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px)); gameCtx.fillStyle = h.color; gameCtx.globalAlpha = h.life / h.maxLife; gameCtx.fillRect(drawX - 1, cy - 6, 2, 12); gameCtx.globalAlpha = 1.0; h.life--; if(h.life <= 0) recentHits.splice(i, 1); } }
-        function createParticles(lane) { for(let i=0; i<4; i++) particles.push({x:lane*100+50, y:HIT_LINE_Y, vx:(Math.random()-0.5)*10, vy:(Math.random()-1)*10-2, life:1, color:COLORS[lane]}); }
-        function drawParticles() { for(let i=particles.length-1; i>=0; i--){ let p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.5; p.life-=0.05; if(p.life<=0) particles.splice(i,1); else { gameCtx.globalAlpha=p.life; gameCtx.fillStyle=p.color; gameCtx.fillRect(p.x,p.y,5,5); } } }
-        function drawJudgmentLine() { gameCtx.shadowBlur = 0; gameCtx.lineWidth = 2; gameCtx.strokeStyle = '#00e5ff'; gameCtx.beginPath(); gameCtx.moveTo(0, HIT_LINE_Y); gameCtx.lineTo(400, HIT_LINE_Y); gameCtx.stroke(); gameCtx.strokeStyle = '#222'; gameCtx.lineWidth = 1; for(let i=0; i<=4; i++) { gameCtx.beginPath(); const x = i*100; gameCtx.moveTo(x, 0); gameCtx.lineTo(x, gameCanvas.height); gameCtx.stroke(); } }
-        function drawLaneBeams() { gameCtx.globalCompositeOperation = 'source-over'; for(let i=0; i<4; i++) { if(activeKeys[i]) { const grd = gameCtx.createLinearGradient(0, HIT_LINE_Y, 0, HIT_LINE_Y - 300); grd.addColorStop(0, COLORS[i]); grd.addColorStop(1, "transparent"); gameCtx.fillStyle=grd; gameCtx.globalAlpha=0.2; gameCtx.fillRect(i*100,0,100,HIT_LINE_Y); } } gameCtx.globalCompositeOperation = 'source-over'; gameCtx.globalAlpha=1.0; }
-
-        function showResult() {
-            try {
-                const rate = totalHits > 0 ? (totalRateSum / totalHits) : 0;
-                let rank = "F"; 
-                if(rate >= 95) rank = "S"; else if(rate >= 90) rank = "A"; else if(rate >= 80) rank = "B"; else if(rate >= 70) rank = "C";
-                const finalScore = Math.round(score);
-                const finalScoreStr = finalScore.toString().padStart(6, '0');
-                
-                if (songParam && diffParam) {
-                    const storageKey = `wb_score_${songParam}_${diffParam}`;
-                    const bestScore = parseInt(localStorage.getItem(storageKey) || "0");
-                    if (finalScore > bestScore) localStorage.setItem(storageKey, finalScoreStr);
-                }
-
-                resultOverlay.innerHTML = `
-                    <div style="text-align:center; margin-bottom:20px;"><h2 style="margin:0; color:#fff; font-size:32px; text-shadow:0 0 10px #00e5ff;">${songParam ? decodeURIComponent(songParam) : "CUSTOM PLAY"}</h2><div style="color:#aaa; font-size:16px; letter-spacing:2px; margin-top:5px;">${diffParam ? diffParam : "TEST MODE"}</div></div>
-                    <div class="${rank} res-rank" style="font-size:140px; margin: 10px 0; line-height:1;">${rank}</div>
-                    <div class="res-info" style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:20px; width:80%; max-width:600px; margin-bottom:30px;">
-                        <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">SCORE</div><div style="font-size:28px; font-weight:bold;">${finalScoreStr}</div></div>
-                        <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">RATE</div><div style="font-size:28px; font-weight:bold;">${rate.toFixed(2)}%</div></div>
-                        <div style="text-align:center"><div style="color:#888; font-size:14px; margin-bottom:5px;">MAX COMBO</div><div style="font-size:28px; font-weight:bold;">${maxCombo}</div></div>
-                    </div>
-                    <div style="display:flex; justify-content:space-between; width:90%; max-width:600px; background:rgba(255,255,255,0.05); padding:20px; border-radius:15px; border:1px solid #333;">
-                        <div style="text-align:center"><div style="color:#00e5ff; font-weight:bold; font-size:12px; margin-bottom:5px;">PERFECT</div><div style="color:#fff; font-size:20px;">${judgeStats.perfect}</div></div>
-                        <div style="text-align:center"><div style="color:#00ff00; font-weight:bold; font-size:12px; margin-bottom:5px;">GREAT</div><div style="color:#fff; font-size:20px;">${judgeStats.great}</div></div>
-                        <div style="text-align:center"><div style="color:#ffff00; font-weight:bold; font-size:12px; margin-bottom:5px;">OKAY</div><div style="color:#fff; font-size:20px;">${judgeStats.okay}</div></div>
-                        <div style="text-align:center"><div style="color:#FF5252; font-weight:bold; font-size:12px; margin-bottom:5px;">OH...</div><div style="color:#fff; font-size:20px;">${judgeStats.oh}</div></div>
-                        <div style="text-align:center"><div style="color:#ff0000; font-weight:bold; font-size:12px; margin-bottom:5px;">MISS</div><div style="color:#fff; font-size:20px;">${judgeStats.miss}</div></div>
-                    </div>
-                    <button class="btn-close" onclick="closeResult()" style="margin-top:40px;">CONTINUE</button>
-                `;
-                resultOverlay.style.display = 'flex';
-            } catch(e) {
-                alert("Result Error: " + e.message);
-                location.href='index.html';
-            }
-        }
-
-        function closeResult() { stopTestMode(); if(songParam) window.location.href="index.html"; }
-        const ac = new (window.AudioContext||window.webkitAudioContext)();
-        function playTick() { if(ac.state==='suspended') ac.resume(); const o = ac.createOscillator(); const g = ac.createGain(); o.connect(g); g.connect(ac.destination); o.frequency.value = 1200; g.gain.value = 0.1; o.start(); o.stop(ac.currentTime+0.05); }
-    </script>
+      }
+      // safeLimit를 충분히 크게 잡아 라인이 어떤 각도로 회전해도 노트 머리가 정상 출력되도록 함
+      if((!n.hit||isPaused)&&headLocalY>-safeLimit&&headLocalY<60){
+        // Note head — slim rectangle, minimal glow
+        gameCtx.globalAlpha=0.88;
+        gameCtx.fillStyle=col;
+        gameCtx.shadowBlur=5;gameCtx.shadowColor=col;
+        roundRect(gameCtx,-laneHalf+6,headLocalY-4,(laneHalf-6)*2,8,2);
+        gameCtx.fill();
+        // Subtle top highlight stripe
+        gameCtx.fillStyle='rgba(255,255,255,0.18)';
+        gameCtx.shadowBlur=0;
+        roundRect(gameCtx,-laneHalf+6,headLocalY-4,(laneHalf-6)*2,2.5,1);
+        gameCtx.fill();
+        gameCtx.globalAlpha=1;
+      }
+    });
+
+    gameCtx.globalAlpha=1;
+    gameCtx.restore();
+    // 레인 restore 후 상태 명시적 초기화 (다음 레인에 alpha/shadow가 새어나가지 않도록)
+    gameCtx.globalAlpha=1;
+    gameCtx.shadowBlur=0;
+    gameCtx.shadowColor='transparent';
+  }
+
+  drawParticles();drawGameFX();drawHitErrorBar();
+  // 프레임 종료 후 변환 행렬 초기화 (다음 프레임에 누적되지 않도록)
+  gameCtx.setTransform(1,0,0,1,0,0);
+  gameCtx.globalAlpha=1;
+  gameCtx.shadowBlur=0;
+}
+
+// hex → rgba
+function hexA(hex,a){
+  const h=hex.replace('#','');
+  const r=parseInt(h.substring(0,2),16),g=parseInt(h.substring(2,4),16),b=parseInt(h.substring(4,6),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+function roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+// ─── HIT CHECK ───
+function checkHit(lane){
+  let ct=0;
+  if(gameState==='PLAYING'&&audio.currentTime>0) ct=audio.currentTime*1000;
+  else ct=(Date.now()-startTimestamp)-START_DELAY;
+
+  const HIT_WINDOW=150;
+  const cands=activeNotes.filter(n=>n.lane===lane&&!n.hit&&!n.finished&&Math.abs(ct-n.time)<=HIT_WINDOW);
+  if(!cands.length)return;
+  const n=cands.reduce((p,c)=>Math.abs(ct-c.time)<Math.abs(ct-p.time)?c:p);
+  const diff=Math.abs(ct-n.time);
+
+  n.hit=true;n.holding=true;if(n.len===0)n.finished=true;
+  totalHits++;
+  playSfx(n.len>0?'hold_start':'hit');
+
+  let judge='MISS',clr='#888',rate=0;
+  if(diff<=40){judge='PERFECT';clr='#00e5ff';rate=100;judgeStats.perfect++;}
+  else if(diff<=80){judge='GREAT';clr='#00ff88';rate=90;judgeStats.great++;}
+  else if(diff<=150){judge='OKAY';clr='#ffdd00';rate=50;judgeStats.okay++;}
+
+  if(rate>0){combo++;if(combo>maxCombo)maxCombo=combo;score+=(rate/100)*scorePerHit;createParticles(lane);}
+  else combo=0;
+
+  totalRateSum+=rate;updateGameHUD();
+  const st=lineStates[lane];
+  const jx = GEAR_X + st.x * GEAR_W;
+  const jy = st.y * GH - 30;
+  judgments.push({text:judge,x:jx,y:jy,life:38,maxLife:38,color:clr});
+  recentHits.push({diff:ct-n.time,color:clr,life:500,maxLife:500});
+}
+
+function checkRelease(lane){
+  const n=activeNotes.find(n=>n.lane===lane&&n.hit&&!n.finished&&n.len>0);
+  if(!n)return;
+  let ct=0;
+  if(gameState==='PLAYING'&&audio.currentTime>0) ct=audio.currentTime*1000;
+  else ct=(Date.now()-startTimestamp)-START_DELAY;
+  const remaining=n.endTime-ct;
+  const safe=Math.max(300,(n.endTime-n.time)*0.5);
+  if(remaining>safe){n.finished=true;combo=0;totalHits++;judgeStats.miss++;updateGameHUD();
+    const st=lineStates[lane];judgments.push({text:'BREAK',x:GEAR_X + st.x * GEAR_W,y:st.y*GH-30,life:38,maxLife:38,color:'#555'});}
+  else{n.finished=true;totalHits++;score+=scorePerHit;totalRateSum+=100;
+    combo++;judgeStats.perfect++;createParticles(lane);updateGameHUD();playSfx('hold_end');
+    const st=lineStates[lane];judgments.push({text:'PERFECT',x:GEAR_X + st.x * GEAR_W,y:st.y*GH-30,life:38,maxLife:38,color:'#00e5ff'});}
+}
+
+// ─── FX HELPERS ───
+function updateGameHUD(){
+  document.getElementById('g-combo').innerText=combo;
+  document.getElementById('g-score').innerText=Math.round(score).toString().padStart(6,'0');
+  const rate=totalHits>0?(totalRateSum/(totalHits*100))*100:100;
+  document.getElementById('g-rate').innerText=rate.toFixed(2)+'%';
+}
+function showJudge(text,lane,color){
+  const st=lineStates[lane];
+  judgments.push({text,x:GEAR_X + st.x * GEAR_W,y:st.y*GH-30,life:38,maxLife:38,color});
+}
+function drawGameFX(){
+  for(let i=judgments.length-1;i>=0;i--){
+    const j=judgments[i];
+    gameCtx.save();gameCtx.globalAlpha=j.life/j.maxLife;
+    gameCtx.fillStyle=j.color;gameCtx.font='900 20px Arial';
+    gameCtx.textAlign='center';gameCtx.shadowBlur=6;gameCtx.shadowColor=j.color;
+    gameCtx.fillText(j.text,j.x,j.y-(1-j.life/j.maxLife)*18);
+    gameCtx.restore();j.life--;if(j.life<=0)judgments.splice(i,1);
+  }
+}
+function drawHitErrorBar(){
+  const cx=GW/2,cy=GH-40,width=260;
+  gameCtx.fillStyle='rgba(40,40,40,0.7)';gameCtx.fillRect(cx-width/2,cy-2,width,4);
+  gameCtx.fillStyle='#fff';gameCtx.fillRect(cx-1,cy-6,2,12);
+  for(let i=recentHits.length-1;i>=0;i--){
+    const h=recentHits[i];
+    const px=(h.diff/100)*(width/2);
+    const dx=Math.max(cx-width/2,Math.min(cx+width/2,cx+px));
+    gameCtx.fillStyle=h.color;gameCtx.globalAlpha=h.life/h.maxLife;
+    gameCtx.fillRect(dx-1,cy-5,2,10);
+    gameCtx.globalAlpha=1;h.life--;if(h.life<=0)recentHits.splice(i,1);
+  }
+}
+function createParticles(lane){
+  const st=lineStates[lane];
+  const px=GEAR_X + st.x * GEAR_W,py=st.y*GH;
+  for(let i=0;i<5;i++) particles.push({x:px,y:py,vx:(Math.random()-0.5)*9,vy:(Math.random()-1)*9-1,life:1,color:LANE_COLORS[lane]});
+}
+function drawParticles(){
+  for(let i=particles.length-1;i>=0;i--){
+    const p=particles[i];p.x+=p.vx;p.y+=p.vy;p.vy+=0.45;p.life-=0.055;
+    if(p.life<=0){particles.splice(i,1);continue;}
+    gameCtx.globalAlpha=p.life*0.8;gameCtx.fillStyle=p.color;
+    gameCtx.beginPath();gameCtx.arc(p.x,p.y,2.5,0,Math.PI*2);gameCtx.fill();
+  }
+  gameCtx.globalAlpha=1;
+}
+
+let speedWarnHideTimer = null;
+
+
+// ─── SPEED WARNING ───
+function showSpeedWarning(t,c){
+  const isUp = t > c;
+  const cls = isUp ? 'warn-up' : 'warn-down';
+  const lbl = isUp ? 'SPEED<br>UP' : 'SLOW<br>DOWN';
+
+  if(speedWarnHideTimer){
+    clearTimeout(speedWarnHideTimer);
+    speedWarnHideTimer = null;
+  }
+
+  [warnLeft,warnRight].forEach(w=>{
+    w.className = 'side-warn-col';
+    w.querySelectorAll('.warn-label').forEach(l=>l.innerHTML = lbl);
+
+    void w.offsetWidth;
+
+    requestAnimationFrame(()=>{
+      w.classList.add(cls);
+    });
+  });
+
+  speedWarnHideTimer = setTimeout(()=>{
+    [warnLeft,warnRight].forEach(w=>w.className = 'side-warn-col');
+    speedWarnHideTimer = null;
+  }, 1400);
+}
+
+// ─── SEEK / PAUSE / REWIND ───
+seekBar.addEventListener('input',e=>{
+  const time=parseFloat(e.target.value);
+  if(time<=audio.duration) audio.currentTime=time;else audio.currentTime=audio.duration;
+  const msTime=time*1000;
+  gameNotes.forEach(n=>{
+    if(n.endTime<msTime){n.finished=true;n.hit=true;n.audioPlayed=true;n.holding=false;}
+    else if(n.time>msTime){n.finished=false;n.hit=false;n.holding=false;n.audioPlayed=false;}
+    else{n.finished=false;n.hit=false;n.holding=false;n.audioPlayed=true;}
+  });
+  activeNotes=gameNotes.filter(n=>!n.finished&&n.time-2000<msTime);
+  speedMap.forEach(ev=>{ev.warned=ev.time<msTime;});
+  particles=[];judgments=[];activeKeys=[false,false,false,false];
+  guideMsgEl.className='';guideMsgEl.innerText='';
+  const mm=Math.floor(time/60).toString().padStart(2,'0');
+  const ss=Math.floor(time%60).toString().padStart(2,'0');
+  timeDisplay.innerText=`${mm}:${ss}`;
+  if(isPaused)drawGameScreen(msTime);
+});
+function togglePauseTest(){
+  if(gameFinished)return;
+  isPaused=!isPaused;
+  if(isPaused){audio.pause();pauseBtn.innerText='▶ PLAY';}
+  else{if(audio.currentTime<audio.duration)audio.play();pauseBtn.innerText='⏸ PAUSE';}
+}
+function rewindTest(){
+  audio.currentTime=0;
+  gameNotes.forEach(n=>{n.finished=false;n.hit=false;n.holding=false;n.audioPlayed=false;});
+  activeNotes=[];particles=[];judgments=[];activeKeys=[false,false,false,false];
+  combo=0;score=0;updateGameHUD();
+  lineStates=DEFAULT_LINE.map(l=>({...l}));
+  linePulsePhase=[0,0,0,0];
+  if(isPaused){drawGameScreen(0);seekBar.value=0;timeDisplay.innerText='00:00';}
+}
+rateSlider.addEventListener('input',e=>{
+  audio.playbackRate=parseFloat(e.target.value);
+  rateValEl.innerText=parseFloat(e.target.value).toFixed(2)+'x';
+});
+
+// ─── RESULT ───
+function showResult(){
+  try{
+    const rate=totalHits>0?totalRateSum/totalHits:0;
+    let rank='F';
+    if(rate>=95)rank='S';else if(rate>=90)rank='A';else if(rate>=80)rank='B';else if(rate>=70)rank='C';
+    const fs=Math.round(score);const fss=fs.toString().padStart(6,'0');
+    if(songParam&&diffParam){
+      const sk=`wb_score_${songParam}_${diffParam}`;
+      if(fs>parseInt(localStorage.getItem(sk)||'0')) localStorage.setItem(sk,fss);
+      const bk=`wb_badge_${songParam}_${diffParam}`;
+      if(judgeStats.miss===0&&judgeStats.okay===0&&judgeStats.great===0) localStorage.setItem(bk,'TB');
+      else if(judgeStats.miss===0) localStorage.setItem(bk,'FC');
+    }
+    const rankColors={'S':'#00e5ff','A':'#00ff88','B':'#ffd700','C':'#ff8800','F':'#ff4444'};
+    resultOverlay.innerHTML=`
+      <div style="text-align:center;margin-bottom:16px;">
+        <h2 style="color:#fff;font-size:28px;">${songParam?decodeURIComponent(songParam):'CUSTOM PLAY'}</h2>
+        <div style="color:#555;font-size:13px;letter-spacing:2px;">${diffParam||'TEST MODE'}</div>
+      </div>
+      <div style="font-size:120px;font-weight:900;color:${rankColors[rank]||'#fff'};
+        text-shadow:0 0 30px ${rankColors[rank]||'#fff'};margin:10px 0;line-height:1;">${rank}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px;width:80%;max-width:540px;margin-bottom:24px;">
+        <div style="text-align:center"><div style="color:#555;font-size:12px;margin-bottom:4px;">SCORE</div><div style="font-size:26px;font-weight:900;">${fss}</div></div>
+        <div style="text-align:center"><div style="color:#555;font-size:12px;margin-bottom:4px;">RATE</div><div style="font-size:26px;font-weight:900;">${rate.toFixed(2)}%</div></div>
+        <div style="text-align:center"><div style="color:#555;font-size:12px;margin-bottom:4px;">MAX COMBO</div><div style="font-size:26px;font-weight:900;">${maxCombo}</div></div>
+      </div>
+      <div style="display:flex;justify-content:space-around;width:88%;max-width:540px;
+        background:rgba(255,255,255,0.03);padding:16px;border-radius:12px;border:1px solid #222;">
+        <div style="text-align:center"><div style="color:#00e5ff;font-size:10px;font-weight:700;margin-bottom:3px;">PERFECT</div><div style="font-size:18px;">${judgeStats.perfect}</div></div>
+        <div style="text-align:center"><div style="color:#00ff88;font-size:10px;font-weight:700;margin-bottom:3px;">GREAT</div><div style="font-size:18px;">${judgeStats.great}</div></div>
+        <div style="text-align:center"><div style="color:#ffdd00;font-size:10px;font-weight:700;margin-bottom:3px;">OKAY</div><div style="font-size:18px;">${judgeStats.okay}</div></div>
+        <div style="text-align:center"><div style="color:#ff4444;font-size:10px;font-weight:700;margin-bottom:3px;">MISS</div><div style="font-size:18px;">${judgeStats.miss}</div></div>
+      </div>
+      <button onclick="closeResult()" style="margin-top:32px;padding:13px 36px;font-size:16px;
+        background:#fff;color:#000;border:none;border-radius:30px;cursor:pointer;font-weight:900;">CONTINUE</button>`;
+    resultOverlay.style.display='flex';
+  }catch(e){alert('Result Error: '+e.message);location.href='index.html';}
+}
+function closeResult(){stopTestMode();if(songParam)window.location.href='index.html';}
+
+// ─── KEYBOARD ───
+const KEY_MAP=['d','f','j','k'];
+window.addEventListener('keydown',e=>{
+  // Undo/Redo — 입력창 포커스 중이 아닐 때 (게임 테스트 중 제외)
+  if((e.ctrlKey||e.metaKey) && !isGameTesting && e.target.tagName!=='INPUT'){
+    const k=e.key.toLowerCase();
+    if(k==='z'){ e.preventDefault(); if(e.shiftKey)doRedo(); else doUndo(); return; }
+    if(k==='y'){ e.preventDefault(); doRedo(); return; }
+  }
+  // 선택 요소 삭제
+  if((e.key==='Delete'||e.key==='Backspace') && !isGameTesting && e.target.tagName!=='INPUT'){
+    if(selection.length>0){ e.preventDefault(); deleteSelection(); return; }
+    if(getSelectedKf()){ e.preventDefault(); deleteSelectedKf(); return; }
+  }
+
+  if(e.target.tagName==='INPUT')return;
+
+  if(e.code==='Space'){
+    e.preventDefault();
+    if(isGameTesting)togglePauseTest();
+    else if(!songParam)toggleEditPlay();
+  }
+  if(e.code==='Enter'&&!isGameTesting&&!songParam){
+    startTestMode(document.getElementById('chk-auto').checked);
+  }
+  if(e.code==='Escape'&&isGameTesting&&!songParam)stopTestMode();
+
+  const li=KEY_MAP.indexOf(e.key.toLowerCase());
+  if(isGameTesting&&!gameFinished&&!isAutoMode&&!isPaused){
+    if(li!==-1&&!activeKeys[li]){activeKeys[li]=true;checkHit(li);}
+  }
+
+  if(isEditPlaying&&isRecording&&li!==-1){
+    const chartMs=audio.currentTime*1000-offset;
+    const mpm=(60/bpm)*(4/beatDenom)*beatNum*1000;
+    const total=chartMs/mpm;let mi=Math.floor(total);
+    if(!measures[mi]){for(let i=measures.length;i<=mi+5;i++) measures.push({index:i,notes:[]});resizeEditor();}
+    const split=parseInt(splitInput.value)||16;
+    let pos192=Math.round(Math.round((total-mi)*split)/split*BASE_RES);
+    if(pos192>=BASE_RES){mi++;pos192=0;}
+    if(measures[mi]){
+      const ex=measures[mi].notes.some(n=>n.lane===li&&Math.abs(n.pos-pos192)<2);
+      if(!ex){measures[mi].notes.push({lane:li,pos:pos192,len:0});playSfx('hit');drawGrid();}
+    }
+  }
+});
+window.addEventListener('keyup',e=>{
+  if(isGameTesting&&!gameFinished&&!isAutoMode&&!isPaused){
+    const li=KEY_MAP.indexOf(e.key.toLowerCase());
+    if(li!==-1){activeKeys[li]=false;checkRelease(li);}
+  }
+});
+
+// ─── URL PARAM GAME START ───
+if(songParam&&diffParam){
+  document.getElementById('sidebar').style.display='none';
+  document.getElementById('editor-view').style.display='none';
+  document.getElementById('loading-screen').style.display='flex';
+  loadGameData(songParam,diffParam);
+}
+document.getElementById('btn-test').addEventListener('click',()=>startTestMode(document.getElementById('chk-auto').checked));
+
+async function loadGameData(song,diff){
+  const msg=document.getElementById('loading-msg');
+  const btn=document.getElementById('btn-start-auto');
+  try{
+    msg.innerText=`LOADING CHART: ${diff}...`;
+    const cr=await fetch(`Maps/${song}/${diff}.json`);
+    if(!cr.ok)throw new Error('Chart not found');
+    parseChartData(await cr.json());
+    msg.innerText='LOADING AUDIO...';
+    const ar=await fetch(`Maps/${song}/audio.mp3`);
+    if(!ar.ok)throw new Error('Audio fetch failed');
+    audio.src=URL.createObjectURL(await ar.blob());
+    audio.load();
+    audio.oncanplaythrough=()=>{msg.style.display='none';btn.style.display='block';};
+  }catch(err){alert(`Error: ${err.message}`);window.location.href='index.html';}
+}
+function startAutoPlay(){
+  warmUp();
+  document.getElementById('loading-screen').style.display='none';
+  startTestMode(false);
+}
+
+// ─── DRAG POPUP ───
+let isDraggingPopup=false,dragOffsetX=0,dragOffsetY=0;
+const testPopup=document.getElementById('test-controls');
+function startDrag(e){
+  isDraggingPopup=true;
+  const rect=testPopup.getBoundingClientRect();
+  dragOffsetX=e.clientX-rect.left;dragOffsetY=e.clientY-rect.top;
+  testPopup.style.transform='none';testPopup.style.left=rect.left+'px';
+  testPopup.style.top=rect.top+'px';testPopup.style.bottom='auto';
+}
+window.addEventListener('mousemove',e=>{if(isDraggingPopup){testPopup.style.left=(e.clientX-dragOffsetX)+'px';testPopup.style.top=(e.clientY-dragOffsetY)+'px';}});
+window.addEventListener('mouseup',()=>isDraggingPopup=false);
+
+// ═══════════════════════════════════════════════════════════════
+//  INITIAL RENDER
+// ═══════════════════════════════════════════════════════════════
+resizeEditor();
+drawGrid();
+renderKfList();
+</script>
 </body>
 </html>
