@@ -5,14 +5,15 @@
     <title>WEB BEAT : SECURE</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600;800&family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Audiowide&family=Oxanium:wght@400;700;800&display=swap');
         :root { 
             --bg: #050505; 
             --accent: #00e5ff; 
             --secondary: #ff0055; 
             --text: #fff; 
             --fever-gold: #ffd700; 
-            --fever-max: #00ff00; 
+            --fever-max: #00ff00;
+            --ui-font: 'Orbitron', sans-serif;
         }
         * { box-sizing: border-box; }
         body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Segoe UI', sans-serif; height: 100vh; overflow: hidden; user-select: none; display: flex; justify-content: center; align-items: center; }
@@ -38,7 +39,7 @@
         #game-view { position: relative; width: 100%; height: 100%; display: flex; flex-direction: row; align-items: stretch; justify-content: center; z-index: 10; gap: 15px; }
         .side-warn-col { width: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transition: opacity 0.1s; pointer-events: none; text-shadow: 0 0 10px currentColor; }
         .chevron { width: 50px; height: 50px; border-top: 10px solid currentColor; border-right: 10px solid currentColor; transform: rotate(-45deg); margin: 10px 0; opacity: 0.5; }
-        .warn-label { font-family: 'Orbitron'; font-weight:900; font-size: 28px; margin: 20px 0; text-align: center; line-height: 1.1; filter: drop-shadow(0 0 5px currentColor); }
+        .warn-label { font-family: var(--ui-font); font-weight:900; font-size: 28px; margin: 20px 0; text-align: center; line-height: 1.1; filter: drop-shadow(0 0 5px currentColor); }
         .warn-up { opacity: 1; color: #ff0055; } .warn-up .chevron { animation: neon-pulse 0.2s infinite alternate; } .warn-up .warn-label { animation: flicker 0.1s infinite; }
         .warn-down { opacity: 1; color: #00e5ff; } .warn-down .chevron { transform: rotate(135deg); animation: neon-pulse-down 0.4s infinite alternate; }
         @keyframes neon-pulse { from { opacity: 0.4; transform: translateY(0) rotate(-45deg); filter: drop-shadow(0 0 2px currentColor); } to { opacity: 1; transform: translateY(-5px) rotate(-45deg); filter: drop-shadow(0 0 15px currentColor); } }
@@ -82,7 +83,7 @@
             top: 16px;
             left: 50%;
             transform: translateX(-50%);
-            font-family: 'Orbitron', sans-serif;
+            font-family: var(--ui-font);
             font-weight: 900;
             font-size: clamp(15px, 1.5vw, 18px);
             letter-spacing: 0;
@@ -123,11 +124,13 @@
         .hud-item { position: absolute; }
         .hud-rate { top: 16px; left: 24px; text-align: left; }
         .hud-score { top: 16px; right: 24px; text-align: right; }
-        .hud-combo { left: 50%; top: 48%; transform: translate(-50%,-50%); text-align: center; opacity: 0.18; }
-        .hud-text { font-family: 'Orbitron', monospace; font-weight: 900; font-size: 30px; color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.4); transition: color 0.2s, text-shadow 0.2s; }
+        .hud-combo { left: 50%; top: 48%; transform: translate(-50%,-50%); text-align: center; opacity: 0.12; }
+        .hud-text { font-family: var(--ui-font); font-weight: 900; font-size: 30px; color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.4); transition: color 0.2s, text-shadow 0.2s; }
         .hud-sub { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #666; font-weight: 700; letter-spacing: 1px; }
         .hud-combo .hud-sub { display: none; }
         .hud-combo .hud-text { font-size: 150px; line-height: 1; text-shadow: 0 0 30px rgba(255,255,255,0.25); }
+        .hud-item[data-custom-pos="1"] { right: auto !important; bottom: auto !important; }
+        .hud-combo.combo-label-on .hud-sub { display: inline; }
         
         #finish-effect { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%); width: 100%; text-align: center; pointer-events: none; z-index: 80; }
         .text-fc { font-family: 'Orbitron', sans-serif; font-size: 60px; color: #00e5ff; text-shadow: 0 0 20px #00e5ff, 0 0 40px #fff; animation: popIn 0.5s forwards; font-style: italic; }
@@ -154,206 +157,357 @@
         .detail-label { font-size: 11px; font-weight: bold; margin-bottom: 5px; opacity:0.7; }
         .detail-val { font-size: 20px; color: #fff; font-family: 'Orbitron', sans-serif; }
 
+        /* ═══════════════════════════════════════════════
+           RESULT SCREEN — FULL CINEMATIC
+        ═══════════════════════════════════════════════ */
         #result-overlay {
             overflow: hidden;
-            background:
-                linear-gradient(100deg, rgba(0,0,0,0.12) 0%, rgba(0,0,0,0.82) 38%, rgba(0,0,0,0.96) 100%),
-                radial-gradient(circle at 78% 22%, rgba(0,229,255,0.18), transparent 34%),
-                radial-gradient(circle at 18% 82%, rgba(255,45,120,0.1), transparent 38%);
-            align-items: flex-end;
+            background: transparent;
+            align-items: stretch;
             justify-content: stretch;
-            backdrop-filter: blur(8px);
+            backdrop-filter: none;
         }
-        #result-overlay::before {
+
+        /* ── 배경 레이어 ── */
+        .res-bg {
+            position: absolute; inset: 0;
+            background:
+                radial-gradient(ellipse at 70% 30%, rgba(0,229,255,0.13) 0%, transparent 52%),
+                radial-gradient(ellipse at 20% 80%, rgba(255,45,120,0.10) 0%, transparent 46%),
+                linear-gradient(160deg, #05060c 0%, #0b0e1a 45%, #060609 100%);
+            opacity: 0;
+            animation: resBgIn 0.45s cubic-bezier(.4,0,.2,1) forwards;
+        }
+        .res-bg::after {
             content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, transparent 0%, rgba(0,229,255,0.12) 48%, transparent 56%);
-            transform: translateX(110%);
+            position: absolute; inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                transparent 0px, transparent 3px,
+                rgba(0,0,0,0.06) 3px, rgba(0,0,0,0.06) 4px
+            );
             pointer-events: none;
         }
-        #result-overlay.result-show::before { animation: resultSweep 0.72s cubic-bezier(.2,.8,.2,1) forwards; }
-        .result-panel {
+        @keyframes resBgIn {
+            0%   { opacity: 0; }
+            100% { opacity: 1; }
+        }
+
+        /* ── 메인 레이아웃 — 오른쪽에서 슬라이드인 ── */
+        .res-layout {
             position: relative;
-            width: min(610px, 88vw);
-            min-height: auto;
-            max-height: calc(100vh - 24px);
-            margin: 12px 20px 12px 0;
-            padding: 24px 30px 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            background: linear-gradient(180deg, rgba(8,12,18,0.92), rgba(2,3,7,0.96));
-            border: 1px solid rgba(255,255,255,0.12);
-            box-shadow: -28px 0 70px rgba(0,0,0,0.44), inset 1px 0 0 rgba(0,229,255,0.14);
-            transform: translateX(105%);
+            display: grid;
+            grid-template-columns: 1fr min(420px, 38vw);
+            grid-template-rows: 1fr;
+            width: 100%; height: 100%;
+            z-index: 1;
+            transform: translateX(48px);
+            opacity: 0;
+            animation: resSlideIn 0.55s cubic-bezier(.22,.9,.22,1) 0.1s forwards;
+        }
+        @keyframes resSlideIn {
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @media (max-width: 860px) {
+            .res-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+        }
+
+        /* ── 왼쪽: 히어로 영역 ── */
+        .res-hero {
+            display: flex; flex-direction: column;
+            justify-content: flex-end;
+            padding: clamp(28px, 5vw, 64px) clamp(28px, 5vw, 64px) clamp(36px, 6vh, 80px);
             overflow: hidden;
         }
-        #result-overlay.result-show .result-panel { animation: resultPanelIn 0.72s cubic-bezier(.16,.82,.24,1) 0.08s forwards; }
-        .result-topline { color: rgba(255,255,255,0.48); font-family:'Orbitron'; font-size: 10px; letter-spacing: 0; margin-bottom: 6px; }
-        .result-head { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: center; margin-bottom: 12px; }
-        .result-title { min-width: 0; }
-        .result-rank-wrap { text-align: right; }
-        .result-rank-wrap::before {
-            content: 'RANK';
-            display: block;
-            margin-bottom: 4px;
-            color: rgba(255,255,255,0.44);
-            font-family: 'Orbitron';
-            font-size: 10px;
-            letter-spacing: 0;
+        .res-eyebrow {
+            font-family: var(--ui-font); font-size: 10px; font-weight: 700;
+            letter-spacing: 4px; color: rgba(255,255,255,0.38);
+            margin-bottom: 14px;
+            opacity: 0; transform: translateY(12px);
+            animation: resLineUp 0.45s ease 0.28s forwards;
         }
-        .res-song-title { text-align:left; font-size: 34px; line-height: 1.05; margin-bottom: 8px; }
-        .res-diff-name { text-align:left; margin-bottom: 0; font-size: 14px; letter-spacing: 3px; }
-        .res-rank {
-            margin: 0;
-            min-width: 128px;
-            padding: 5px 14px 8px;
-            border: 1px solid color-mix(in srgb, currentColor 36%, transparent);
-            background: linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.015));
-            font-size: clamp(52px, 8vw, 84px);
-            letter-spacing: 0;
-            text-align: center;
-            box-shadow: inset 0 0 24px rgba(255,255,255,0.04), 0 0 22px color-mix(in srgb, currentColor 22%, transparent);
-            animation: rankReveal 0.65s cubic-bezier(.2,.9,.2,1) 0.62s both;
+        .res-song-name {
+            font-family: var(--ui-font); font-weight: 900;
+            font-size: clamp(26px, 4.5vw, 56px);
+            line-height: 1.05; color: #fff;
+            text-shadow: 0 2px 40px rgba(0,229,255,0.22);
+            margin-bottom: 10px;
+            overflow-wrap: anywhere;
+            opacity: 0; transform: translateY(20px);
+            animation: resLineUp 0.5s cubic-bezier(.2,.9,.2,1) 0.32s forwards;
         }
-        .res-rank::after {
+        .res-diff-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-family: var(--ui-font); font-size: 12px; letter-spacing: 2px;
+            color: rgba(255,255,255,0.55);
+            opacity: 0; transform: translateY(10px);
+            animation: resLineUp 0.46s ease 0.38s forwards;
+            margin-bottom: 36px;
+        }
+        .res-diff-badge span { color: var(--accent); }
+
+        /* ── 랭크 + 스코어 히어로 ── */
+        .res-rank-hero {
+            display: flex; align-items: flex-end; gap: 28px; flex-wrap: wrap;
+            opacity: 0;
+            animation: resScaleIn 0.58s cubic-bezier(.16,.9,.24,1) 0.46s forwards;
+        }
+        .res-grade {
+            font-family: var(--ui-font); font-weight: 900;
+            font-size: clamp(80px, 14vw, 160px);
+            line-height: 0.88;
+            color: currentColor;
+            filter: drop-shadow(0 0 28px currentColor) drop-shadow(0 0 60px currentColor);
+            position: relative;
+        }
+        .res-grade::after {
             content: '';
             display: block;
-            width: 70%;
-            height: 2px;
-            margin: 3px auto 0;
+            width: 100%;
+            height: 3px;
             background: currentColor;
-            opacity: 0.55;
-            box-shadow: 0 0 12px currentColor;
+            box-shadow: 0 0 16px currentColor;
+            opacity: 0.6;
+            margin-top: 6px;
         }
-        .rank-tb { color:#fff; text-shadow: 0 0 18px #fff, 0 0 34px #00e5ff, 0 0 60px #ff2d78; }
-        .rank-sp, .rank-s { color:#00e5ff; text-shadow: 0 0 24px #00e5ff, 0 0 54px rgba(0,229,255,0.7); }
-        .rank-ap, .rank-a { color:#00ff88; text-shadow: 0 0 22px #00ff88, 0 0 48px rgba(0,255,136,0.55); }
-        .rank-b { color:#6aa7ff; text-shadow: 0 0 22px #3b9eff; }
-        .rank-c { color:#ffc832; text-shadow: 0 0 22px #ffc832; }
-        .rank-failed { color:#ff4455; text-shadow: 0 0 24px #ff4455; }
-        .res-info {
-            width: 100%;
-            max-width: none;
-            gap: 7px;
-            margin-bottom: 9px;
+        .res-score-block { padding-bottom: 8px; }
+        .res-score-label {
+            font-family: var(--ui-font); font-size: 10px; letter-spacing: 3px;
+            color: rgba(255,255,255,0.4); margin-bottom: 4px;
         }
-        .res-box {
-            padding: 8px 10px;
-            background: rgba(255,255,255,0.035);
-            border: 1px solid rgba(255,255,255,0.09);
-            text-align: left;
+        .res-score-value {
+            font-family: var(--ui-font); font-weight: 900;
+            font-size: clamp(28px, 4vw, 46px);
+            color: #fff;
+            text-shadow: 0 0 24px rgba(0,229,255,0.5);
+            letter-spacing: 2px;
         }
-        .res-val { font-size: 20px; }
-        .res-val.primary-score { font-size: 27px; color:#fff; text-shadow: 0 0 18px rgba(0,229,255,0.42); }
-        .result-detail-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 6px;
-            width: 100%;
-            margin-bottom: 8px;
+
+        /* ── NEW RECORD ── */
+        .res-new-record {
+            display: inline-flex; align-items: center; gap: 10px;
+            margin-top: 20px;
+            font-family: var(--ui-font); font-weight: 900; font-size: clamp(14px, 2vw, 20px);
+            letter-spacing: 3px;
+            color: var(--fever-gold);
+            text-shadow: 0 0 20px var(--fever-gold), 0 0 40px rgba(255,215,0,0.4);
+            opacity: 0;
+            animation: resNewRecord 0.65s cubic-bezier(.2,.9,.2,1) 0.82s forwards;
         }
-        .result-detail-grid .detail-item {
-            padding: 6px 5px;
+        .res-new-record::before {
+            content: '★';
+            animation: nrSpin 1.5s linear infinite;
+            display: inline-block;
+        }
+        .res-new-record::after {
+            content: '★';
+            animation: nrSpin 1.5s linear infinite reverse;
+            display: inline-block;
+        }
+        .res-pb-diff {
+            font-family: var(--ui-font); font-size: clamp(11px, 1.4vw, 14px);
+            color: var(--green, #50e896);
+            text-shadow: 0 0 12px rgba(80,232,150,0.5);
+            opacity: 0; margin-top: 8px;
+            animation: resLineUp 0.42s ease 0.90s forwards;
+        }
+        .res-pb-diff.negative { color: rgba(255,255,255,0.32); text-shadow: none; }
+        @keyframes resNewRecord {
+            0%   { opacity: 0; transform: scale(0.7) translateY(10px); filter: blur(4px); }
+            60%  { opacity: 1; transform: scale(1.08) translateY(-2px); filter: blur(0); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        @keyframes nrSpin { to { transform: rotate(360deg); } }
+
+        /* ── 오른쪽: 스탯 패널 ── */
+        .res-panel {
+            display: flex; flex-direction: column; justify-content: center;
+            padding: clamp(20px, 3vw, 48px) clamp(20px, 3vw, 40px);
+            border-left: 1px solid rgba(255,255,255,0.07);
+            background: rgba(0,0,0,0.28);
+            overflow-y: auto;
+            scrollbar-width: none;
+            opacity: 0; transform: translateX(32px);
+            animation: resPanelIn 0.52s cubic-bezier(.2,.9,.2,1) 0.36s forwards;
+        }
+        .res-panel::-webkit-scrollbar { display: none; }
+        @keyframes resPanelIn {
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* RATE / MAX COMBO */
+        .res-stat-row {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+            margin-bottom: 18px;
+        }
+        .res-stat {
+            padding: 12px 14px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px;
+            opacity: 0; transform: translateY(14px);
+        }
+        .res-stat:nth-child(1) { animation: resLineUp 0.4s ease 0.54s forwards; }
+        .res-stat:nth-child(2) { animation: resLineUp 0.4s ease 0.60s forwards; }
+        .res-stat-label {
+            font-family: var(--ui-font); font-size: 9px; letter-spacing: 2px;
+            color: rgba(255,255,255,0.38); margin-bottom: 5px;
+        }
+        .res-stat-val {
+            font-family: var(--ui-font); font-weight: 900; font-size: 22px; color: #fff;
+        }
+
+        /* 판정 그리드 */
+        .res-judge-title {
+            font-family: var(--ui-font); font-size: 9px; letter-spacing: 2px;
+            color: rgba(255,255,255,0.3); margin-bottom: 8px;
+            opacity: 0; animation: resLineUp 0.38s ease 0.64s forwards;
+        }
+        .res-judge-grid {
+            display: flex; flex-direction: column; gap: 5px;
+            margin-bottom: 20px;
+        }
+        .res-judge-row {
+            display: flex; align-items: center; gap: 10px;
+            opacity: 0; transform: translateX(-10px);
+        }
+        .res-judge-row:nth-child(1) { animation: resSlideR 0.35s ease 0.68s forwards; }
+        .res-judge-row:nth-child(2) { animation: resSlideR 0.35s ease 0.73s forwards; }
+        .res-judge-row:nth-child(3) { animation: resSlideR 0.35s ease 0.78s forwards; }
+        .res-judge-row:nth-child(4) { animation: resSlideR 0.35s ease 0.83s forwards; }
+        .res-judge-row:nth-child(5) { animation: resSlideR 0.35s ease 0.88s forwards; }
+        .res-judge-row:nth-child(6) { animation: resSlideR 0.35s ease 0.93s forwards; }
+        .res-judge-row:nth-child(7) { animation: resSlideR 0.35s ease 0.98s forwards; }
+        .res-judge-row:nth-child(8) { animation: resSlideR 0.35s ease 1.03s forwards; }
+        @keyframes resSlideR { to { opacity: 1; transform: translateX(0); } }
+        .res-judge-name {
+            font-family: var(--ui-font); font-size: 10px; font-weight: 700;
+            width: 68px; flex-shrink: 0;
+        }
+        .res-judge-bar-wrap {
+            flex: 1; height: 5px; background: rgba(255,255,255,0.07);
+            border-radius: 3px; overflow: hidden;
+        }
+        .res-judge-bar {
+            height: 100%; border-radius: 3px;
+            background: currentColor;
+            box-shadow: 0 0 8px currentColor;
+            transform-origin: left;
+            transform: scaleX(0);
+            transition: transform 0.7s cubic-bezier(.2,.9,.2,1);
+        }
+        .res-judge-count {
+            font-family: var(--ui-font); font-size: 12px; font-weight: 900;
+            width: 36px; text-align: right; color: rgba(255,255,255,0.7);
+        }
+
+        /* 랭킹 */
+        .res-ranking-wrap {
+            opacity: 0; animation: resLineUp 0.4s ease 1.08s forwards;
+        }
+        .res-ranking-title {
+            font-family: var(--ui-font); font-size: 9px; letter-spacing: 2px;
+            color: rgba(255,255,255,0.3); margin-bottom: 8px;
+        }
+        .res-ranking-list { display: flex; flex-direction: column; gap: 4px; }
+        .res-rank-entry {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 10px;
             background: rgba(255,255,255,0.03);
-            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 6px; font-size: 12px;
         }
-        .result-ranking { width: 100%; }
-        .result-ranking > div {
-            width: 100% !important;
-            max-width: none !important;
-            margin-top: 6px !important;
-            padding: 6px 8px !important;
-            font-size: 13px !important;
+        .res-rank-entry.is-me { background: rgba(0,229,255,0.07); color: var(--fever-gold); }
+        .res-rank-medal { width: 22px; flex-shrink: 0; }
+        .res-rank-name { flex: 1; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .res-rank-score { font-family: 'Orbitron'; font-size: 11px; }
+
+        /* 하단 버튼 */
+        .res-actions {
+            display: flex; gap: 10px; margin-top: 18px;
+            opacity: 0; animation: resLineUp 0.4s ease 1.18s forwards;
         }
-        .result-ranking > div > div {
-            margin-bottom: 3px !important;
-            font-size: 13px !important;
-            line-height: 1.15;
+        .res-btn {
+            flex: 1; padding: 13px 10px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.04);
+            color: #fff; border-radius: 8px; cursor: pointer;
+            font-family: var(--ui-font); font-size: 11px; font-weight: 700;
+            letter-spacing: 1px; transition: 0.15s;
         }
-        #google-login-btn-result {
-            margin-top: 6px !important;
-            min-height: 0 !important;
+        .res-btn:hover { background: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.3); }
+        .res-btn.primary {
+            border-color: var(--accent); color: var(--accent);
+            text-shadow: 0 0 12px rgba(0,229,255,0.4);
+            box-shadow: inset 0 0 20px rgba(0,229,255,0.05);
         }
-        .result-panel .btn-common {
-            margin-top: 0;
-            padding: 9px 28px;
-            font-size: 13px;
+        .res-btn.primary:hover { background: var(--accent); color: #050e12; text-shadow: none; }
+
+        /* badge */
+        .res-badge-wrap {
+            margin-bottom: 14px; min-height: 0;
+            opacity: 0; animation: resScaleIn 0.46s cubic-bezier(.2,.9,.2,1) 0.76s forwards;
         }
-        .result-actions { display:flex; justify-content:flex-end; margin-top: 7px; }
+        .res-badge-fc {
+            display: inline-block;
+            font-family: var(--ui-font); font-weight: 900; font-size: 16px; letter-spacing: 2px;
+            color: #00e5ff; text-shadow: 0 0 18px #00e5ff;
+            animation: fcPulse 1.4s ease-in-out infinite;
+        }
+        .res-badge-tb {
+            display: inline-block;
+            font-family: var(--ui-font); font-weight: 900; font-size: 16px; letter-spacing: 2px;
+            background: linear-gradient(90deg,#ff0080,#ff8c00,#ffe000,#00ff88,#00e5ff,#7b2fff);
+            background-size: 300% 100%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: rainbow-shift 1.5s linear infinite;
+            filter: drop-shadow(0 0 8px #fff);
+        }
+        @keyframes fcPulse { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+
+        /* PREPARING */
         .result-prep {
-            position: absolute;
-            inset: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            position: absolute; inset: 0;
+            display: flex; align-items: center; justify-content: center;
             color: rgba(255,255,255,0.68);
-            font-family: 'Orbitron';
-            font-size: 14px;
-            letter-spacing: 0;
-            background: radial-gradient(circle at center, rgba(0,229,255,0.08), rgba(0,0,0,0.82) 55%);
+            font-family: var(--ui-font); font-size: 14px; letter-spacing: 3px;
+            background: radial-gradient(circle at center, rgba(0,229,255,0.08), rgba(0,0,0,0.9) 55%);
         }
         .result-prep::after {
             content: '';
-            width: 120px;
-            height: 1px;
-            margin-left: 14px;
+            width: 120px; height: 1px; margin-left: 14px;
             background: linear-gradient(90deg, var(--accent), transparent);
             animation: prepLine 0.8s ease-in-out infinite;
         }
-        @keyframes resultSweep {
-            0% { transform: translateX(110%); opacity: 0; }
-            35% { opacity: 1; }
-            100% { transform: translateX(-115%); opacity: 0; }
-        }
-        @keyframes resultPanelIn {
-            0% { transform: translateX(105%); }
-            100% { transform: translateX(0); }
-        }
+        @keyframes prepLine { 0%,100%{opacity:0.25;transform:scaleX(0.5);} 50%{opacity:1;transform:scaleX(1);} }
+
+        /* 공용 애니메이션 */
+        @keyframes resLineUp  { to { opacity: 1; transform: translateY(0) translateX(0); } }
+        @keyframes resScaleIn { to { opacity: 1; transform: scale(1); } }
+
+        /* rank colors */
+        .rg-tb { color:#fff; }
+        .rg-sp { color:#00ffff; }
+        .rg-s  { color:#00e5ff; }
+        .rg-ap { color:#00ff88; }
+        .rg-a  { color:#00cc66; }
+        .rg-b  { color:#6aa7ff; }
+        .rg-c  { color:#ffc832; }
+        .rg-failed { color:#ff4455; }
+
         @keyframes rankReveal {
             0% { opacity: 0; transform: translateY(18px) scale(0.86); filter: blur(8px); }
             100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
         }
-        @keyframes prepLine { 0%,100% { opacity: 0.25; transform: scaleX(0.5); } 50% { opacity: 1; transform: scaleX(1); } }
-        @media (max-height: 820px) {
-            .result-panel {
-                transform: translateX(105%) scale(0.93);
-                transform-origin: right center;
-            }
-            #result-overlay.result-show .result-panel { animation: resultPanelInCompact 0.72s cubic-bezier(.16,.82,.24,1) 0.08s forwards; }
-        }
-        @keyframes resultPanelInCompact {
-            0% { transform: translateX(105%) scale(0.93); }
-            100% { transform: translateX(0) scale(0.93); }
-        }
-
-        .btn-common { margin-top: 20px; padding: 15px 50px; font-size: 18px; background: transparent; color: #fff; border: 2px solid var(--accent); border-radius: 50px; cursor: pointer; font-weight: 900; font-family: 'Orbitron'; letter-spacing: 2px; transition: 0.2s; box-shadow: 0 0 15px rgba(0,229,255,0.2); text-shadow: 0 0 5px var(--accent); }
-        .btn-common:hover { background: var(--accent); color: #000; box-shadow: 0 0 40px var(--accent); transform: scale(1.05); }
-        .btn-secondary { border-color: #666; color: #aaa; box-shadow: none; text-shadow: none; }
-        .btn-secondary:hover { background: #333; color: #fff; box-shadow: none; }
-        .res-song-title { font-family: 'Orbitron'; font-size: 40px; font-weight: 900; color: #fff; text-shadow: 0 0 20px var(--accent); margin-bottom: 5px; text-align:center; }
-        .res-diff-name { font-family: 'Segoe UI'; font-size: 18px; color: #aaa; letter-spacing: 5px; margin-bottom: 30px; text-transform: uppercase; font-weight: 600; }
-        .result-panel .res-song-title {
-            text-align: left;
-            font-size: 25px;
-            line-height: 1.05;
-            margin-bottom: 5px;
-            overflow-wrap: anywhere;
-        }
-        .result-panel .res-diff-name {
-            text-align: left;
-            margin-bottom: 0;
-            font-size: 11px;
-            letter-spacing: 1.8px;
-        }
-        .result-panel .detail-label { font-size: 10px; margin-bottom: 3px; }
-        .result-panel .detail-val { font-size: 18px; }
-        .result-panel .res-label { font-size: 10px; margin-bottom: 3px; letter-spacing: 1px; }
 
         /* Loading */
         .loading-text { font-family: 'Orbitron'; font-size: 30px; margin-bottom: 30px; animation: blink 1s infinite; letter-spacing: 3px; color: var(--accent); }
         @keyframes blink { 50% { opacity: 0.3; } }
+        .btn-common { margin-top: 20px; padding: 15px 50px; font-size: 18px; background: transparent; color: #fff; border: 2px solid var(--accent); border-radius: 50px; cursor: pointer; font-weight: 900; font-family: var(--ui-font); letter-spacing: 2px; transition: 0.2s; box-shadow: 0 0 15px rgba(0,229,255,0.2); text-shadow: 0 0 5px var(--accent); }
+        .btn-common:hover { background: var(--accent); color: #000; box-shadow: 0 0 40px var(--accent); transform: scale(1.05); }
 
         /* Pause Menu - keyboard nav */
         #pause-menu { z-index: 400; }
@@ -362,7 +516,7 @@
         .pause-btn {
             padding: 18px 50px; font-size: 18px; background: transparent; color: #aaa;
             border: 2px solid #444; border-radius: 50px; cursor: pointer; font-weight: 900;
-            font-family: 'Orbitron'; letter-spacing: 2px; transition: 0.15s; text-align: center;
+            font-family: var(--ui-font); letter-spacing: 2px; transition: 0.15s; text-align: center;
             position: relative;
         }
         .pause-btn.selected {
@@ -382,7 +536,7 @@
         #resume-countdown {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 450; display: none; justify-content: center; align-items: center;
-            font-family: 'Orbitron'; font-size: 150px; font-weight: 900; color: var(--accent);
+            font-family: var(--ui-font); font-size: 150px; font-weight: 900; color: var(--accent);
             text-shadow: 0 0 50px var(--accent); pointer-events: none;
         }
 
@@ -390,7 +544,7 @@
         #guide-message {
             position: absolute; top: 35%; left: 50%; transform: translateX(-50%);
             width: 100%; text-align: center; pointer-events: none; z-index: 70;
-            font-family: 'Orbitron', sans-serif; font-weight: 900; font-size: 48px; color: #fff;
+            font-family: var(--ui-font); font-weight: 900; font-size: 48px; color: #fff;
             text-shadow: 0 0 20px #d084ff, 0 0 40px #d084ff;
             opacity: 0; transition: opacity 0.2s, transform 0.2s;
             white-space: nowrap; letter-spacing: 2px;
@@ -400,14 +554,13 @@
         /* ★ 판정 팝업 오버레이 (canvas 위에 CSS로 표시) */
         #judge-display {
             position: absolute;
-            left: 50%; transform: translateX(-50%);
-            bottom: calc(100% - 85%);
+            inset: 0;
             pointer-events: none; z-index: 60;
-            text-align: center;
-            width: 300px;
         }
         .judge-popup {
-            font-family: 'Orbitron', sans-serif;
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-family: var(--ui-font);
             font-weight: 900;
             font-size: 32px;
             letter-spacing: 2px;
@@ -415,10 +568,99 @@
             display: inline-block;
             white-space: nowrap;
         }
+        .judge-popup.judge-style-flat {
+            text-shadow: none !important;
+            filter: none !important;
+            letter-spacing: 1px;
+        }
+        .judge-popup.judge-style-outline {
+            color: #fff !important;
+            text-shadow: 0 0 16px var(--judge-color), 0 0 34px var(--judge-color) !important;
+            -webkit-text-stroke: 1.2px var(--judge-color);
+            filter: none !important;
+        }
+        .judge-effect {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 0;
+            height: 0;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            --judge-scale: 1;
+            --judge-color: #00e5ff;
+        }
+        .judge-effect-ripple::before,
+        .judge-effect-ripple::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            width: 34px;
+            height: 34px;
+            border: 2px solid var(--judge-color);
+            border-radius: 50%;
+            box-shadow: 0 0 18px var(--judge-color), inset 0 0 14px rgba(255, 255, 255, 0.22);
+            transform: translate(-50%, -50%) scale(0.24);
+            animation: judgeRipple 0.52s ease-out forwards;
+        }
+        .judge-effect-ripple.judge-effect-perfect::before,
+        .judge-effect-ripple.judge-effect-perfect::after {
+            border: 0;
+            background: conic-gradient(from 90deg, #ff0080, #ff8c00, #ffe000, #00ff88, #00e5ff, #7b2fff, #ff0080);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+            box-shadow: 0 0 18px #fff, 0 0 28px #ff0080, inset 0 0 14px rgba(255, 255, 255, 0.22);
+        }
+        .judge-effect-ripple::after {
+            animation-delay: 0.08s;
+            opacity: 0.7;
+        }
+        .judge-effect-linewave {
+            width: var(--wave-width);
+            height: 2px;
+        }
+        .judge-effect-linewave::before,
+        .judge-effect-linewave::after {
+            content: "";
+            position: absolute;
+            left: 50%;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--judge-color), #fff, var(--judge-color), transparent);
+            box-shadow: 0 0 14px var(--judge-color), 0 0 28px rgba(255, 255, 255, 0.28);
+            transform: translateX(-50%) scaleX(0.35);
+            opacity: 0;
+        }
+        .judge-effect-linewave.judge-effect-perfect::before,
+        .judge-effect-linewave.judge-effect-perfect::after {
+            background: linear-gradient(90deg, transparent, #ff0080, #ff8c00, #ffe000, #00ff88, #00e5ff, #7b2fff, #ff0080, transparent);
+            box-shadow: 0 0 12px #fff, 0 0 22px #ff0080, 0 0 34px #00e5ff;
+        }
+        .judge-effect-linewave::before {
+            top: 0;
+            animation: judgeLineWaveUp 0.48s ease-out forwards;
+        }
+        .judge-effect-linewave::after {
+            bottom: 0;
+            animation: judgeLineWaveDown 0.48s ease-out forwards;
+        }
+        @keyframes judgeRipple {
+            0% { opacity: 0.95; transform: translate(-50%, -50%) scale(0.24); }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(calc(2.5 * var(--judge-scale))); }
+        }
+        @keyframes judgeLineWaveUp {
+            0% { opacity: 0.95; transform: translateX(-50%) translateY(0) scaleX(0.35); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(calc(-42px * var(--judge-scale))) scaleX(1.12); }
+        }
+        @keyframes judgeLineWaveDown {
+            0% { opacity: 0.95; transform: translateX(-50%) translateY(0) scaleX(0.35); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(calc(42px * var(--judge-scale))) scaleX(1.12); }
+        }
         @keyframes judgeAnim {
-            0%   { opacity: 1; transform: scale(1.3) translateY(0); }
-            60%  { opacity: 1; transform: scale(1.0) translateY(-15px); }
-            100% { opacity: 0; transform: scale(0.9) translateY(-30px); }
+            0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+            60%  { opacity: 1; transform: translate(-50%, calc(-50% - 15px)) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%, calc(-50% - 30px)) scale(0.9); }
         }
         /* Perfect! 레인보우 */
         .judge-perfect-ex {
@@ -430,6 +672,16 @@
             animation: judgeAnim 0.5s forwards, rainbow-shift 0.8s linear infinite;
             filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 6px #ff0080);
             font-size: 38px;
+        }
+        .judge-perfect-ex.judge-style-flat {
+            background: none;
+            -webkit-text-fill-color: var(--judge-color);
+            color: var(--judge-color);
+        }
+        .judge-perfect-ex.judge-style-outline {
+            background: none;
+            -webkit-text-fill-color: #fff;
+            color: #fff !important;
         }
         @keyframes rainbow-shift { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
     </style>
@@ -614,6 +866,15 @@
     const styleEl = document.createElement('style');
     styleEl.textContent = judgeStyles;
     document.head.appendChild(styleEl);
+
+    function getMusicVolumeSetting() {
+        const value = parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || "0.65");
+        return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0.65));
+    }
+
+    function isFeverEnabled() {
+        return localStorage.getItem('wb_fever_enabled') !== '0';
+    }
 
     // ============================================================
     // 기존 변수 / 초기화
@@ -809,11 +1070,396 @@
         gameCanvas.height = window.innerHeight;
         HIT_LINE_Y = window.innerHeight * 0.85;
         computeGear();
+        applyHudLayout();
         resizeBg();
     });
     resizeBg();
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'wb_note_skin_config') applyHudLayout();
+    });
 
     const COLORS = ['#FF4081', '#00E676', '#00E676', '#448AFF'];
+    const NOTE_SKIN_DEFAULTS = {
+        skin: 'thin-bar',
+        size: 100,
+        colorTheme: 'default',
+        uiFont: 'orbitron',
+        customColors: [null, null, null, null],
+        useCustomColors: false,
+        hud: {
+            combo: { x: 50, y: 48 },
+            score: { x: 88, y: 4 },
+            rate: { x: 12, y: 4 },
+            comboLabel: false
+        }
+    };
+
+    const FONT_FAMILIES = {
+        orbitron:  "'Orbitron', sans-serif",
+        exo2:      "'Exo 2', sans-serif",
+        sharetech: "'Share Tech Mono', monospace",
+        rajdhani:  "'Rajdhani', sans-serif",
+        audiowide: "'Audiowide', sans-serif",
+        oxanium:   "'Oxanium', sans-serif",
+    };
+    const COLOR_THEMES = {
+        default: ['#b84060', '#2a9558', '#3d8fb0', '#b07830'],
+        deuteranopia: ['#0072b2', '#e69f00', '#56b4e9', '#f0e442'],
+        protanopia: ['#0072b2', '#d55e00', '#56b4e9', '#cc79a7'],
+        tritanopia: ['#e69f00', '#009e73', '#d55e00', '#0072b2'],
+        monochrome: ['#f4f4f4', '#bdbdbd', '#888888', '#555555']
+    };
+
+    function readNoteSkinConfig() {
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem('wb_note_skin_config') || '{}'); } catch(e) {}
+        const hud = Object.assign({}, NOTE_SKIN_DEFAULTS.hud, saved.hud || {});
+        hud.combo = Object.assign({}, NOTE_SKIN_DEFAULTS.hud.combo, hud.combo || {});
+        hud.score = Object.assign({}, NOTE_SKIN_DEFAULTS.hud.score, hud.score || {});
+        hud.rate  = Object.assign({}, NOTE_SKIN_DEFAULTS.hud.rate,  hud.rate  || {});
+        const customColors = Array.isArray(saved.customColors)
+            ? [...saved.customColors]
+            : [null, null, null, null];
+        return Object.assign({}, NOTE_SKIN_DEFAULTS, saved, { hud, customColors });
+    }
+
+    function clampNumber(value, min, max, fallback) {
+        const n = parseFloat(value);
+        if (!Number.isFinite(n)) return fallback;
+        return Math.max(min, Math.min(max, n));
+    }
+
+    function getLaneColor(lane) {
+        const cfg = readNoteSkinConfig();
+        const palette = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.default;
+        const base = palette[lane % palette.length];
+        if (cfg.useCustomColors && cfg.customColors[lane]) return cfg.customColors[lane];
+        return base;
+    }
+
+    function getNoteStyleMetrics(cfg, laneHalf) {
+        const sizeScale = clampNumber(cfg.size, 50, 160, 100) / 100;
+        const baseWidth = laneHalf * 2;
+        const skin = cfg.skin || 'thin-bar';
+        let width = (baseWidth - 12) * sizeScale;
+        let height = 8 * sizeScale;
+        let radius = 2 * sizeScale;
+        if (skin === 'circle') {
+            const d = Math.min(baseWidth * 0.72, 42) * sizeScale;
+            width = d; height = d; radius = d / 2;
+        } else if (skin === 'medium-bar') {
+            height = 14 * sizeScale; radius = 3 * sizeScale;
+        } else if (skin === 'thick-bar') {
+            height = 22 * sizeScale; radius = 4 * sizeScale;
+        } else if (skin === 'neon-core') {
+            height = 16 * sizeScale; radius = 4 * sizeScale;
+        } else if (skin === 'star') {
+            const d = Math.min(baseWidth * 0.82, 46) * sizeScale;
+            width = d; height = d; radius = d / 2;
+        } else if (skin === 'round-thin') {
+            height = 9 * sizeScale; radius = height / 2;
+        } else if (skin === 'round-medium') {
+            height = 15 * sizeScale; radius = height / 2;
+        } else if (skin === 'round-thick') {
+            height = 24 * sizeScale; radius = height / 2;
+        }
+        return { skin, width, height, radius, sizeScale };
+    }
+
+    function drawStarShape(ctx, x, y, outer, inner, points) {
+        ctx.beginPath();
+        for (let i = 0; i < points * 2; i++) {
+            const r = i % 2 === 0 ? outer : inner;
+            const a = -Math.PI / 2 + i * Math.PI / points;
+            const px = x + Math.cos(a) * r;
+            const py = y + Math.sin(a) * r;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+    }
+
+    function drawSkinnedLine(ctx, laneHalf, col, active, metrics) {
+        const skin = metrics.skin;
+        ctx.shadowColor = col;
+        ctx.fillStyle = col;
+        ctx.strokeStyle = col;
+
+        // ── thin-bar: editor-style precision line ──
+        if (skin === 'thin-bar' || skin === 'round-thin' || skin === 'medium-bar' || skin === 'round-medium' || skin === 'thick-bar' || skin === 'round-thick') {
+            ctx.shadowBlur = active ? 10 : 3;
+            ctx.lineWidth = active ? 2.2 : 1.4;
+            ctx.globalAlpha = active ? 0.95 : 0.70;
+            ctx.beginPath();
+            ctx.moveTo(-laneHalf, 0);
+            ctx.lineTo(laneHalf, 0);
+            ctx.stroke();
+            // center dot
+            ctx.shadowBlur = active ? 8 : 2;
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, active ? 3.5 : 2, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (skin === 'circle') {
+            // circle skin: ring + dot
+            ctx.shadowBlur = active ? 12 : 4;
+            ctx.lineWidth = active ? 2.0 : 1.2;
+            ctx.globalAlpha = active ? 0.95 : 0.72;
+            ctx.beginPath();
+            ctx.arc(0, 0, Math.max(10, metrics.height * 0.44), 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(0, 0, active ? 4 : 2.6, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (skin === 'star') {
+            // star skin: wavy line + star dot
+            ctx.shadowBlur = active ? 12 : 4;
+            ctx.lineWidth = active ? 1.8 : 1.1;
+            ctx.globalAlpha = active ? 0.95 : 0.72;
+            ctx.beginPath();
+            ctx.moveTo(-laneHalf, 0);
+            for (let i = 0; i <= 10; i++) {
+                const sx = -laneHalf + (laneHalf * 2 * i / 10);
+                const sy = (i % 2 === 0 ? -1 : 1) * (active ? 4 : 2.5);
+                ctx.lineTo(sx, sy);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = active ? 14 : 6;
+            drawStarShape(ctx, 0, 0, active ? 7 : 5.5, active ? 3 : 2.2, 5);
+            ctx.fill();
+        } else if (skin === 'neon-core') {
+            // neon-core: double-line with bright center
+            ctx.shadowBlur = active ? 16 : 6;
+            ctx.lineWidth = active ? 3.5 : 2.0;
+            ctx.globalAlpha = active ? 0.55 : 0.35;
+            ctx.beginPath();
+            ctx.moveTo(-laneHalf, 0);
+            ctx.lineTo(laneHalf, 0);
+            ctx.stroke();
+            // bright core
+            ctx.shadowBlur = active ? 20 : 8;
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = active ? 1.2 : 0.8;
+            ctx.globalAlpha = active ? 0.85 : 0.55;
+            ctx.beginPath();
+            ctx.moveTo(-laneHalf * 0.7, 0);
+            ctx.lineTo(laneHalf * 0.7, 0);
+            ctx.stroke();
+            // center dot
+            ctx.fillStyle = '#fff';
+            ctx.shadowBlur = active ? 10 : 4;
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, active ? 3 : 2, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // fallback
+            ctx.shadowBlur = active ? 10 : 3;
+            ctx.lineWidth = active ? 2.2 : 1.4;
+            ctx.globalAlpha = active ? 0.95 : 0.70;
+            ctx.beginPath();
+            ctx.moveTo(-laneHalf, 0);
+            ctx.lineTo(laneHalf, 0);
+            ctx.stroke();
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, active ? 3.5 : 2, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+    }
+
+    function drawSkinnedNote(ctx, metrics, y, col) {
+        const x = -metrics.width / 2;
+        const h = metrics.height;
+        const skin = metrics.skin;
+        ctx.shadowColor = col;
+        ctx.fillStyle = col;
+
+        if (skin === 'thin-bar') {
+            // Editor-style: slim bar with top highlight
+            ctx.globalAlpha = 0.88;
+            ctx.shadowBlur = 5;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, metrics.radius);
+            ctx.fill();
+            // top highlight stripe
+            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x, y - h / 2, metrics.width, h * 0.32, metrics.radius);
+            ctx.fill();
+
+        } else if (skin === 'medium-bar') {
+            // Medium bar: filled + bright top edge + subtle bottom fade
+            ctx.globalAlpha = 0.90;
+            ctx.shadowBlur = 7;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, metrics.radius);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.22)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x, y - h / 2, metrics.width, h * 0.28, metrics.radius);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
+            roundRect(ctx, x, y + h * 0.22, metrics.width, h * 0.28, metrics.radius);
+            ctx.fill();
+
+        } else if (skin === 'thick-bar') {
+            // Thick bar: prominent with gradient-feel layers
+            ctx.globalAlpha = 0.92;
+            ctx.shadowBlur = 9;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, metrics.radius);
+            ctx.fill();
+            // bright top band
+            ctx.fillStyle = 'rgba(255,255,255,0.28)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x, y - h / 2, metrics.width, h * 0.25, metrics.radius);
+            ctx.fill();
+            // thin bright edge line
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            roundRect(ctx, x, y - h / 2, metrics.width, 1.5, metrics.radius);
+            ctx.fill();
+
+        } else if (skin === 'round-thin') {
+            // Fully pill-shaped, softly glowing
+            ctx.globalAlpha = 0.88;
+            ctx.shadowBlur = 6;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, h / 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.28)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x + 3, y - h / 2 + 1, metrics.width - 6, h * 0.42, (h * 0.42) / 2);
+            ctx.fill();
+
+        } else if (skin === 'round-medium') {
+            // Pill bar, richer
+            ctx.globalAlpha = 0.90;
+            ctx.shadowBlur = 8;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, h / 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.25)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x + 4, y - h / 2 + 1.5, metrics.width - 8, h * 0.38, (h * 0.38) / 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.50)';
+            roundRect(ctx, x + metrics.width * 0.3, y - h / 2 + 1, metrics.width * 0.4, 1.5, 1);
+            ctx.fill();
+
+        } else if (skin === 'round-thick') {
+            // Fat pill, bold highlight
+            ctx.globalAlpha = 0.92;
+            ctx.shadowBlur = 12;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, h / 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.30)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x + 5, y - h / 2 + 2, metrics.width - 10, h * 0.35, (h * 0.35) / 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            roundRect(ctx, x + metrics.width * 0.25, y - h / 2 + 1.5, metrics.width * 0.5, 2, 1);
+            ctx.fill();
+
+        } else if (skin === 'circle') {
+            // Solid circle + specular highlight
+            ctx.globalAlpha = 0.90;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(0, y, h / 2, 0, Math.PI * 2);
+            ctx.fill();
+            // specular dot
+            ctx.fillStyle = 'rgba(255,255,255,0.38)';
+            ctx.shadowBlur = 0;
+            ctx.beginPath();
+            ctx.arc(-h * 0.14, y - h * 0.16, h * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+            // rim edge
+            ctx.strokeStyle = 'rgba(255,255,255,0.20)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.arc(0, y, h / 2, 0, Math.PI * 2);
+            ctx.stroke();
+
+        } else if (skin === 'star') {
+            // Star with outer glow ring
+            ctx.globalAlpha = 0.90;
+            ctx.shadowBlur = 10;
+            drawStarShape(ctx, 0, y, h / 2, h * 0.22, 5);
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+            ctx.lineWidth = Math.max(1, h * 0.06);
+            ctx.shadowBlur = 0;
+            ctx.stroke();
+            // tiny bright center
+            ctx.fillStyle = 'rgba(255,255,255,0.55)';
+            ctx.beginPath();
+            ctx.arc(0, y, h * 0.09, 0, Math.PI * 2);
+            ctx.fill();
+
+        } else if (skin === 'neon-core') {
+            // Dark fill + bright border + inner hot line
+            ctx.globalAlpha = 0.92;
+            ctx.fillStyle = '#06080e';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, metrics.radius);
+            ctx.fill();
+            ctx.strokeStyle = col;
+            ctx.shadowBlur = 14;
+            ctx.lineWidth = Math.max(1.5, h * 0.15);
+            ctx.globalAlpha = 0.88;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, metrics.radius);
+            ctx.stroke();
+            // inner core line
+            ctx.globalAlpha = 0.80;
+            ctx.fillStyle = col;
+            ctx.shadowBlur = 8;
+            roundRect(ctx, x + metrics.width * 0.1, y - 1, metrics.width * 0.8, 2, 1);
+            ctx.fill();
+            // end caps glow
+            ctx.globalAlpha = 0.70;
+            ctx.shadowBlur = 12;
+            ctx.beginPath(); ctx.arc(x + metrics.radius, y, metrics.radius * 0.65, 0, Math.PI * 2); ctx.fill();
+            ctx.beginPath(); ctx.arc(-x - metrics.radius, y, metrics.radius * 0.65, 0, Math.PI * 2); ctx.fill();
+
+        } else {
+            // fallback = thin-bar style
+            ctx.globalAlpha = 0.88;
+            ctx.shadowBlur = 5;
+            roundRect(ctx, x, y - h / 2, metrics.width, h, metrics.radius);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255,255,255,0.18)';
+            ctx.shadowBlur = 0;
+            roundRect(ctx, x, y - h / 2, metrics.width, h * 0.32, metrics.radius);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+        ctx.shadowBlur = 0;
+    }
+
+    function applyHudLayout() {
+        const cfg = readNoteSkinConfig();
+
+        // 폰트 적용
+        const fontFamily = FONT_FAMILIES[cfg.uiFont] || FONT_FAMILIES.orbitron;
+        document.documentElement.style.setProperty('--ui-font', fontFamily);
+        const map = [
+            ['.hud-combo', cfg.hud.combo, 50, 50],
+            ['.hud-score', cfg.hud.score, 100, 0],
+            ['.hud-rate',  cfg.hud.rate,  0,   0]
+        ];
+        map.forEach(([selector, pos, defAX, defAY]) => {
+            const el = document.querySelector(selector);
+            if (!el || !pos) return;
+            el.dataset.customPos = '1';
+            el.style.left = clampNumber(pos.x, 0, 100, 50) + '%';
+            el.style.top  = clampNumber(pos.y, 0, 100, 10) + '%';
+            const ax = pos.anchorX ?? defAX;
+            const ay = pos.anchorY ?? defAY;
+            el.style.transform = `translate(-${ax}%, -${ay}%)`;
+            el.style.textAlign = ax > 60 ? 'right' : ax < 40 ? 'left' : 'center';
+        });
+        const comboEl = document.querySelector('.hud-combo');
+        if (comboEl) comboEl.classList.toggle('combo-label-on', !!cfg.hud.comboLabel);
+    }
+    applyHudLayout();
 
     // ============================================================
     // ★ LINE CHOREOGRAPHY SYSTEM (에디터에서 이식)
@@ -933,8 +1579,12 @@
     }
     // 라인 좌표(0~1) → 캔버스 픽셀 (중앙 GEAR 영역 기준)
     function laneHalfW(){ return (GEAR_W/4)*0.44; }
-    function lineX(st){ return GEAR_X + st.x * GEAR_W; }
-    function lineY(st){ return st.y * gameCanvas.height; }
+    function lineX(st){
+        return GEAR_X + st.x * GEAR_W;
+    }
+    function lineY(st){
+        return st.y * gameCanvas.height;
+    }
 
     let gameFinished    = false;
     let finishTimer     = null;
@@ -985,8 +1635,8 @@
         const colors = judgeInfo.particleColors;
         const count  = judgeInfo.comboBreak ? 4 : 14;
         const st = lineStates[lane] || DEFAULT_LINE[lane];
-        const ox = GEAR_X + st.x * GEAR_W;
-        const oy = st.y * gameCanvas.height;
+        const ox = lineX(st);
+        const oy = lineY(st);
         for(let i = 0; i < count; i++) {
             const angle  = Math.random() * Math.PI * 2;
             const speed  = Math.random() * 18 + 4;
@@ -1016,20 +1666,43 @@
     // ============================================================
     // ★ CSS 판정 팝업 (canvas 대신 DOM)
     // ============================================================
-    let judgePopupTimeout = null;
+    const judgePopupTimeouts = [null, null, null, null];
 
     function showJudgePopup(judgeInfo, lane) {
-        if(judgePopupTimeout) clearTimeout(judgePopupTimeout);
-        judgeDisplayEl.innerHTML = '';
+        const safeLane = Math.max(0, Math.min(3, lane || 0));
+        if(judgePopupTimeouts[safeLane]) clearTimeout(judgePopupTimeouts[safeLane]);
+        judgeDisplayEl.querySelectorAll(`[data-lane="${safeLane}"]`).forEach(el => el.remove());
 
-        const el = document.createElement('span');
-        el.className = `judge-popup ${judgeInfo.cssClass}`;
-        el.textContent = judgeInfo.name;
+        const judgeStyle = localStorage.getItem('wb_judge_style') || 'neon';
+        const judgeSize = Math.max(40, Math.min(140, parseFloat(localStorage.getItem('wb_judge_size') || '100') || 100));
+        const laneState = lineStates[safeLane] || DEFAULT_LINE[safeLane];
+        const x = lineX(laneState);
+        const hitY = lineY(laneState);
+        const isRainbowPerfect = judgeInfo.key === 'perfectEx' || judgeInfo.cssClass === 'judge-perfect-ex';
+        const el = document.createElement(judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 'div' : 'span');
+        el.dataset.lane = safeLane;
+        el.style.left = `${x}px`;
+        el.style.setProperty('--judge-color', isRainbowPerfect ? '#ff0080' : judgeInfo.color);
+        el.style.setProperty('--judge-scale', String(judgeSize / 100));
+        if(judgeStyle === 'ripple') {
+            el.className = `judge-effect judge-effect-ripple${isRainbowPerfect ? ' judge-effect-perfect' : ''}`;
+            el.style.top = `${hitY}px`;
+        } else if(judgeStyle === 'linewave') {
+            el.className = `judge-effect judge-effect-linewave${isRainbowPerfect ? ' judge-effect-perfect' : ''}`;
+            el.style.top = `${hitY}px`;
+            el.style.setProperty('--wave-width', `${Math.max(44, LANE_WIDTH * 0.86) * judgeSize / 100}px`);
+        } else {
+            el.className = `judge-popup ${judgeInfo.cssClass} judge-style-${judgeStyle}`;
+            el.textContent = judgeInfo.name;
+            el.style.fontSize = `${32 * judgeSize / 100}px`;
+            el.style.top = `${hitY - 58}px`;
+        }
         judgeDisplayEl.appendChild(el);
 
-        judgePopupTimeout = setTimeout(() => {
-            judgeDisplayEl.innerHTML = '';
-        }, 500);
+        judgePopupTimeouts[safeLane] = setTimeout(() => {
+            el.remove();
+            judgePopupTimeouts[safeLane] = null;
+        }, judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 560 : 500);
     }
 
     // ============================================================
@@ -1160,7 +1833,7 @@
         const speed = urlParams.get('speed'); // 누락된 변수 선언 추가
         if(speed) baseNoteSpeed = parseFloat(speed);
         
-        const userGlobalOffset = parseInt(localStorage.getItem('wb_global_offset') || 0);
+        const userGlobalOffset = parseInt(localStorage.getItem('wb_visual_offset') || localStorage.getItem('wb_start_offset') || localStorage.getItem('wb_global_offset') || 0);
         offset += userGlobalOffset;
         const savedOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || "70");
         const alpha = savedOpacity / 100;
@@ -1327,6 +2000,7 @@
         gameState = 'COUNTDOWN';
         startTimestamp = Date.now();
         audio.currentTime = 0;
+        audio.volume = getMusicVolumeSetting();
         gameStartTimeLocal = Date.now();
         gameLoop();
     }
@@ -1336,8 +2010,7 @@
         gameFinished = true;
         if (finishTimer) clearTimeout(finishTimer);
         showResultPreparing();
-        const savedMusicVol = parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || "1");
-        audio.volume = Math.min(1, savedMusicVol);
+        audio.volume = getMusicVolumeSetting();
         await fadeAudioElement(audio, 0, 900, true);
         if(useVideoBga) bgaVideo.pause();
         await sleep(800);
@@ -1425,6 +2098,10 @@
     }
 
     function checkFeverState(currentCombo) {
+        if (!isFeverEnabled()) {
+            resetFever();
+            return;
+        }
         const container = document.getElementById('game-canvas-container');
         if (currentCombo === FEVER_LV1) {
             isFever = true;
@@ -1461,7 +2138,7 @@
     }
 
     function drawFeverGearEffect() {
-        if (!isFever) return;
+        if (!isFever || !isFeverEnabled()) return;
         const level = Math.max(1, feverLevel || (combo >= FEVER_LV3 ? 3 : combo >= FEVER_LV2 ? 2 : 1));
         const colors = [
             null,
@@ -1511,6 +2188,7 @@
 
     function updateBgParticles() {
         bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+        if (!isFeverEnabled()) return;
         const maxFireflies = combo >= FEVER_LV3 ? 42 : 26;
         if (combo >= FEVER_LV2 && fireflies.length < maxFireflies) {
             if(Math.random() < 0.055) fireflies.push(new Firefly());
@@ -1702,7 +2380,9 @@
             const pulse=linePulsePhase[lane]||0;
             const px=lineX(st), py=lineY(st);
             const ang=(st.angle*Math.PI)/180;
-            const col=LANE_COLORS[lane];
+            const skinCfg = readNoteSkinConfig();
+            const col=getLaneColor(lane);
+            const metrics=getNoteStyleMetrics(skinCfg, laneHalf);
 
             gameCtx.save();
             gameCtx.translate(px,py);
@@ -1718,14 +2398,7 @@
             }
 
             // 판정 라인
-            gameCtx.shadowBlur=activeKeys[lane]?10:3;
-            gameCtx.shadowColor=col;
-            gameCtx.strokeStyle=col;
-            gameCtx.lineWidth=activeKeys[lane]?2.2:1.4;
-            gameCtx.globalAlpha=activeKeys[lane]?0.95:0.7;
-            gameCtx.beginPath();
-            gameCtx.moveTo(-laneHalf,0); gameCtx.lineTo(laneHalf,0);
-            gameCtx.stroke();
+            drawSkinnedLine(gameCtx, laneHalf, col, activeKeys[lane], metrics);
             // 중심 점
             gameCtx.fillStyle=col; gameCtx.globalAlpha=1;
             gameCtx.shadowBlur=activeKeys[lane]?8:2;
@@ -1745,22 +2418,29 @@
                     const top=Math.min(drawHeadY,endLocalY), bot=Math.max(drawHeadY,endLocalY);
                     const clTop=Math.max(-safeLimit,top), clBot=Math.min(60,bot);
                     if(clBot>clTop){
-                        gameCtx.fillStyle=col; gameCtx.globalAlpha=0.15;
-                        gameCtx.fillRect(-laneHalf+12,clTop,(laneHalf-12)*2,clBot-clTop);
-                        gameCtx.globalAlpha=0.35;
-                        gameCtx.fillRect(-laneHalf+12,clTop,1.5,clBot-clTop);
-                        gameCtx.fillRect(laneHalf-13.5,clTop,1.5,clBot-clTop);
-                        gameCtx.globalAlpha=1;
+                        const skin = metrics.skin;
+                        const holdWidth = Math.max(8, metrics.width * (skin === 'circle' || skin === 'star' ? 0.44 : 0.74));
+                        const holdRadius = Math.min(holdWidth / 2, metrics.radius || 4);
+                        gameCtx.shadowColor = col;
+                        if (skin === 'neon-core') {
+                            gameCtx.fillStyle = '#06080e'; gameCtx.globalAlpha = 0.55; gameCtx.shadowBlur = 0;
+                            roundRect(gameCtx,-holdWidth/2,clTop,holdWidth,clBot-clTop,holdRadius); gameCtx.fill();
+                            gameCtx.fillStyle = col; gameCtx.shadowBlur = 5;
+                            gameCtx.globalAlpha = 0.50;
+                            gameCtx.fillRect(-holdWidth/2,clTop,1.5,clBot-clTop);
+                            gameCtx.fillRect(holdWidth/2-1.5,clTop,1.5,clBot-clTop);
+                        } else {
+                            gameCtx.fillStyle=col; gameCtx.globalAlpha=0.14; gameCtx.shadowBlur=0;
+                            roundRect(gameCtx,-holdWidth/2,clTop,holdWidth,clBot-clTop,holdRadius); gameCtx.fill();
+                            gameCtx.globalAlpha=0.38;
+                            gameCtx.fillRect(-holdWidth/2,clTop,1.5,clBot-clTop);
+                            gameCtx.fillRect(holdWidth/2-1.5,clTop,1.5,clBot-clTop);
+                        }
+                        gameCtx.globalAlpha=1; gameCtx.shadowBlur=0;
                     }
                 }
                 if((!n.hit||isPaused)&&headLocalY>-safeLimit&&headLocalY<60){
-                    gameCtx.globalAlpha=0.88;
-                    gameCtx.fillStyle=col;
-                    gameCtx.shadowBlur=5; gameCtx.shadowColor=col;
-                    roundRect(gameCtx,-laneHalf+6,headLocalY-4,(laneHalf-6)*2,8,2); gameCtx.fill();
-                    gameCtx.fillStyle='rgba(255,255,255,0.18)'; gameCtx.shadowBlur=0;
-                    roundRect(gameCtx,-laneHalf+6,headLocalY-4,(laneHalf-6)*2,2.5,1); gameCtx.fill();
-                    gameCtx.globalAlpha=1;
+                    drawSkinnedNote(gameCtx, metrics, headLocalY, col);
                 }
             });
 
@@ -1832,14 +2512,28 @@
 
         const key  = e.key.toLowerCase();
         const lane = KEY_MAP.indexOf(key);
-        if(lane !== -1 && !activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
+        if(lane !== -1) {
+            e.preventDefault();
+            if(!activeKeys[lane]) {
+                activeKeys[lane] = true;
+                checkHit(lane);
+            }
+        }
     });
 
     window.addEventListener('keyup', e => {
         if(gameFinished || isPaused) return;
         const key  = e.key.toLowerCase();
         const lane = KEY_MAP.indexOf(key);
-        if(lane !== -1) { activeKeys[lane] = false; checkRelease(lane); }
+        if(lane !== -1) { e.preventDefault(); activeKeys[lane] = false; checkRelease(lane); }
+    });
+
+    function resetActiveKeys() {
+        activeKeys = [false, false, false, false];
+    }
+    window.addEventListener('blur', resetActiveKeys);
+    document.addEventListener('visibilitychange', () => {
+        if (document.hidden) resetActiveKeys();
     });
 
     if (isMobile) {
@@ -2002,7 +2696,7 @@
             lineFlash.life -= 0.08;
         }
 
-        const lineColor = (combo >= FEVER_LV3) ? '#00ff00' : (isFever ? '#ffd700' : '#00e5ff');
+        const lineColor = (isFeverEnabled() && combo >= FEVER_LV3) ? '#00ff00' : (isFeverEnabled() && isFever ? '#ffd700' : '#00e5ff');
         gameCtx.shadowBlur   = 12;
         gameCtx.shadowColor  = lineColor;
         gameCtx.strokeStyle  = lineColor;
@@ -2055,9 +2749,14 @@
     }
 
     function drawHitErrorBar() {
+        const meterScale = Math.max(50, Math.min(150, parseFloat(localStorage.getItem('wb_hit_meter_size') || '100') || 100)) / 100;
         const cx    = gameCanvas.width / 2;
-        const cy    = HIT_LINE_Y + 40;
-        const width = 300;
+        const cy    = Math.min(gameCanvas.height - (22 * meterScale), HIT_LINE_Y + (76 * meterScale));
+        const width = 300 * meterScale;
+        const barHeight = 6 * meterScale;
+        const centerHeight = 16 * meterScale;
+        const markWidth = Math.max(2, 4 * meterScale);
+        const markHeight = 16 * meterScale;
 
         // 판정 구간 배경 (색상 그라디언트로)
         const barGrd = gameCtx.createLinearGradient(cx - width/2, 0, cx + width/2, 0);
@@ -2069,11 +2768,11 @@
         barGrd.addColorStop(0.75, 'rgba(255,119,51,0.3)');
         barGrd.addColorStop(1,    'rgba(255,45,120,0.3)');
         gameCtx.fillStyle = barGrd;
-        gameCtx.fillRect(cx - width/2, cy - 3, width, 6);
+        gameCtx.fillRect(cx - width/2, cy - barHeight/2, width, barHeight);
 
         // 중심선
         gameCtx.fillStyle = "#fff";
-        gameCtx.fillRect(cx - 1, cy - 8, 2, 16);
+        gameCtx.fillRect(cx - meterScale, cy - centerHeight/2, 2 * meterScale, centerHeight);
 
         // 히트 마크
         for(let i = recentHits.length - 1; i >= 0; i--) {
@@ -2082,9 +2781,9 @@
             const drawX = Math.max(cx - width/2, Math.min(cx + width/2, cx + px));
             gameCtx.fillStyle   = h.color;
             gameCtx.globalAlpha = h.life / h.maxLife;
-            gameCtx.shadowBlur  = 6;
+            gameCtx.shadowBlur  = 6 * meterScale;
             gameCtx.shadowColor = h.color;
-            gameCtx.fillRect(drawX - 2, cy - 8, 4, 16);
+            gameCtx.fillRect(drawX - markWidth/2, cy - markHeight/2, markWidth, markHeight);
             gameCtx.shadowBlur  = 0;
             gameCtx.globalAlpha = 1.0;
             h.life--;
@@ -2142,23 +2841,20 @@
         requestAnimationFrame(step);
     }
 
-    function startResultCountUp(scoreValue, rateValue) {
-        animateResultValue(
-            document.getElementById('result-score-value'),
-            scoreValue,
-            value => Math.floor(value).toString().padStart(6, '0'),
-            1550
-        );
-        animateResultValue(
-            document.getElementById('result-rate-value'),
-            rateValue,
-            value => value.toFixed(2) + "%",
-            1550
-        );
+    function animateResultValue(el, target, fmt, duration) {
+        if (!el) return;
+        const start = performance.now();
+        function step(now) {
+            const t = Math.min(1, (now - start) / duration);
+            const ease = 1 - Math.pow(1 - t, 3);
+            el.textContent = fmt(target * ease);
+            if (t < 1) requestAnimationFrame(step);
+            else el.textContent = fmt(target);
+        }
+        requestAnimationFrame(step);
     }
 
     function showResultPreparing() {
-        resultOverlay.classList.remove('result-show');
         resultOverlay.innerHTML = `<div class="result-prep">COMPILING RESULT</div>`;
         resultOverlay.style.display = 'flex';
     }
@@ -2167,45 +2863,33 @@
         const fallbackSong = songParam ? decodeURIComponent(songParam) : "UNKNOWN SONG";
         const fallbackDiff = diffParam ? diffParam.replace(/\.json$/i, '').split('_')[0].toUpperCase() : "UNKNOWN";
         const fallbackLevel = new URLSearchParams(window.location.search).get('level') || "?";
-
         try {
             const res = await fetch('song_list.json');
-            if (!res.ok) throw new Error('song_list.json not found');
+            if (!res.ok) throw new Error();
             const songs = await res.json();
             const song = songs.find(s => s.folder === songParam || decodeURIComponent(s.folder) === decodeURIComponent(songParam || ''));
             const diffFile = diffParam && diffParam.endsWith('.json') ? diffParam : `${diffParam}.json`;
-            const chart = song && song.charts
-                ? song.charts.find(c => c.file === diffFile || c.file.replace(/\.json$/i, '') === diffParam)
-                : null;
-
-            return {
-                title: song?.title || fallbackSong,
-                diffName: chart?.name || fallbackDiff,
-                level: chart?.level ?? fallbackLevel
-            };
+            const chart = song?.charts?.find(c => c.file === diffFile || c.file.replace(/\.json$/i,'') === diffParam);
+            return { title: song?.title || fallbackSong, diffName: chart?.name || fallbackDiff, level: chart?.level ?? fallbackLevel };
         } catch(e) {
-            console.warn("Result song info fallback:", e);
             return { title: fallbackSong, diffName: fallbackDiff, level: fallbackLevel };
         }
     }
 
     // ============================================================
-    // 결과 화면
+    // ★ 결과 화면 — FULL CINEMATIC
     // ============================================================
     async function showResult() {
         try {
             const currentTime  = Date.now();
             const playDuration = currentTime - gameStartTimeLocal;
             const minPlayTime  = lastNoteEndTime * 0.5;
-
             if (playDuration < minPlayTime && !isFever) {
-                console.warn(`🚨 Security Alert: Play time too short.`);
                 alert("비정상적인 플레이가 감지되었습니다. (Time Logic)");
                 location.href = 'index.html'; return;
             }
 
             const pureScore = Math.floor(score);
-            // 세분화된 8단계 판정 기준으로 재계산
             const calcScore = Math.floor(
                 (judgeStats.perfectEx * scorePerHit * 1.0) +
                 (judgeStats.perfect   * scorePerHit * 0.96) +
@@ -2215,183 +2899,228 @@
                 (judgeStats.save      * scorePerHit * 0.20) +
                 (judgeStats.oh        * scorePerHit * 0.05)
             );
-
             if (Math.abs(pureScore - calcScore) > 1000) {
-                console.warn(`🚨 Security Alert: Score mismatch. Real: ${calcScore}, memory: ${pureScore}`);
                 alert("데이터 무결성 오류가 발생했습니다. (점수 불일치)");
                 location.href = 'index.html'; return;
             }
 
-            const SECRET_SALT     = "WebBeat_Secure_Key_2026_Ver42";
-            const secureScore     = Math.floor(score);
-            const secureMaxCombo  = Math.floor(maxCombo || 0);
-            const secureUserId    = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2, 9);
-            const secureUserName  = userProfile ? userProfile.name : "GUEST";
-            const securePlayTime  = Math.floor(playDuration || 0);
-            const rawSignature    = `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
-            const signatureToken  = btoa(unescape(encodeURIComponent(rawSignature)));
-
-            const SERVER_BASE = SERVER_URL.replace('/api/score', '');
+            const SECRET_SALT    = "WebBeat_Secure_Key_2026_Ver42";
+            const secureScore    = Math.floor(score);
+            const secureMaxCombo = Math.floor(maxCombo || 0);
+            const secureUserId   = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2,9);
+            const secureUserName = userProfile ? userProfile.name : "GUEST";
+            const securePlayTime = Math.floor(playDuration || 0);
+            const rawSignature   = `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
+            const signatureToken = btoa(unescape(encodeURIComponent(rawSignature)));
+            const SERVER_BASE    = SERVER_URL.replace('/api/score','');
             finishEffect.innerHTML = "";
 
             let finalRate = 0;
-            if(totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
+            if (totalHits > 0) finalRate = (totalRateSum / (totalHits * 100)) * 100;
 
             let gainedXp = Math.floor(secureScore / 5000);
             if (combo === totalMaxHits && totalMaxHits > 0) gainedXp += 50;
-
-            let currentLv  = parseInt(localStorage.getItem('wb_user_lv') || "1");
-            let currentXp  = parseInt(localStorage.getItem('wb_user_xp') || "0");
-            currentXp     += gainedXp;
+            let currentLv = parseInt(localStorage.getItem('wb_user_lv') || "1");
+            let currentXp = parseInt(localStorage.getItem('wb_user_xp') || "0");
+            currentXp += gainedXp;
             let requiredXp = currentLv * 500;
             while (currentXp >= requiredXp) { currentXp -= requiredXp; currentLv++; requiredXp = currentLv * 500; }
             localStorage.setItem('wb_user_lv', currentLv);
             localStorage.setItem('wb_user_xp', currentXp);
 
-            let rank = "", gradeColor = "", glowEffect = "";
-            if (secureScore <= 0) {
-                rank = "—"; gradeColor = "#444"; glowEffect = "none";
-            } else if (secureScore < 600000) {
-                rank = "FAILED"; gradeColor = "#ff4455"; glowEffect = "0 0 40px #ff4455";
-            } else {
-                const thresholds = [
-                    { min: 1000000, grade: 'TB', hex: '#ffffff' },
-                    { min: 950000,  grade: 'S+', hex: '#00ffff' },
-                    { min: 900000,  grade: 'S',  hex: '#00e5ff' },
-                    { min: 850000,  grade: 'A+', hex: '#00ff88' },
-                    { min: 800000,  grade: 'A',  hex: '#00cc66' },
-                    { min: 700000,  grade: 'B',  hex: '#3b9eff' },
-                    { min: 600000,  grade: 'C',  hex: '#ffc832' }
-                ];
-                const gradeInfo = thresholds.find(t => secureScore >= t.min) || thresholds[thresholds.length - 1];
-                rank        = gradeInfo.grade;
-                gradeColor  = gradeInfo.hex;
-                glowEffect  = `0 0 40px ${gradeInfo.hex}`;
-            }
+            // ── 랭크 계산 ──
+            const thresholds = [
+                { min:1000000, grade:'TB',     cls:'rg-tb', hex:'#ffffff' },
+                { min:950000,  grade:'S+',     cls:'rg-sp', hex:'#00ffff' },
+                { min:900000,  grade:'S',      cls:'rg-s',  hex:'#00e5ff' },
+                { min:850000,  grade:'A+',     cls:'rg-ap', hex:'#00ff88' },
+                { min:800000,  grade:'A',      cls:'rg-a',  hex:'#00cc66' },
+                { min:700000,  grade:'B',      cls:'rg-b',  hex:'#6aa7ff' },
+                { min:600000,  grade:'C',      cls:'rg-c',  hex:'#ffc832' },
+                { min:0,       grade:'FAILED', cls:'rg-failed', hex:'#ff4455' },
+            ];
+            const gradeInfo = secureScore >= 600000
+                ? (thresholds.find(t => secureScore >= t.min) || thresholds[thresholds.length-1])
+                : thresholds[thresholds.length-1];
+            const rank = gradeInfo.grade;
+            const rankCls = gradeInfo.cls;
+            const rankColor = gradeInfo.hex;
 
-            const finalScoreStr = secureScore.toString().padStart(6, '0');
-            const rankClass = rank === 'TB' ? 'rank-tb'
-                : rank === 'S+' ? 'rank-sp'
-                : rank === 'S' ? 'rank-s'
-                : rank === 'A+' ? 'rank-ap'
-                : rank === 'A' ? 'rank-a'
-                : rank === 'B' ? 'rank-b'
-                : rank === 'C' ? 'rank-c'
-                : rank === 'FAILED' ? 'rank-failed'
-                : '';
-            const urlParams     = new URLSearchParams(window.location.search);
-            const songParam     = urlParams.get('song');
-            const diffParam     = urlParams.get('diff');
-
+            // ── URL 파라미터 ──
+            const urlParams  = new URLSearchParams(window.location.search);
+            const songParam  = urlParams.get('song');
+            const diffParam  = urlParams.get('diff');
             const resultSongInfo = await getResultSongInfo(songParam, diffParam);
 
+            // ── 개인 최고기록 ──
+            let savedScore = 0, isNewRecord = false, scoreDiff = 0;
             if (songParam && diffParam) {
                 const scoreKey  = `wb_score_${songParam}_${diffParam}`;
                 const badgeKey  = `wb_badge_${songParam}_${diffParam}`;
-                const savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
-                if (secureScore > savedScore) localStorage.setItem(scoreKey, secureScore.toString().padStart(6, '0'));
+                const detailKey = `wb_detail_${songParam}_${diffParam}`;
+                savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
+                scoreDiff  = secureScore - savedScore;
+                isNewRecord = secureScore > savedScore && savedScore > 0;
+                if (secureScore > savedScore) localStorage.setItem(scoreKey, secureScore.toString().padStart(6,'0'));
                 if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
                 else if (combo === totalMaxHits && totalMaxHits > 0) {
                     if (localStorage.getItem(badgeKey) !== "TB") localStorage.setItem(badgeKey, "FC");
                 }
+                localStorage.setItem(detailKey, JSON.stringify({
+                    score: secureScore, maxCombo: secureMaxCombo, rate: finalRate,
+                    judgeStats, totalMaxHits, playedAt: new Date().toISOString()
+                }));
             }
 
+            // ── 서버 전송 ──
             if (songParam && diffParam && userProfile) {
                 try {
                     const response = await fetch(`${SERVER_BASE}/api/score`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({
-                            userId: secureUserId, userName: secureUserName,
-                            song: songParam, diff: diffParam,
-                            score: secureScore, maxCombo: secureMaxCombo,
-                            level: currentLv, signature: signatureToken,
-                            playTime: securePlayTime, details: judgeStats
-                        })
+                        method:"POST", headers:{"Content-Type":"application/json"},
+                        body: JSON.stringify({ userId:secureUserId, userName:secureUserName, song:songParam, diff:diffParam, score:secureScore, maxCombo:secureMaxCombo, level:currentLv, signature:signatureToken, playTime:securePlayTime, details:judgeStats })
                     });
                     const resData = await response.json();
                     if (!response.ok || !resData.success) throw new Error(resData.error || "Server Validation Failed");
-                    console.log("✅ 서버 검증 및 랭킹 등록 성공!");
                     await fetch(`${SERVER_BASE}/api/user/update`, {
-                        method: "POST", headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ userId: secureUserId, level: currentLv, xp: currentXp })
+                        method:"POST", headers:{"Content-Type":"application/json"},
+                        body: JSON.stringify({ userId:secureUserId, level:currentLv, xp:currentXp })
                     });
-                } catch (err) {
+                } catch(err) {
                     console.error("🚨 서버 전송 중 에러:", err);
                     alert("점수 검증 에러: " + err.message);
                 }
             }
 
-            let rankingHtml = "<div style='color:#888; margin-top:10px;'>LOADING RANKING...</div>";
+            // ── 랭킹 ──
+            let rankingHtml = '';
             try {
-                const res      = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
+                const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
                 const rankData = await res.json();
-                if(rankData.length > 0) {
-                    rankingHtml = `<div style="margin-top:20px; width:100%; max-width:400px; border:1px solid #444; border-radius:10px; padding:10px; background:rgba(0,0,0,0.5);"><div style="color:#00e5ff; font-weight:bold; margin-bottom:10px;">🏆 TOP 5 PLAYERS</div>`;
-                    rankData.slice(0, 5).forEach((r, idx) => {
-                        const medal = idx === 0 ? "🥇" : idx === 1 ? "🥈" : idx === 2 ? "🥉" : `#${idx+1}`;
-                        const isMe  = userProfile && r.userId === secureUserId ? "color:#ffd700;" : "color:#fff;";
-                        rankingHtml += `<div style="display:flex; justify-content:space-between; margin-bottom:5px; font-size:14px; ${isMe}"><span>${medal} ${r.userName}</span><span>${r.score}</span></div>`;
-                    });
-                    rankingHtml += `</div>`;
-                } else { rankingHtml = "<div style='color:#666; margin-top:20px;'>BE THE FIRST CHALLENGER!</div>"; }
+                if (rankData.length > 0) {
+                    const rows = rankData.slice(0,5).map((r, idx) => {
+                        const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`#${idx+1}`;
+                        const isMe  = userProfile && r.userId === secureUserId;
+                        return `<div class="res-rank-entry${isMe?' is-me':''}">
+                            <span class="res-rank-medal">${medal}</span>
+                            <span class="res-rank-name">${r.userName}</span>
+                            <span class="res-rank-score">${r.score}</span>
+                        </div>`;
+                    }).join('');
+                    rankingHtml = `<div class="res-ranking-wrap">
+                        <div class="res-ranking-title">TOP PLAYERS</div>
+                        <div class="res-ranking-list">${rows}</div>
+                    </div>`;
+                }
             } catch(e) { console.warn("Ranking Load Fail", e); }
 
-            let badgeHtml = "";
-            if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-ap'>TROLL BEAT!</div>";
-            else if (combo === totalMaxHits && totalMaxHits > 0) badgeHtml = "<div class='res-badge badge-fc'>FULL COMBO</div>";
+            // ── badge ──
+            let badgeHtml = '';
+            if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0)
+                badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-tb">✦ TROLL BEAT ✦</span></div>`;
+            else if (combo === totalMaxHits && totalMaxHits > 0)
+                badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-fc">✦ FULL COMBO ✦</span></div>`;
 
-            const songName = resultSongInfo.title;
-            const diffName = resultSongInfo.diffName;
-            const levelName = resultSongInfo.level;
+            // ── PB diff 표시 ──
+            let pbHtml = '';
+            if (savedScore > 0) {
+                const sign = scoreDiff >= 0 ? '+' : '';
+                const cls  = scoreDiff >= 0 ? '' : ' negative';
+                pbHtml = `<div class="res-pb-diff${cls}">PERSONAL BEST ${sign}${scoreDiff.toLocaleString()}</div>`;
+            }
+            const newRecordHtml = isNewRecord
+                ? `<div class="res-new-record">NEW RECORD</div>`
+                : '';
 
-            // ★ 판정 상세: 8단계
-            resultOverlay.classList.remove('result-show');
+            // ── 판정 bars ──
+            const judgeRows = [
+                { name:'Perfect!', val:judgeStats.perfectEx, color:'#ff80cc' },
+                { name:'Perfect',  val:judgeStats.perfect,   color:'#FFE000' },
+                { name:'Great',    val:judgeStats.great,     color:'#00F2FF' },
+                { name:'Good',     val:judgeStats.good,      color:'#88FF00' },
+                { name:'Not Bad',  val:judgeStats.notBad,    color:'#FFB300' },
+                { name:'Save',     val:judgeStats.save,      color:'#FF7733' },
+                { name:'Oh...',    val:judgeStats.oh,        color:'#FF2D78' },
+                { name:'No...',    val:judgeStats.miss,      color:'#555566' },
+            ];
+            const maxJudge = Math.max(1, ...judgeRows.map(j => j.val));
+            const judgeHtml = judgeRows.map(j => `
+                <div class="res-judge-row">
+                    <span class="res-judge-name" style="color:${j.color}">${j.name}</span>
+                    <div class="res-judge-bar-wrap">
+                        <div class="res-judge-bar" style="color:${j.color};width:${(j.val/maxJudge*100).toFixed(1)}%" data-w="${(j.val/maxJudge*100).toFixed(1)}"></div>
+                    </div>
+                    <span class="res-judge-count">${j.val}</span>
+                </div>`).join('');
+
+            // ── Google login ──
+            const loginHtml = (!userProfile)
+                ? `<div id="google-login-btn-result" style="margin-bottom:10px;display:flex;justify-content:center;min-height:40px;"></div>`
+                : '';
+
+            // ── HTML 조립 ──
             resultOverlay.innerHTML = `
-                <div class="result-panel">
-                    <div class="result-topline">RESULT ANALYSIS</div>
-                    <div class="result-head">
-                        <div class="result-title">
-                            <div class="res-song-title">${songName}</div>
-                            <div class="res-diff-name">${diffName} Lv.${levelName}</div>
+                <div class="res-bg"></div>
+                <div class="res-layout">
+                    <div class="res-hero">
+                        <div class="res-eyebrow">RESULT ANALYSIS</div>
+                        <div class="res-song-name">${resultSongInfo.title}</div>
+                        <div class="res-diff-badge">${resultSongInfo.diffName} <span>Lv.${resultSongInfo.level}</span></div>
+                        <div class="res-rank-hero">
+                            <div class="res-grade ${rankCls}" style="color:${rankColor}">${rank}</div>
+                            <div class="res-score-block">
+                                <div class="res-score-label">SCORE</div>
+                                <div class="res-score-value" id="result-score-value">000000</div>
+                            </div>
                         </div>
-                        <div class="result-rank-wrap">
-                            <div class="res-rank ${rankClass}" style="color:${gradeColor}; text-shadow:${glowEffect};">${rank}</div>
+                        ${newRecordHtml}
+                        ${pbHtml}
+                    </div>
+                    <div class="res-panel">
+                        ${badgeHtml}
+                        <div class="res-stat-row">
+                            <div class="res-stat">
+                                <div class="res-stat-label">RATE</div>
+                                <div class="res-stat-val" id="result-rate-value">0.00%</div>
+                            </div>
+                            <div class="res-stat">
+                                <div class="res-stat-label">MAX COMBO</div>
+                                <div class="res-stat-val">${secureMaxCombo}</div>
+                            </div>
+                        </div>
+                        <div class="res-judge-title">JUDGMENT DETAIL</div>
+                        <div class="res-judge-grid">${judgeHtml}</div>
+                        ${rankingHtml}
+                        ${loginHtml}
+                        <div class="res-actions">
+                            <button class="res-btn primary" onclick="location.href='select.html'">CONTINUE</button>
+                            <button class="res-btn" onclick="location.reload()">RETRY</button>
                         </div>
                     </div>
-                ${badgeHtml}
-                <div class="res-info">
-                    <div class="res-box"><div class="res-label">SCORE</div><div class="res-val primary-score" id="result-score-value">000000</div></div>
-                    <div class="res-box"><div class="res-label">RATE</div><div class="res-val" id="result-rate-value">0.00%</div></div>
-                    <div class="res-box"><div class="res-label">MAX COMBO</div><div class="res-val">${secureMaxCombo}</div></div>
-                </div>
-                <div class="result-detail-grid">
-                    <div class="detail-item"><div class="detail-label" style="color:#fff;background:linear-gradient(90deg,#ff0080,#00e5ff,#88ff00);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">Perfect!</div><div class="detail-val">${judgeStats.perfectEx}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#FFE000;">Perfect</div><div class="detail-val">${judgeStats.perfect}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#00F2FF;">Great</div><div class="detail-val">${judgeStats.great}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#88FF00;">Good</div><div class="detail-val">${judgeStats.good}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#FFB300;">Not Bad</div><div class="detail-val">${judgeStats.notBad}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#FF7733;">Save</div><div class="detail-val">${judgeStats.save}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#FF2D78;">Oh...</div><div class="detail-val">${judgeStats.oh}</div></div>
-                    <div class="detail-item"><div class="detail-label" style="color:#555566;">No...</div><div class="detail-val">${judgeStats.miss}</div></div>
-                </div>
-                <div class="result-ranking">${rankingHtml}</div>
-                <div id="google-login-btn-result" style="margin-top:15px; display:flex; justify-content:center; min-height:40px;"></div>
-                <div class="result-actions"><button class="btn-common" onclick="location.href='select.html'">CONTINUE</button></div>
-                </div>
-            `;
+                </div>`;
 
             resultOverlay.style.display = 'flex';
-            void resultOverlay.offsetWidth;
-            resultOverlay.classList.add('result-show');
-            startResultCountUp(secureScore, finalRate);
 
+            // ── 카운트업 ──
+            animateResultValue(document.getElementById('result-score-value'), secureScore,
+                v => Math.floor(v).toString().padStart(6,'0'), 1600);
+            animateResultValue(document.getElementById('result-rate-value'), finalRate,
+                v => v.toFixed(2) + '%', 1400);
+
+            // ── 판정 bar 애니메이션 (약간 딜레이 후 scaleX 적용) ──
+            setTimeout(() => {
+                resultOverlay.querySelectorAll('.res-judge-bar').forEach(bar => {
+                    bar.style.transform = `scaleX(${parseFloat(bar.dataset.w)/100})`;
+                });
+            }, 700);
+
+            // ── Google 버튼 ──
             if (!userProfile && typeof google !== 'undefined') {
                 google.accounts.id.renderButton(
                     document.getElementById("google-login-btn-result"),
-                    { theme: "filled_black", size: "large", shape: "pill" }
+                    { theme:"filled_black", size:"large", shape:"pill" }
                 );
             }
+
         } catch(e) {
             alert("Result Error: " + e.message);
             location.href = 'index.html';

@@ -1,0 +1,1689 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WEB BEAT : NOTE SKIN LAB</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600;800&family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Audiowide&family=Oxanium:wght@400;700;800&display=swap');
+
+        /* Color picker */
+        .color-pick-wrap {
+            display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .color-pick-label {
+            font-family: var(--ui-font); font-size: 9px; color: var(--muted); letter-spacing: 1px;
+        }
+        .color-pick-swatch {
+            width: 100%; height: 32px; border-radius: 7px;
+            border: 2px solid rgba(255,255,255,0.12);
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+        .color-pick-swatch input[type="color"] {
+            position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px);
+            border: none; padding: 0; cursor: pointer; opacity: 0;
+        }
+        :root {
+            --bg: #06070b;
+            --panel: rgba(10,13,22,0.97);
+            --line: rgba(255,255,255,0.10);
+            --text: #f0f4ff;
+            --muted: #6b7585;
+            --accent: #00d5ff;
+            --hot: #ff477e;
+            --gold: #ffd166;
+            --green: #50e896;
+            --ui-font: 'Orbitron', sans-serif;
+        }
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; width: 100%; height: 100%;
+            background: var(--bg); color: var(--text);
+            font-family: 'Exo 2', 'Segoe UI', sans-serif;
+            overflow: hidden; user-select: none;
+        }
+        body {
+            background:
+                radial-gradient(circle at 15% 15%, rgba(0,213,255,0.16), transparent 26%),
+                radial-gradient(circle at 85% 22%, rgba(255,71,126,0.10), transparent 28%),
+                linear-gradient(135deg, #05060a 0%, #0f1220 52%, #06070b 100%);
+        }
+
+        /* ─── PANEL ─── */
+        .panel {
+            position: fixed;
+            top: 0; left: 0; bottom: 0;
+            z-index: 20;
+            width: min(340px, calc(100vw - 24px));
+            display: flex; flex-direction: column;
+            background: linear-gradient(180deg, rgba(9,11,20,0.98) 0%, rgba(6,7,13,0.96) 100%);
+            border-right: 1px solid var(--line);
+            box-shadow: 8px 0 40px rgba(0,0,0,0.45);
+            transform: translateX(calc(-100% - 4px));
+            transition: transform 0.22s cubic-bezier(0.4,0,0.2,1);
+        }
+        body.settings-open .panel { transform: translateX(0); }
+
+        .panel-header {
+            flex-shrink: 0;
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--line);
+            display: flex; align-items: center; justify-content: space-between; gap: 12px;
+        }
+        .title { font-family: var(--ui-font); font-size: 16px; font-weight: 900; letter-spacing: 0; color: var(--text); }
+        .title span { color: var(--accent); }
+        .back {
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            border-radius: 7px;
+            padding: 8px 14px;
+            cursor: pointer;
+            font-family: var(--ui-font);
+            font-size: 10px;
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .back:hover { background: rgba(255,255,255,0.08); }
+
+        /* Tab nav */
+        .tab-nav {
+            flex-shrink: 0;
+            display: flex;
+            border-bottom: 1px solid var(--line);
+        }
+        .tab-btn {
+            flex: 1; padding: 10px 4px;
+            background: transparent; border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--muted); font-family: var(--ui-font); font-size: 9px; font-weight: 900;
+            cursor: pointer; transition: 0.15s; letter-spacing: 0.3px;
+        }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-btn:hover:not(.active) { color: rgba(255,255,255,0.6); }
+
+        /* Scroll body */
+        .panel-body {
+            flex: 1; overflow-y: auto; overflow-x: hidden;
+            padding: 16px 18px 24px;
+            scrollbar-width: thin; scrollbar-color: #222 transparent;
+        }
+        .panel-body::-webkit-scrollbar { width: 4px; }
+        .panel-body::-webkit-scrollbar-thumb { background: #2a2a35; border-radius: 4px; }
+
+        .tab-pane { display: none; flex-direction: column; gap: 18px; }
+        .tab-pane.active { display: flex; }
+
+        /* Section */
+        .section { display: flex; flex-direction: column; gap: 10px; }
+        .section-title {
+            font-family: var(--ui-font); color: var(--muted); font-size: 10px; font-weight: 900;
+            letter-spacing: 1px; text-transform: uppercase;
+        }
+
+        /* Skin grid */
+        .skin-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; }
+        .skin-btn {
+            min-height: 58px;
+            border: 1px solid rgba(255,255,255,0.09);
+            background: rgba(255,255,255,0.03);
+            color: #d0d8e8;
+            border-radius: 9px;
+            cursor: pointer;
+            text-align: left;
+            padding: 10px 12px;
+            transition: 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+        .skin-btn::before {
+            content: ''; position: absolute; inset: 0;
+            background: linear-gradient(135deg, rgba(0,213,255,0.06), transparent);
+            opacity: 0; transition: 0.15s;
+        }
+        .skin-btn:hover { border-color: rgba(255,255,255,0.18); }
+        .skin-btn:hover::before { opacity: 1; }
+        .skin-btn strong { display: block; font-family: var(--ui-font); font-size: 10px; margin-bottom: 3px; }
+        .skin-btn span { color: var(--muted); font-size: 10px; }
+        .skin-btn.active {
+            border-color: var(--accent);
+            background: rgba(0,213,255,0.08);
+            box-shadow: inset 0 0 0 1px rgba(0,213,255,0.12), 0 0 16px rgba(0,213,255,0.10);
+        }
+        .skin-btn.active strong { color: var(--accent); }
+        .skin-btn.active::before { opacity: 1; }
+        .skin-preview-canvas {
+            display: block;
+            width: 100%;
+            height: 30px;
+            margin-top: 6px;
+            border-radius: 4px;
+        }
+
+        /* Sliders */
+        .slider-row {
+            display: grid; grid-template-columns: 90px 1fr 46px;
+            gap: 10px; align-items: center;
+        }
+        .slider-row label { color: #a8b4c8; font-size: 11px; font-weight: 800; }
+        .value { font-family: var(--ui-font); font-size: 11px; color: var(--gold); text-align: right; }
+        input[type="range"] {
+            width: 100%; accent-color: var(--accent);
+            -webkit-appearance: none; height: 3px;
+            background: rgba(255,255,255,0.1); border-radius: 3px; cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; width: 14px; height: 14px;
+            background: var(--accent); border-radius: 50%;
+            box-shadow: 0 0 8px rgba(0,213,255,0.5);
+        }
+
+        /* Color theme */
+        .theme-btn {
+            width: 100%;
+            border: 1px solid rgba(255,255,255,0.09);
+            background: rgba(255,255,255,0.03);
+            color: #d0d8e8;
+            border-radius: 9px;
+            cursor: pointer;
+            text-align: left;
+            padding: 10px 12px;
+            transition: 0.15s;
+        }
+        .theme-btn:hover { border-color: rgba(255,255,255,0.18); }
+        .theme-btn strong { display: block; font-family: var(--ui-font); font-size: 10px; margin-bottom: 2px; }
+        .theme-btn span { color: var(--muted); font-size: 10px; }
+        .theme-btn.active { border-color: var(--accent); background: rgba(0,213,255,0.07); }
+        .theme-btn.active strong { color: var(--accent); }
+        .palette { display: flex; gap: 4px; margin-top: 7px; }
+        .swatch { height: 6px; flex: 1; border-radius: 3px; }
+
+        /* Toggle buttons */
+        .toggle-row { display: flex; gap: 7px; }
+        .toggle {
+            flex: 1; min-height: 36px;
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.03);
+            color: #a0aaba;
+            cursor: pointer;
+            font-family: var(--ui-font);
+            font-size: 9px;
+            transition: 0.15s;
+        }
+        .toggle:hover { background: rgba(255,255,255,0.07); }
+        .toggle.active { color: #05120a; background: var(--green); border-color: var(--green); }
+
+        /* Judge style */
+        .judge-style-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .judge-style-btn {
+            min-height: 44px; padding: 8px 6px;
+            border: 1px solid rgba(255,255,255,0.09);
+            background: rgba(255,255,255,0.03);
+            color: var(--muted); border-radius: 8px;
+            cursor: pointer; font-family: var(--ui-font); font-size: 9px;
+            transition: 0.15s;
+        }
+        .judge-style-btn:hover { border-color: rgba(255,255,255,0.18); color: var(--text); }
+        .judge-style-btn.active { border-color: var(--hot); background: rgba(255,71,126,0.10); color: var(--hot); }
+
+        /* Hint text */
+        .hint {
+            color: var(--muted); font-size: 11px; line-height: 1.55;
+            background: rgba(255,255,255,0.025);
+            border: 1px solid rgba(255,255,255,0.06);
+            border-radius: 8px; padding: 10px 12px;
+        }
+
+        /* Divider */
+        .divider { border: none; border-top: 1px solid var(--line); margin: 2px 0; }
+
+        /* ─── STAGE ─── */
+        .stage {
+            position: relative;
+            width: 100vw; height: 100vh;
+            overflow: hidden;
+        }
+        canvas#preview { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+        /* Toolbar */
+        .toolbar {
+            position: absolute;
+            top: 16px; left: 16px; right: 16px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+        }
+        .toolbar-left, .toolbar-right { display: flex; gap: 8px; align-items: center; pointer-events: auto; }
+        .badge {
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(0,0,0,0.50);
+            backdrop-filter: blur(14px);
+            border-radius: 8px;
+            padding: 9px 12px;
+            color: var(--muted);
+            font-family: var(--ui-font);
+            font-size: 10px;
+            pointer-events: none;
+        }
+        .badge.saved { color: var(--green); border-color: rgba(80,232,150,0.28); }
+        .tool-button {
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(0,0,0,0.50);
+            color: var(--text);
+            border-radius: 8px;
+            padding: 9px 14px;
+            cursor: pointer;
+            font-family: var(--ui-font);
+            font-size: 10px;
+            backdrop-filter: blur(14px);
+            transition: 0.15s;
+            white-space: nowrap;
+        }
+        .tool-button:hover { background: rgba(255,255,255,0.08); }
+        .tool-button.active { border-color: var(--accent); color: #050e12; background: var(--accent); }
+
+        /* HUD items */
+        .hud {
+            position: absolute; inset: 0; z-index: 4; pointer-events: none;
+        }
+        .hud-item {
+            position: absolute;
+            pointer-events: auto; cursor: grab;
+            min-width: 80px;
+            padding: 5px 8px;
+            border: 1px solid transparent;
+            border-radius: 8px;
+            background: transparent;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        body.edit-mode .hud-item {
+            border-color: rgba(255,255,255,0.20);
+            background: rgba(0,0,0,0.22);
+        }
+        body.edit-mode .hud-item:hover { border-color: var(--accent); }
+        .hud-item:active { cursor: grabbing; }
+        .hud-label { display: block; color: #6b7585; font-size: 10px; font-weight: 900; letter-spacing: 1px; font-family: var(--ui-font); }
+        .hud-text { font-family: var(--ui-font); font-weight: 900; color: #fff; font-size: 26px; text-shadow: 0 0 14px rgba(255,255,255,0.30); }
+        .combo .hud-text { font-size: 88px; line-height: 0.88; }
+        .combo { min-width: 130px; text-align: center; opacity: 0.28; }
+        .score { text-align: right; }
+        .rate  { text-align: left; }
+
+        /* drag grip hint visible in edit mode */
+        body.edit-mode .hud-item::after {
+            content: '⠿';
+            position: absolute; top: 4px; right: 6px;
+            font-size: 10px; color: rgba(255,255,255,0.28);
+            pointer-events: none;
+        }
+
+
+
+        @media (max-width: 860px) {
+            .panel { width: min(300px, calc(100vw - 16px)); }
+            .combo .hud-text { font-size: 56px; }
+        }
+
+        /* ★ 판정 팝업 오버레이 — game.html 동일 */
+        #judge-display {
+            position: absolute; inset: 0;
+            pointer-events: none; z-index: 60;
+        }
+        .judge-popup {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            font-family: var(--ui-font);
+            font-weight: 900; font-size: 32px; letter-spacing: 2px;
+            animation: judgeAnim 0.5s forwards;
+            display: inline-block; white-space: nowrap;
+        }
+        .judge-popup.judge-style-flat {
+            text-shadow: none !important; filter: none !important; letter-spacing: 1px;
+        }
+        .judge-popup.judge-style-outline {
+            color: #fff !important;
+            text-shadow: 0 0 16px var(--judge-color), 0 0 34px var(--judge-color) !important;
+            -webkit-text-stroke: 1.2px var(--judge-color); filter: none !important;
+        }
+        /* Perfect! 레인보우 */
+        .judge-perfect-ex {
+            background: linear-gradient(90deg,#ff0080,#ff8c00,#ffe000,#00ff88,#00e5ff,#7b2fff,#ff0080);
+            background-size: 300% 100%;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+            animation: judgeAnim 0.5s forwards, rainbow-shift 0.8s linear infinite;
+            filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 6px #ff0080); font-size: 38px;
+        }
+        .judge-perfect-ex.judge-style-flat  { background: none; -webkit-text-fill-color: var(--judge-color); color: var(--judge-color); }
+        .judge-perfect-ex.judge-style-outline { background: none; -webkit-text-fill-color: #fff; color: #fff !important; }
+        /* 판정 색 */
+        .judge-perfect { color: #FFE000; text-shadow: 0 0 20px #FFE000, 0 0 40px #ffe000aa; }
+        .judge-great   { color: #00F2FF; text-shadow: 0 0 20px #00F2FF, 0 0 40px #00f2ffaa; }
+        .judge-good    { color: #88FF00; text-shadow: 0 0 20px #88FF00, 0 0 40px #88ff0088; }
+        .judge-notbad  { color: #FFB300; text-shadow: 0 0 16px #FFB300, 0 0 30px #ffb30066; }
+        .judge-save    { color: #FF7733; text-shadow: 0 0 14px #FF7733, 0 0 28px #ff773366; }
+        .judge-oh      { color: #FF2D78; text-shadow: 0 0 18px #FF2D78, 0 0 35px #ff2d7888; }
+        .judge-no      { color: #555566; opacity: 0.6; font-size: 24px !important; }
+        /* 이펙트 (ripple / linewave) */
+        .judge-effect {
+            position: absolute; left: 0; top: 0; width: 0; height: 0;
+            pointer-events: none; transform: translate(-50%, -50%);
+            --judge-scale: 1; --judge-color: #00e5ff;
+        }
+        .judge-effect-ripple::before, .judge-effect-ripple::after {
+            content: ""; position: absolute; left: 50%; top: 50%;
+            width: 34px; height: 34px;
+            border: 2px solid var(--judge-color); border-radius: 50%;
+            box-shadow: 0 0 18px var(--judge-color), inset 0 0 14px rgba(255,255,255,0.22);
+            transform: translate(-50%,-50%) scale(0.24);
+            animation: judgeRipple 0.52s ease-out forwards;
+        }
+        .judge-effect-ripple.judge-effect-perfect::before,
+        .judge-effect-ripple.judge-effect-perfect::after {
+            border: 0;
+            background: conic-gradient(from 90deg,#ff0080,#ff8c00,#ffe000,#00ff88,#00e5ff,#7b2fff,#ff0080);
+            -webkit-mask: radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));
+            mask: radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));
+            box-shadow: 0 0 18px #fff, 0 0 28px #ff0080, inset 0 0 14px rgba(255,255,255,0.22);
+        }
+        .judge-effect-ripple::after { animation-delay: 0.08s; opacity: 0.7; }
+        .judge-effect-linewave { width: var(--wave-width); height: 2px; }
+        .judge-effect-linewave::before, .judge-effect-linewave::after {
+            content: ""; position: absolute; left: 50%; width: 100%; height: 2px;
+            background: linear-gradient(90deg,transparent,var(--judge-color),#fff,var(--judge-color),transparent);
+            box-shadow: 0 0 14px var(--judge-color), 0 0 28px rgba(255,255,255,0.28);
+            transform: translateX(-50%) scaleX(0.35); opacity: 0;
+        }
+        .judge-effect-linewave.judge-effect-perfect::before,
+        .judge-effect-linewave.judge-effect-perfect::after {
+            background: linear-gradient(90deg,transparent,#ff0080,#ff8c00,#ffe000,#00ff88,#00e5ff,#7b2fff,#ff0080,transparent);
+            box-shadow: 0 0 12px #fff, 0 0 22px #ff0080, 0 0 34px #00e5ff;
+        }
+        .judge-effect-linewave::before { top: 0; animation: judgeLineWaveUp 0.48s ease-out forwards; }
+        .judge-effect-linewave::after  { bottom: 0; animation: judgeLineWaveDown 0.48s ease-out forwards; }
+        @keyframes judgeRipple {
+            0%   { opacity: 0.95; transform: translate(-50%,-50%) scale(0.24); }
+            100% { opacity: 0;    transform: translate(-50%,-50%) scale(calc(2.5 * var(--judge-scale))); }
+        }
+        @keyframes judgeLineWaveUp {
+            0%   { opacity: 0.95; transform: translateX(-50%) translateY(0) scaleX(0.35); }
+            100% { opacity: 0;    transform: translateX(-50%) translateY(calc(-42px * var(--judge-scale))) scaleX(1.12); }
+        }
+        @keyframes judgeLineWaveDown {
+            0%   { opacity: 0.95; transform: translateX(-50%) translateY(0) scaleX(0.35); }
+            100% { opacity: 0;    transform: translateX(-50%) translateY(calc(42px * var(--judge-scale))) scaleX(1.12); }
+        }
+        @keyframes judgeAnim {
+            0%   { opacity: 1; transform: translate(-50%,-50%) scale(1.3); }
+            60%  { opacity: 1; transform: translate(-50%,calc(-50% - 15px)) scale(1.0); }
+            100% { opacity: 0; transform: translate(-50%,calc(-50% - 30px)) scale(0.9); }
+        }
+        @keyframes comboPop {
+            0%   { transform: scale(1.22); }
+            100% { transform: scale(1.0);  }
+        }
+        @keyframes rainbow-shift { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
+    </style>
+</head>
+<body>
+    <aside class="panel" id="panel">
+        <div class="panel-header">
+            <div class="title">NOTE <span>SKIN</span> LAB</div>
+            <button class="back" id="panel-close-btn">✕ CLOSE</button>
+        </div>
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="note">NOTE</button>
+            <button class="tab-btn" data-tab="judge">JUDGMENT</button>
+            <button class="tab-btn" data-tab="layout">LAYOUT</button>
+            <button class="tab-btn" data-tab="color">COLOR</button>
+        </nav>
+        <div class="panel-body">
+
+            <!-- NOTE TAB -->
+            <div class="tab-pane active" id="tab-note">
+                <div class="section">
+                    <div class="section-title">NOTE SHAPE</div>
+                    <div class="skin-grid" id="skin-grid"></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">NOTE SIZE</div>
+                    <div class="slider-row">
+                        <label for="size">SIZE</label>
+                        <input id="size" type="range" min="50" max="160" step="5">
+                        <div class="value" id="size-val">100%</div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-title">UI FONT</div>
+                    <div class="skin-grid" id="font-grid"></div>
+                </div>
+            </div>
+
+            <!-- JUDGMENT TAB -->
+            <div class="tab-pane" id="tab-judge">
+                <div class="section">
+                    <div class="section-title">POPUP STYLE</div>
+                    <div class="judge-style-grid" id="judge-style-grid"></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">POPUP SIZE</div>
+                    <div class="slider-row">
+                        <label for="judge-size">SIZE</label>
+                        <input id="judge-size" type="range" min="40" max="140" step="5">
+                        <div class="value" id="judge-size-val">100%</div>
+                    </div>
+                </div>
+                <div class="section">
+                    <div class="section-title">GEAR OPACITY</div>
+                    <div class="slider-row">
+                        <label for="gear-opacity">OPACITY</label>
+                        <input id="gear-opacity" type="range" min="0" max="100" step="5">
+                        <div class="value" id="gear-opacity-val">70%</div>
+                    </div>
+                    <div class="hint">How dark the lane background is during play.</div>
+                </div>
+                <div class="section">
+                    <div class="section-title">OFFSET</div>
+                    <div class="slider-row">
+                        <label for="offset">GLOBAL</label>
+                        <input id="offset" type="range" min="-200" max="200" step="5">
+                        <div class="value" id="offset-val">0 ms</div>
+                    </div>
+                    <div class="hint">Negative = earlier hit. Positive = later hit. Adjust if notes feel off from the music.</div>
+                </div>
+            </div>
+
+            <!-- LAYOUT TAB -->
+            <div class="tab-pane" id="tab-layout">
+                <div class="section">
+                    <div class="section-title">HUD ELEMENTS</div>
+                    <div class="toggle-row">
+                        <button class="toggle" id="combo-label-toggle">COMBO LABEL</button>
+                        <button class="toggle" id="edit-toggle">EDIT MODE</button>
+                    </div>
+                    <div class="hint">Enable Edit Mode, then drag COMBO, SCORE, and RATE on the preview. The judgment line handle also appears.</div>
+                </div>
+                <div class="section">
+                    <div class="section-title">RESET</div>
+                    <div class="toggle-row">
+                        <button class="toggle" onclick="resetLayout()">RESET LAYOUT</button>
+                        <button class="toggle" onclick="resetAll()" style="color:var(--hot);">RESET ALL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COLOR TAB -->
+            <div class="tab-pane" id="tab-color">
+                <div class="section">
+                    <div class="section-title">LANE COLOR THEME</div>
+                    <div id="theme-grid" style="display:flex;flex-direction:column;gap:7px;"></div>
+                </div>
+                <div class="section">
+                    <div class="section-title">CUSTOM LANE COLORS</div>
+                    <div class="toggle-row">
+                        <button class="toggle" id="custom-color-toggle">CUSTOM COLOR</button>
+                    </div>
+                    <div id="custom-color-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:8px;"></div>
+                </div>
+            </div>
+
+        </div><!-- /panel-body -->
+    </aside>
+
+    <main class="stage" id="stage">
+        <canvas id="preview"></canvas>
+        <div id="judge-display"></div>
+        <div class="toolbar">
+            <div class="toolbar-left">
+                <button class="tool-button" id="settings-toggle">☰ SETTINGS</button>
+                <div class="badge" id="status">LIVE PREVIEW</div>
+            </div>
+            <div class="toolbar-right">
+                <div class="badge" id="hit-hint" style="color:var(--accent);display:none;">D F J K</div>
+                <div class="badge">NOTE SKIN LAB</div>
+                <button class="tool-button" onclick="location.href='select.html'">← SELECT</button>
+            </div>
+        </div>
+
+        <div class="hud" id="hud">
+            <div class="hud-item rate" data-id="rate"><span class="hud-label">RATE</span><span class="hud-text">98.64%</span></div>
+            <div class="hud-item score" data-id="score"><span class="hud-label">SCORE</span><span class="hud-text">864200</span></div>
+            <div class="hud-item combo" data-id="combo"><span class="hud-label">COMBO</span><span class="hud-text">128</span></div>
+        </div>
+    </main>
+
+    <script>
+    'use strict';
+
+    const DEFAULTS = {
+        skin: 'thin-bar',
+        size: 100,
+        colorTheme: 'default',
+        customColors: [null, null, null, null],
+        useCustomColors: false,
+        uiFont: 'orbitron',
+        hud: {
+            combo: { x: 50, y: 48, anchorX: 50, anchorY: 50 },
+            score: { x: 88, y: 4,  anchorX: 100, anchorY: 0 },
+            rate:  { x: 12, y: 4,  anchorX: 0,   anchorY: 0 },
+            comboLabel: false
+        }
+    };
+    const FONTS = [
+        { id: 'orbitron',   name: 'ORBITRON',    family: "'Orbitron', sans-serif",      sample: 'ABCD' },
+        { id: 'exo2',       name: 'EXO 2',       family: "'Exo 2', sans-serif",          sample: 'ABCD' },
+        { id: 'sharetech',  name: 'SHARE TECH',  family: "'Share Tech Mono', monospace", sample: 'ABCD' },
+        { id: 'rajdhani',   name: 'RAJDHANI',    family: "'Rajdhani', sans-serif",       sample: 'ABCD' },
+        { id: 'audiowide',  name: 'AUDIOWIDE',   family: "'Audiowide', sans-serif",      sample: 'ABCD' },
+        { id: 'oxanium',    name: 'OXANIUM',     family: "'Oxanium', sans-serif",        sample: 'ABCD' },
+    ];
+
+    const SKINS = [
+        ['thin-bar',     'THIN BAR',    'Editor-style precision'],
+        ['medium-bar',   'MEDIUM BAR',  'More visible'],
+        ['thick-bar',    'THICK BAR',   'Bold, chunky'],
+        ['round-thin',   'ROUND THIN',  'Soft pill, slim'],
+        ['round-medium', 'ROUND MID',   'Soft pill, medium'],
+        ['round-thick',  'ROUND THICK', 'Soft pill, thick'],
+        ['circle',       'CIRCLE',      'Round tap note'],
+        ['star',         'STAR',        'Star burst'],
+        ['neon-core',    'NEON CORE',   'Dark body + glow edge'],
+    ];
+    const JUDGE_STYLES = [
+        ['neon',     'NEON TEXT', 'Classic popup'],
+        ['flat',     'FLAT TEXT', 'No glow'],
+        ['outline',  'OUTLINE',   'Stroke only'],
+        ['ripple',   'RIPPLE',    'Ring burst'],
+        ['linewave', 'LINE WAVE', 'Wave beam'],
+    ];
+    const THEMES = {
+        default:      { name: 'DEFAULT',       desc: 'Original neon lanes',    colors: ['#b84060','#2a9558','#3d8fb0','#b07830'] },
+        deuteranopia: { name: 'RED-GREEN A',    desc: 'Deuteranopia friendly',  colors: ['#0072b2','#e69f00','#56b4e9','#f0e442'] },
+        protanopia:   { name: 'RED-GREEN B',    desc: 'Protanopia friendly',    colors: ['#0072b2','#d55e00','#56b4e9','#cc79a7'] },
+        tritanopia:   { name: 'BLUE-YELLOW',    desc: 'Tritanopia friendly',    colors: ['#e69f00','#009e73','#d55e00','#0072b2'] },
+        monochrome:   { name: 'HIGH CONTRAST',  desc: 'Brightness-first lanes', colors: ['#f4f4f4','#bdbdbd','#888888','#555555'] },
+    };
+
+    const canvas  = document.getElementById('preview');
+    const ctx     = canvas.getContext('2d');
+    const stage   = document.getElementById('stage');
+    const statusEl = document.getElementById('status');
+    let config = loadConfig();
+    let dragTarget = null;
+    let isEditMode = false;
+
+    // ─── Config helpers ───
+    function loadConfig() {
+        let saved = {};
+        try { saved = JSON.parse(localStorage.getItem('wb_note_skin_config') || '{}'); } catch(e) {}
+        const hud = Object.assign({}, DEFAULTS.hud, saved.hud || {});
+        hud.combo = Object.assign({}, DEFAULTS.hud.combo, hud.combo || {});
+        hud.score = Object.assign({}, DEFAULTS.hud.score, hud.score || {});
+        hud.rate  = Object.assign({}, DEFAULTS.hud.rate,  hud.rate  || {});
+        const customColors = Array.isArray(saved.customColors)
+            ? [...saved.customColors]
+            : [null, null, null, null];
+        return Object.assign({}, DEFAULTS, saved, { hud, customColors });
+    }
+    function saveConfig() {
+        localStorage.setItem('wb_note_skin_config', JSON.stringify(config));
+        statusEl.textContent = 'SAVED ✓';
+        statusEl.classList.add('saved');
+        clearTimeout(saveConfig._t);
+        saveConfig._t = setTimeout(() => { statusEl.textContent = 'LIVE PREVIEW'; statusEl.classList.remove('saved'); }, 900);
+    }
+    function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+
+    // 커스텀 색 or 테마 색 반환
+    function getEffectiveColors() {
+        const theme = (THEMES[config.colorTheme] || THEMES.default).colors;
+        if (!config.useCustomColors) return theme;
+        return theme.map((c, i) => config.customColors[i] || c);
+    }
+
+    // 폰트 적용
+    function applyFont(fontId) {
+        const f = FONTS.find(f => f.id === fontId) || FONTS[0];
+        document.documentElement.style.setProperty('--ui-font', f.family);
+    }
+
+    // ─── Build controls ───
+    function buildControls() {
+        // Skin buttons
+        const skinGrid = document.getElementById('skin-grid');
+        skinGrid.innerHTML = SKINS.map(([id, name, desc]) =>
+            `<button class="skin-btn" data-skin="${id}">
+                <strong>${name}</strong>
+                <span>${desc}</span>
+                <canvas class="skin-preview-canvas" data-skin-preview="${id}" height="30"></canvas>
+            </button>`
+        ).join('');
+        skinGrid.querySelectorAll('.skin-btn').forEach(btn => btn.addEventListener('click', () => {
+            config.skin = btn.dataset.skin;
+            judgeDisplayEl.innerHTML = '';
+            saveConfig(); syncControls();
+        }));
+
+        // Font grid
+        const fontGrid = document.getElementById('font-grid');
+        fontGrid.innerHTML = FONTS.map(f =>
+            `<button class="skin-btn" data-font="${f.id}" style="font-family:${f.family}">
+                <strong style="font-family:${f.family}">${f.name}</strong>
+                <span style="font-family:${f.family};font-size:13px;letter-spacing:1px;color:#fff;">${f.sample}</span>
+            </button>`
+        ).join('');
+        fontGrid.querySelectorAll('.skin-btn').forEach(btn => btn.addEventListener('click', () => {
+            config.uiFont = btn.dataset.font;
+            applyFont(config.uiFont);
+            saveConfig(); syncControls();
+        }));
+
+        // Custom color toggle + pickers
+        const ccg = document.getElementById('custom-color-grid');
+        const laneLabels = ['LANE 1', 'LANE 2', 'LANE 3', 'LANE 4'];
+        const themeColors = (THEMES[config.colorTheme] || THEMES.default).colors;
+        ccg.innerHTML = laneLabels.map((label, i) =>
+            `<div class="color-pick-wrap">
+                <div class="color-pick-label">${label}</div>
+                <div class="color-pick-swatch" id="swatch-${i}" style="background:${config.customColors[i] || themeColors[i]}">
+                    <input type="color" id="colorpick-${i}" value="${config.customColors[i] || themeColors[i]}">
+                </div>
+            </div>`
+        ).join('');
+        [0,1,2,3].forEach(i => {
+            const input  = document.getElementById(`colorpick-${i}`);
+            const swatch = document.getElementById(`swatch-${i}`);
+            input.addEventListener('input', e => {
+                config.customColors[i] = e.target.value;
+                swatch.style.background = e.target.value;
+                if (!config.useCustomColors) {
+                    config.useCustomColors = true;
+                    document.getElementById('custom-color-toggle').classList.add('active');
+                    const ccgEl = document.getElementById('custom-color-grid');
+                    if (ccgEl) ccgEl.style.opacity = '1';
+                }
+                saveConfig(); drawSkinPreviews();
+            });
+        });
+        document.getElementById('custom-color-toggle').addEventListener('click', () => {
+            config.useCustomColors = !config.useCustomColors;
+            saveConfig(); syncControls();
+        });
+        const jsg = document.getElementById('judge-style-grid');
+        jsg.innerHTML = JUDGE_STYLES.map(([id, name, desc]) =>
+            `<button class="judge-style-btn" data-style="${id}"><strong style="display:block;font-family:Orbitron;font-size:10px;margin-bottom:2px;">${name}</strong><span style="font-size:9px;color:var(--muted);">${desc}</span></button>`
+        ).join('');
+        jsg.querySelectorAll('.judge-style-btn').forEach(btn => btn.addEventListener('click', () => {
+            localStorage.setItem('wb_judge_style', btn.dataset.style);
+            // 기존 팝업 즉시 제거 → 새 스타일 바로 적용
+            judgeDisplayEl.innerHTML = '';
+            syncControls();
+        }));
+
+        // Theme buttons
+        const tg = document.getElementById('theme-grid');
+        tg.innerHTML = Object.entries(THEMES).map(([id, t]) => {
+            const swatches = t.colors.map(c => `<span class="swatch" style="background:${c}"></span>`).join('');
+            return `<button class="theme-btn" data-theme="${id}"><strong>${t.name}</strong><span>${t.desc}</span><div class="palette">${swatches}</div></button>`;
+        }).join('');
+        tg.querySelectorAll('.theme-btn').forEach(btn => btn.addEventListener('click', () => {
+            config.colorTheme = btn.dataset.theme; saveConfig(); syncControls();
+        }));
+
+        // Sliders
+        document.getElementById('size').addEventListener('input', e => { config.size = +e.target.value; saveConfig(); syncControls(false); });
+        document.getElementById('judge-size').addEventListener('input', e => { localStorage.setItem('wb_judge_size', e.target.value); syncControls(false); });
+        document.getElementById('gear-opacity').addEventListener('input', e => { localStorage.setItem('wb_gear_opacity', e.target.value); syncControls(false); });
+        document.getElementById('offset').addEventListener('input', e => { localStorage.setItem('wb_visual_offset', e.target.value); syncControls(false); });
+
+        // Toggles
+        document.getElementById('combo-label-toggle').addEventListener('click', () => {
+            config.hud.comboLabel = !config.hud.comboLabel; saveConfig(); syncControls();
+        });
+        document.getElementById('edit-toggle').addEventListener('click', () => {
+            isEditMode = !isEditMode;
+            document.body.classList.toggle('edit-mode', isEditMode);
+            document.getElementById('edit-toggle').classList.toggle('active', isEditMode);
+        });
+        document.getElementById('settings-toggle').addEventListener('click', () => {
+            document.body.classList.toggle('settings-open');
+            document.getElementById('settings-toggle').classList.toggle('active', document.body.classList.contains('settings-open'));
+        });
+        document.getElementById('panel-close-btn').addEventListener('click', () => {
+            document.body.classList.remove('settings-open');
+            document.getElementById('settings-toggle').classList.remove('active');
+        });
+
+        // Tab navigation
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.addEventListener('click', () => {
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            btn.classList.add('active');
+            document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+        }));
+    }
+
+    function syncControls(updateInputs = true) {
+        const judgeStyle = localStorage.getItem('wb_judge_style') || 'neon';
+        const judgeSize  = parseInt(localStorage.getItem('wb_judge_size') || '100');
+        const gearOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || '70');
+        const offset     = parseInt(localStorage.getItem('wb_visual_offset') || '0');
+
+        document.querySelectorAll('.skin-btn[data-font]').forEach(b => b.classList.toggle('active', b.dataset.font === (config.uiFont || 'orbitron')));
+        document.querySelectorAll('.skin-btn[data-skin]').forEach(b => b.classList.toggle('active', b.dataset.skin === config.skin));
+        document.querySelectorAll('.theme-btn').forEach(b => b.classList.toggle('active', b.dataset.theme === config.colorTheme));
+        document.querySelectorAll('.judge-style-btn').forEach(b => b.classList.toggle('active', b.dataset.style === judgeStyle));
+        document.getElementById('combo-label-toggle').classList.toggle('active', !!config.hud.comboLabel);
+
+        if (updateInputs) {
+            document.getElementById('size').value = config.size;
+            document.getElementById('judge-size').value = judgeSize;
+            document.getElementById('gear-opacity').value = gearOpacity;
+            document.getElementById('offset').value = offset;
+        }
+        document.getElementById('size-val').textContent         = `${config.size}%`;
+        document.getElementById('judge-size-val').textContent   = `${judgeSize}%`;
+        document.getElementById('gear-opacity-val').textContent = `${gearOpacity}%`;
+        document.getElementById('offset-val').textContent       = `${offset > 0 ? '+' : ''}${offset} ms`;
+
+        document.getElementById('custom-color-toggle').classList.toggle('active', !!config.useCustomColors);
+        // picker는 토글 켜졌을 때만 진하게
+        const ccgEl = document.getElementById('custom-color-grid');
+        if (ccgEl) ccgEl.style.opacity = config.useCustomColors ? '1' : '0.35';
+
+        // 커스텀 컬러 picker 동기화
+        const effColors = getEffectiveColors();
+        [0,1,2,3].forEach(i => {
+            const swatch = document.getElementById(`swatch-${i}`);
+            const input  = document.getElementById(`colorpick-${i}`);
+            if (!swatch || !input) return;
+            const col = config.customColors[i] || (THEMES[config.colorTheme] || THEMES.default).colors[i];
+            swatch.style.background = col;
+            input.value = col;
+        });
+
+        positionHud();
+        drawSkinPreviews();
+    }
+
+    function resetLayout() {
+        config.hud = JSON.parse(JSON.stringify(DEFAULTS.hud));
+        saveConfig(); syncControls();
+    }
+    function resetAll() {
+        if (!confirm('Reset all settings to default?')) return;
+        config = JSON.parse(JSON.stringify(DEFAULTS));
+        localStorage.removeItem('wb_judge_style');
+        localStorage.removeItem('wb_judge_size');
+        localStorage.removeItem('wb_gear_opacity');
+        localStorage.removeItem('wb_visual_offset');
+        saveConfig(); syncControls();
+    }
+
+    // pos.x/y = 앵커 기준 화면 % 위치, anchorX/Y = 요소 내 기준점 %
+    function positionHud() {
+        document.querySelectorAll('.hud-item').forEach(el => {
+            const id  = el.dataset.id;
+            const def = DEFAULTS.hud[id];
+            const pos = config.hud[id] || def;
+            el.style.left      = `${pos.x}%`;
+            el.style.top       = `${pos.y}%`;
+            el.style.transform = `translate(-${pos.anchorX ?? def.anchorX}%, -${pos.anchorY ?? def.anchorY}%)`;
+            el.style.textAlign = (pos.anchorX ?? def.anchorX) > 60 ? 'right'
+                               : (pos.anchorX ?? def.anchorX) < 40 ? 'left' : 'center';
+            if (id === 'combo') el.querySelector('.hud-label').style.display = config.hud.comboLabel ? 'block' : 'none';
+        });
+    }
+    function pointerPercent(e) {
+        const r = stage.getBoundingClientRect();
+        return {
+            x: clamp(((e.clientX - r.left) / r.width)  * 100, 0, 100),
+            y: clamp(((e.clientY - r.top)  / r.height) * 100, 0, 100)
+        };
+    }
+    document.querySelectorAll('.hud-item').forEach(el => {
+        el.addEventListener('pointerdown', e => {
+            if (!isEditMode) return;
+            const r  = stage.getBoundingClientRect();
+            const er = el.getBoundingClientRect();
+            // 클릭 지점이 요소 내 어느 위치인지 앵커로 저장
+            dragTarget = {
+                type: 'hud',
+                id: el.dataset.id,
+                offX: ((e.clientX - er.left) / er.width)  * 100,
+                offY: ((e.clientY - er.top)  / er.height) * 100,
+            };
+            el.setPointerCapture(e.pointerId);
+        });
+    });
+    stage.addEventListener('pointermove', e => {
+        if (!dragTarget) return;
+        const p = pointerPercent(e);
+        if (dragTarget.type === 'hud') {
+            config.hud[dragTarget.id] = {
+                x: Math.round(clamp(p.x, 0, 100)),
+                y: Math.round(clamp(p.y, 0, 100)),
+                anchorX: Math.round(dragTarget.offX),
+                anchorY: Math.round(dragTarget.offY),
+            };
+        }
+        saveConfig(); syncControls();
+    });
+    window.addEventListener('pointerup', () => { dragTarget = null; });
+
+    // ─── Canvas helpers ───
+    function roundRect(c, x, y, w, h, r) {
+        c.beginPath();
+        c.moveTo(x+r,y); c.lineTo(x+w-r,y); c.quadraticCurveTo(x+w,y,x+w,y+r);
+        c.lineTo(x+w,y+h-r); c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+        c.lineTo(x+r,y+h); c.quadraticCurveTo(x,y+h,x,y+h-r);
+        c.lineTo(x,y+r); c.quadraticCurveTo(x,y,x+r,y);
+        c.closePath();
+    }
+    function starPath(c, x, y, outer, inner) {
+        c.beginPath();
+        for (let i = 0; i < 10; i++) {
+            const r = i % 2 ? inner : outer;
+            const a = -Math.PI / 2 + i * Math.PI / 5;
+            i === 0 ? c.moveTo(x+Math.cos(a)*r, y+Math.sin(a)*r) : c.lineTo(x+Math.cos(a)*r, y+Math.sin(a)*r);
+        }
+        c.closePath();
+    }
+
+    function getMetrics(skin, laneW, sizeScale) {
+        const s = sizeScale;
+        let w = laneW * 0.78 * s, h = 8 * s, r = 2 * s;
+        if (skin === 'circle')       { h = Math.min(laneW * 0.58, 46)*s; w = h; r = h/2; }
+        if (skin === 'medium-bar')   { h = 14*s; r = 3*s; }
+        if (skin === 'thick-bar')    { h = 22*s; r = 4*s; }
+        if (skin === 'neon-core')    { h = 16*s; r = 4*s; }
+        if (skin === 'star')         { h = Math.min(laneW*0.66,50)*s; w = h; r = h/2; }
+        if (skin === 'round-thin')   { h = 9*s;  r = h/2; }
+        if (skin === 'round-medium') { h = 15*s; r = h/2; }
+        if (skin === 'round-thick')  { h = 24*s; r = h/2; }
+        return { w, h, r };
+    }
+
+    // Note drawing — cx=0 when called inside ctx.translate(laneX, lineY) context
+    function drawNote(c, skin, cx, cy, m, col) {
+        c.save();
+        c.fillStyle = col; c.strokeStyle = col; c.shadowColor = col;
+        const mx = cx - m.w/2;
+
+        if (skin === 'thin-bar') {
+            c.shadowBlur = 5; c.globalAlpha = 0.92;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.r); c.fill();
+
+        } else if (skin === 'medium-bar') {
+            c.shadowBlur = 7; c.globalAlpha = 0.92;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.r); c.fill();
+
+        } else if (skin === 'thick-bar') {
+            c.shadowBlur = 9; c.globalAlpha = 0.94;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.r); c.fill();
+
+        } else if (skin === 'round-thin') {
+            c.shadowBlur = 6; c.globalAlpha = 0.92;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.h/2); c.fill();
+
+        } else if (skin === 'round-medium') {
+            c.shadowBlur = 8; c.globalAlpha = 0.92;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.h/2); c.fill();
+
+        } else if (skin === 'round-thick') {
+            c.shadowBlur = 12; c.globalAlpha = 0.94;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.h/2); c.fill();
+
+        } else if (skin === 'circle') {
+            c.shadowBlur = 8; c.globalAlpha = 0.92;
+            c.beginPath(); c.arc(cx, cy, m.h/2, 0, Math.PI*2); c.fill();
+
+        } else if (skin === 'star') {
+            c.shadowBlur = 10; c.globalAlpha = 0.92;
+            starPath(c, cx, cy, m.h/2, m.h*0.22); c.fill();
+
+        } else if (skin === 'neon-core') {
+            c.globalAlpha = 0.92; c.fillStyle = '#06080e'; c.shadowBlur = 0;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.r); c.fill();
+            c.strokeStyle = col; c.shadowBlur = 14; c.lineWidth = Math.max(1.5, m.h*0.15); c.globalAlpha = 0.88;
+            roundRect(c, mx, cy-m.h/2, m.w, m.h, m.r); c.stroke();
+            c.globalAlpha = 0.80; c.fillStyle = col; c.shadowBlur = 8;
+            roundRect(c, mx + m.w*0.1, cy-1, m.w*0.8, 2, 1); c.fill();
+        }
+        c.restore();
+    }
+
+    // Judgment line — editor-style precise thin line for all bar skins
+    function drawLine(c, skin, x, y, laneHalf, m, col, active) {
+        c.save();
+        c.translate(x, y);
+        c.fillStyle = col; c.strokeStyle = col; c.shadowColor = col;
+
+        if (skin === 'circle') {
+            c.shadowBlur = active ? 12 : 4;
+            c.lineWidth = active ? 2.0 : 1.2;
+            c.globalAlpha = active ? 0.95 : 0.72;
+            c.beginPath(); c.arc(0,0, m.h/2, 0, Math.PI*2); c.stroke();
+            c.beginPath(); c.arc(0,0, active?4:2.6, 0, Math.PI*2); c.fill();
+        } else if (skin === 'star') {
+            c.shadowBlur = active ? 12 : 4;
+            c.lineWidth = active ? 1.8 : 1.1;
+            c.globalAlpha = active ? 0.95 : 0.72;
+            c.beginPath(); c.moveTo(-laneHalf, 0);
+            for (let i=0; i<=10; i++) c.lineTo(-laneHalf + laneHalf*2*i/10, (i%2===0?-1:1)*(active?4:2.5));
+            c.stroke();
+            c.shadowBlur = active ? 14 : 6;
+            starPath(c, 0, 0, active?7:5.5, active?3:2.2); c.fill();
+        } else if (skin === 'neon-core') {
+            // double-line
+            c.shadowBlur = active ? 16 : 6;
+            c.lineWidth = active ? 3.5 : 2.0;
+            c.globalAlpha = active ? 0.55 : 0.35;
+            c.beginPath(); c.moveTo(-laneHalf, 0); c.lineTo(laneHalf, 0); c.stroke();
+            c.strokeStyle = '#fff'; c.lineWidth = active?1.2:0.8;
+            c.globalAlpha = active ? 0.85 : 0.55;
+            c.shadowBlur = active ? 20 : 8;
+            c.beginPath(); c.moveTo(-laneHalf*0.7, 0); c.lineTo(laneHalf*0.7, 0); c.stroke();
+            c.fillStyle = '#fff'; c.globalAlpha = 1; c.shadowBlur = active?10:4;
+            c.beginPath(); c.arc(0,0, active?3:2, 0, Math.PI*2); c.fill();
+        } else {
+            // thin precision line (editor style) — all bar variants
+            c.shadowBlur = active ? 10 : 3;
+            c.lineWidth = active ? 2.2 : 1.4;
+            c.globalAlpha = active ? 0.95 : 0.70;
+            c.beginPath(); c.moveTo(-laneHalf, 0); c.lineTo(laneHalf, 0); c.stroke();
+            c.shadowBlur = active ? 8 : 2;
+            c.globalAlpha = 1;
+            c.beginPath(); c.arc(0,0, active?3.5:2, 0, Math.PI*2); c.fill();
+        }
+        c.restore();
+    }
+
+    // ─── Skin mini previews ───
+    function drawSkinPreviews() {
+        const palette = getEffectiveColors();
+        const sizeScale = config.size / 100;
+        document.querySelectorAll('[data-skin-preview]').forEach(pc => {
+            const skin = pc.dataset.skinPreview;
+            const W = pc.offsetWidth || 120, H = 30;
+            if (pc.width !== W || pc.height !== H) { pc.width = W; pc.height = H; }
+            const pctx = pc.getContext('2d');
+            pctx.clearRect(0,0,W,H);
+            const laneW = W / 4;
+            for (let i=0; i<4; i++) {
+                const col = palette[i];
+                const nx = laneW * (i+0.5);
+                const m = getMetrics(skin, laneW, Math.min(sizeScale, 0.9));
+                drawNote(pctx, skin, nx, H/2, m, col);
+            }
+        });
+    }
+
+    function hexA(hex, a) {
+        const h = hex.replace('#','');
+        const r=parseInt(h.slice(0,2),16), g=parseInt(h.slice(2,4),16), b=parseInt(h.slice(4,6),16);
+        return `rgba(${r},${g},${b},${a})`;
+    }
+
+    // ═══════════════════════════════════════════════════
+    // ★ 판정 테이블 (game.html 동일 8단계)
+    // ═══════════════════════════════════════════════════
+    const JUDGE_TABLE = [
+        { name:'Perfect!', window:32,       key:'perfectEx', cssClass:'judge-perfect-ex', color:'#ffffff', glowColor:'#ff0080', comboBreak:false, ratePct:100 },
+        { name:'Perfect',  window:40,       key:'perfect',   cssClass:'judge-perfect',    color:'#FFE000', glowColor:'#FFE000', comboBreak:false, ratePct:96  },
+        { name:'Great',    window:48,       key:'great',     cssClass:'judge-great',      color:'#00F2FF', glowColor:'#00F2FF', comboBreak:false, ratePct:88  },
+        { name:'Good',     window:56,       key:'good',      cssClass:'judge-good',       color:'#88FF00', glowColor:'#88FF00', comboBreak:false, ratePct:70  },
+        { name:'Not Bad',  window:72,       key:'notBad',    cssClass:'judge-notbad',     color:'#FFB300', glowColor:'#FFB300', comboBreak:false, ratePct:45  },
+        { name:'Save',     window:90,       key:'save',      cssClass:'judge-save',       color:'#FF7733', glowColor:'#FF7733', comboBreak:false, ratePct:20  },
+        { name:'Oh...',    window:110,      key:'oh',        cssClass:'judge-oh',         color:'#FF2D78', glowColor:'#FF2D78', comboBreak:true,  ratePct:5   },
+        { name:'No...',    window:Infinity, key:'miss',      cssClass:'judge-no',         color:'#555566', glowColor:'#555566', comboBreak:true,  ratePct:0   },
+    ];
+    const MAX_HIT_WINDOW = 110;
+
+    // ─── 라이브 점수 상태 ─────────────────────────────────
+    let liveScore  = 0;
+    let liveCombo  = 0;
+    let liveTotalHits  = 0;
+    let liveRateSum    = 0; // 판정별 ratePct 누적
+
+    function liveHit(judgeInfo) {
+        liveTotalHits++;
+        liveRateSum += judgeInfo.ratePct;
+        if (judgeInfo.comboBreak) {
+            liveCombo = 0;
+        } else {
+            liveCombo++;
+            // 간이 점수: 판정 가중치 * 콤보 보너스
+            liveScore += Math.floor(judgeInfo.ratePct * 10 * (1 + liveCombo * 0.001));
+        }
+        updateHud();
+    }
+
+    function liveMiss() {
+        liveTotalHits++;
+        liveRateSum += 0;
+        liveCombo = 0;
+        updateHud();
+    }
+
+    function updateHud() {
+        const comboEl = document.querySelector('.hud-item.combo .hud-text');
+        const scoreEl = document.querySelector('.hud-item.score .hud-text');
+        const rateEl  = document.querySelector('.hud-item.rate  .hud-text');
+        if (comboEl) {
+            comboEl.textContent = liveCombo;
+            if (liveCombo > 0) {
+                comboEl.style.animation = 'none';
+                void comboEl.offsetWidth;
+                comboEl.style.animation = 'comboPop 0.14s cubic-bezier(.2,.9,.2,1)';
+            }
+        }
+        if (scoreEl) scoreEl.textContent = liveScore.toString().padStart(6, '0');
+        if (rateEl)  rateEl.textContent  = liveTotalHits > 0
+            ? (liveRateSum / liveTotalHits).toFixed(2) + '%'
+            : '100.00%';
+        const comboItem = document.querySelector('.hud-item.combo');
+        if (comboItem) comboItem.style.opacity = liveCombo === 0 ? '0.28' : '0.85';
+    }
+
+    function resetLiveStats() {
+        liveScore = 0; liveCombo = 0; liveTotalHits = 0; liveRateSum = 0;
+        updateHud();
+    }
+
+    const judgeDisplayEl = document.getElementById('judge-display');
+    const judgePopupTimeouts = [null, null, null, null];
+
+    // ─── showJudgePopup (game.html 동일) ─────────────────
+    function showJudgePopup(judgeInfo, lane) {
+        const safeLane = Math.max(0, Math.min(3, lane || 0));
+        if (judgePopupTimeouts[safeLane]) clearTimeout(judgePopupTimeouts[safeLane]);
+        judgeDisplayEl.querySelectorAll(`[data-lane="${safeLane}"]`).forEach(el => el.remove());
+
+        // 라이브 HUD 업데이트
+        if (judgeInfo.key === 'miss') liveMiss();
+        else liveHit(judgeInfo);
+
+        const judgeStyle = localStorage.getItem('wb_judge_style') || 'neon';
+        const judgeSize  = Math.max(40, Math.min(140, parseFloat(localStorage.getItem('wb_judge_size') || '100') || 100));
+
+        // 팝업 위치: 레인 중앙, 판정선 위
+        const W = stage.clientWidth, H = stage.clientHeight;
+        const gearW  = Math.min(400, W * 0.95);
+        const gearX  = (W - gearW) / 2;
+        const laneW  = gearW / 4;
+        const hitY   = H * 0.85;
+        const x      = gearX + laneW * (safeLane + 0.5);
+        const isRainbow = judgeInfo.key === 'perfectEx';
+
+        const el = document.createElement(judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 'div' : 'span');
+        el.dataset.lane = safeLane;
+        el.style.left = `${x}px`;
+        el.style.setProperty('--judge-color', isRainbow ? '#ff0080' : judgeInfo.color);
+        el.style.setProperty('--judge-scale', String(judgeSize / 100));
+
+        if (judgeStyle === 'ripple') {
+            el.className = `judge-effect judge-effect-ripple${isRainbow ? ' judge-effect-perfect' : ''}`;
+            el.style.top = `${hitY}px`;
+        } else if (judgeStyle === 'linewave') {
+            el.className = `judge-effect judge-effect-linewave${isRainbow ? ' judge-effect-perfect' : ''}`;
+            el.style.top = `${hitY}px`;
+            el.style.setProperty('--wave-width', `${Math.max(44, laneW * 0.86) * judgeSize / 100}px`);
+        } else {
+            el.className = `judge-popup ${judgeInfo.cssClass} judge-style-${judgeStyle}`;
+            el.textContent = judgeInfo.name;
+            el.style.fontSize = `${32 * judgeSize / 100}px`;
+            el.style.top = `${hitY - 58}px`;
+        }
+        judgeDisplayEl.appendChild(el);
+
+        judgePopupTimeouts[safeLane] = setTimeout(() => {
+            el.remove();
+            judgePopupTimeouts[safeLane] = null;
+        }, judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 560 : 500);
+    }
+
+    // ═══════════════════════════════════════════════════
+    // ★ LIVE GAME ENGINE
+    // ═══════════════════════════════════════════════════
+    const BASE_RES = 192;
+    let previewNotes = [], activeNotes = [], pendingNotes = [], particles = [];
+
+    let bpm = 130, beatNum = 4, beatDenom = 4, chartOffset = 0;
+    let speedEvents = [], speedMap = [];
+    let baseNoteSpeed = 5.0;
+
+    let previewAudio = new Audio();
+    previewAudio.loop = false;
+    previewAudio.addEventListener('ended', () => {
+        if (gameState !== 'PLAYING' || loopRestartAt !== null) return;
+        loopRestartAt = performance.now() + 5000;
+        activeNotes  = [];
+        particles    = [];
+        judgeDisplayEl.innerHTML = '';
+        pendingNotes = previewNotes.map(n => ({...n, hit:false, holding:false, finished:false}));
+        resetLiveStats();
+    });
+    let gameState = 'LOADING';
+
+    // ─── activeKeys: 롱노트 홀딩 감지용 (game.html 방식) ─
+    const activeKeys = [false, false, false, false];
+    const laneFlash  = [0, 0, 0, 0]; // 0~1, 부드러운 감쇠
+
+    // ─── FALLBACK 가상 타임라인 ──────────────────────────
+    const FB_BPM      = 128;
+    const FB_BEAT_MS  = 60000 / FB_BPM;
+    const FB_COOLDOWN = 5000;
+    const FB_PATTERN  = [
+        [0,0,false],[1,1,false],[2,2,false],[3,3,false],
+        [4,0,false],[4,2,false],[5,1,false],[5,3,false],
+        [6,0,true,2],[6,2,false],[7,3,false],
+        [8,1,false],[8,3,false],[9,0,false],[9,2,false],
+        [10,1,true,1.5],[10,3,false],[11,0,false],[11,2,false],
+        [12,0,false],[12,1,false],[12,2,false],[12,3,false],
+        [13,1,false],[14,0,false],[14,3,false],[15,2,false],
+    ];
+    const FB_CYCLE_MS  = FB_BEAT_MS * 16 + FB_COOLDOWN;
+    let fbVirtualMs    = 0;
+    let fbLastPerf     = 0;
+    let fbPendingNotes = [], fbActiveNotes = [];
+    let fbCycleIdx     = -1;
+
+    function fbBuildCycle(cycleStartMs) {
+        FB_PATTERN.forEach(([beat, lane, isLong, longBeats]) => {
+            const t   = cycleStartMs + FB_COOLDOWN + beat * FB_BEAT_MS;
+            const len = isLong ? (longBeats * FB_BEAT_MS) : 0;
+            fbPendingNotes.push({ lane, time:t, endTime:t+len, len, hit:false, finished:false, holding:false });
+        });
+        fbPendingNotes.sort((a,b) => a.time - b.time);
+    }
+
+    function fbTick(nowPerf, H) {
+        const delta = nowPerf - fbLastPerf;
+        fbLastPerf  = nowPerf;
+        fbVirtualMs += delta;
+
+        const cyc = Math.floor(fbVirtualMs / FB_CYCLE_MS);
+        if (cyc !== fbCycleIdx) {
+            fbCycleIdx = cyc;
+            fbBuildCycle(cyc * FB_CYCLE_MS);
+            fbBuildCycle((cyc + 1) * FB_CYCLE_MS); // 미리 로드
+        }
+
+        const gs        = 0.1 * baseNoteSpeed;
+        const lookAhead = (H * 0.85) / gs + 500;
+        while (fbPendingNotes.length > 0 && fbPendingNotes[0].time - lookAhead < fbVirtualMs) {
+            fbActiveNotes.push(fbPendingNotes.shift());
+        }
+
+        // ─ 롱노트 홀딩 유지 체크 (game.html 방식) ─
+        fbActiveNotes.forEach(n => {
+            if (n.hit && n.len > 0 && !n.finished) {
+                if (activeKeys[n.lane]) {
+                    // 끝까지 유지: 자동 Perfect!
+                    if (fbVirtualMs >= n.endTime) {
+                        n.finished = true;
+                        showJudgePopup(JUDGE_TABLE[0], n.lane);
+                        spawnParticle(getLaneX(n.lane), getLineY(), getPaletteColor(n.lane));
+                    }
+                } else {
+                    // 손 뗀 경우 — checkRelease 에서 이미 처리됨
+                }
+            }
+            // MISS 처리
+            if (!n.hit && !n.finished && fbVirtualMs - n.time > MAX_HIT_WINDOW + 50) {
+                n.finished = true;
+                showJudgePopup(JUDGE_TABLE[7], n.lane);
+            }
+        });
+        fbActiveNotes = fbActiveNotes.filter(n => !n.finished);
+    }
+
+    // ─── 레이아웃 헬퍼 ──────────────────────────────────
+    function getLaneX(lane) {
+        const W = stage.clientWidth;
+        const gearW = Math.min(400, W * 0.95);
+        const gearX = (W - gearW) / 2;
+        return gearX + (gearW / 4) * (lane + 0.5);
+    }
+    function getLineY() { return stage.clientHeight * 0.85; }
+    function getPaletteColor(lane) {
+        return getEffectiveColors()[lane];
+    }
+
+    // ─── Chart note queue (PLAYING mode) ──────────────
+    let loopRestartAt = null; // performance.now() 기준으로 오디오+노트 재시작 예정 시각
+
+    function resetNoteQueue() {
+        pendingNotes  = previewNotes.map(n => ({...n, hit:false, holding:false, finished:false}));
+        activeNotes   = [];
+        particles     = [];
+        loopRestartAt = null;
+        judgeDisplayEl.innerHTML = '';
+        resetLiveStats();
+    }
+
+    let lastAudioTime = 0;
+    function checkLoop(ct) {
+        // 루프 감지: currentTime이 역전됨
+        if (ct < lastAudioTime - 0.5 && loopRestartAt === null) {
+            // 오디오 즉시 정지 — 5초 후 재시작 예약
+            previewAudio.pause();
+            previewAudio.currentTime = 0;
+            loopRestartAt = performance.now() + 5000;
+            activeNotes  = [];
+            particles    = [];
+            judgeDisplayEl.innerHTML = '';
+            pendingNotes = previewNotes.map(n => ({...n, hit:false, holding:false, finished:false}));
+        }
+        lastAudioTime = ct;
+    }
+
+    function getVisualPos(time) {
+        let ev = speedMap[0];
+        for (let i = 1; i < speedMap.length; i++) {
+            if (speedMap[i].time > time) break;
+            ev = speedMap[i];
+        }
+        return ev.vPos + (time - ev.time) * ev.mult;
+    }
+
+    // ─── loadPreview ─────────────────────────────────
+    async function loadPreview() {
+        try {
+            previewAudio.src = 'preview/audio.mp3';
+            previewAudio.volume = parseFloat(localStorage.getItem('wb_bgm_volume') || '0.65');
+            await previewAudio.play();
+        } catch(e) {}
+
+        try {
+            const res = await fetch('preview/chart.json');
+            if (!res.ok) throw new Error();
+            const data = await res.json();
+            parseChart(data);
+            gameState = 'PLAYING';
+            resetNoteQueue();
+            updateStatus('PREVIEW');
+        } catch(e) {
+            gameState = 'FALLBACK';
+            fbVirtualMs = 0; fbLastPerf = performance.now();
+            fbCycleIdx = -1; fbPendingNotes = []; fbActiveNotes = [];
+            updateStatus('PREVIEW (no chart)');
+        }
+        document.getElementById('hit-hint').style.display = '';
+    }
+
+    function parseChart(data) {
+        if (data.bpm)       bpm         = data.bpm;
+        if (data.beat)      beatNum     = data.beat;
+        if (data.beatDenom) beatDenom   = data.beatDenom;
+        if (data.offset)    chartOffset = data.offset;
+        if (data.noteSpeed) baseNoteSpeed = data.noteSpeed;
+        speedEvents = data.speedEvents
+            ? (data.speedEvents.some(e => e.time === 0) ? data.speedEvents : [...data.speedEvents, {time:0,mult:1.0}])
+            : [{time:0,mult:1.0}];
+
+        previewNotes = [];
+        const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
+        if (data.measures) {
+            data.measures.forEach(m => {
+                const ratio = BASE_RES / (m.split || 32);
+                m.notes.forEach(n => {
+                    const time     = (m.index + n.pos * ratio / BASE_RES) * msPerMeasure + chartOffset;
+                    const duration = ((n.len || 0) * ratio / BASE_RES) * msPerMeasure;
+                    previewNotes.push({ time, endTime:time+duration, lane:n.lane, len:(n.len||0)*ratio, hit:false, holding:false, finished:false });
+                });
+            });
+        }
+        previewNotes.sort((a,b) => a.time - b.time);
+        speedMap = [{time:-999999, vPos:0, mult:1.0}];
+        [...speedEvents].sort((a,b)=>a.time-b.time).forEach(ev => {
+            const prev = speedMap[speedMap.length-1];
+            speedMap.push({ time:ev.time, vPos:prev.vPos+(ev.time-prev.time)*prev.mult, mult:ev.mult });
+        });
+    }
+
+    // ═══════════════════════════════════════════════════
+    // ★ 입력 처리 — game.html checkHit / checkRelease 이식
+    // ═══════════════════════════════════════════════════
+    const KEY_MAP = {'d':0,'f':1,'j':2,'k':3};
+
+    function checkHit(lane) {
+        const currentMs = gameState === 'FALLBACK' ? fbVirtualMs : previewAudio.currentTime * 1000;
+        const notes     = gameState === 'FALLBACK' ? fbActiveNotes : activeNotes;
+
+        const candidates = notes.filter(n =>
+            n.lane === lane && !n.hit && !n.finished &&
+            Math.abs(currentMs - n.time) <= MAX_HIT_WINDOW
+        );
+        if (candidates.length === 0) return; // 윈도우 밖 탭 — 반응 없음
+
+        const n = candidates.reduce((prev, curr) =>
+            Math.abs(currentMs - curr.time) < Math.abs(currentMs - prev.time) ? curr : prev
+        );
+        const absDiff = Math.abs(currentMs - n.time);
+
+        n.hit     = true;
+        n.holding = true;
+        if (n.len === 0) n.finished = true;
+
+        // 판정 결정 (8단계)
+        let judgeInfo = JUDGE_TABLE[7];
+        for (const j of JUDGE_TABLE) {
+            if (absDiff <= j.window) { judgeInfo = j; break; }
+        }
+
+        showJudgePopup(judgeInfo, lane);
+        spawnParticle(getLaneX(lane), getLineY(), getPaletteColor(lane));
+    }
+
+    function checkRelease(lane) {
+        const currentMs = gameState === 'FALLBACK' ? fbVirtualMs : previewAudio.currentTime * 1000;
+        const notes     = gameState === 'FALLBACK' ? fbActiveNotes : activeNotes;
+
+        const n = notes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
+        if (!n) return;
+
+        const remaining     = n.endTime - currentMs;
+        const totalDuration = n.endTime - n.time;
+        const safeZone      = Math.max(100, totalDuration * 0.2);
+
+        if (remaining > safeZone) {
+            // 불안전 구간 — No... (Miss)
+            n.finished = true;
+            n.holding  = false;
+            showJudgePopup(JUDGE_TABLE[7], lane);
+        } else {
+            // 안전 구간 — Perfect!
+            n.finished = true;
+            n.holding  = false;
+            showJudgePopup(JUDGE_TABLE[0], lane);
+            spawnParticle(getLaneX(lane), getLineY(), getPaletteColor(lane));
+        }
+    }
+
+    // Keyboard
+    window.addEventListener('keydown', e => {
+        if (e.repeat) return;
+        const lane = KEY_MAP[e.key.toLowerCase()];
+        if (lane === undefined) return;
+        if (!activeKeys[lane]) {
+            activeKeys[lane] = true;
+            laneFlash[lane]  = Math.max(laneFlash[lane], 0.35); // 부드러운 시작
+            checkHit(lane);
+        }
+    });
+    window.addEventListener('keyup', e => {
+        const lane = KEY_MAP[e.key.toLowerCase()];
+        if (lane === undefined) return;
+        activeKeys[lane] = false;
+        checkRelease(lane);
+    });
+
+    // Touch / Pointer
+    const touchLaneMap = new Map();
+    stage.addEventListener('pointerdown', e => {
+        if (isEditMode) return;
+        const W = stage.clientWidth;
+        const gearW = Math.min(400, W * 0.95);
+        const gearX = (W - gearW) / 2;
+        const laneW = gearW / 4;
+        const rx    = e.clientX - gearX;
+        if (rx < 0 || rx > gearW) return;
+        const lane = Math.floor(rx / laneW);
+        if (lane < 0 || lane > 3) return;
+        touchLaneMap.set(e.pointerId, lane);
+        if (!activeKeys[lane]) {
+            activeKeys[lane] = true;
+            laneFlash[lane]  = Math.max(laneFlash[lane], 0.35);
+            checkHit(lane);
+        }
+    });
+    function onPointerUp(e) {
+        const lane = touchLaneMap.get(e.pointerId);
+        if (lane !== undefined) {
+            activeKeys[lane] = false;
+            checkRelease(lane);
+            touchLaneMap.delete(e.pointerId);
+        }
+    }
+    stage.addEventListener('pointerup',     onPointerUp);
+    stage.addEventListener('pointercancel', onPointerUp);
+
+    // ─── Canvas resize ────────────────────────────────
+    function resize() {
+        const dpr = window.devicePixelRatio || 1;
+        const r   = stage.getBoundingClientRect();
+        canvas.width  = Math.floor(r.width * dpr);
+        canvas.height = Math.floor(r.height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+
+    // ─── Main draw loop ───────────────────────────────
+    function draw() {
+        requestAnimationFrame(draw);
+        const now = performance.now();
+        const W   = stage.clientWidth, H = stage.clientHeight;
+        ctx.clearRect(0, 0, W, H);
+
+        const gearOpacity = parseInt(localStorage.getItem('wb_gear_opacity') || '70') / 100;
+        ctx.fillStyle = `rgba(0,0,0,${gearOpacity})`;
+        ctx.fillRect(0, 0, W, H);
+
+        const gearW     = Math.min(400, W * 0.95);
+        const gearX     = (W - gearW) / 2;
+        const laneW     = gearW / 4;
+        const lineY     = H * 0.85;
+        const lh        = laneW * 0.44;
+        const palette   = (THEMES[config.colorTheme] || THEMES.default).colors;
+        const sizeScale = config.size / 100;
+        const skin      = config.skin;
+        const gs        = 0.1 * baseNoteSpeed;
+        const safeLimit = Math.sqrt(W*W + H*H) * 3;
+
+        // ── 모드별 시간·노트 업데이트 ──
+        let currentMs = 0;
+        if (gameState === 'PLAYING') {
+            // loopRestartAt 만료 → 오디오 재시작
+            if (loopRestartAt !== null && performance.now() >= loopRestartAt) {
+                loopRestartAt = null;
+                previewAudio.currentTime = 0;
+                previewAudio.play().catch(() => {});
+                lastAudioTime = 0;
+            }
+
+            currentMs = previewAudio.currentTime * 1000;
+
+            // ended 이벤트가 없는 브라우저 대비: currentTime 역전으로도 감지
+            checkLoop(previewAudio.currentTime);
+
+            const lookAhead = lineY / gs + 500;
+
+            if (loopRestartAt !== null) {
+                // 대기 중: 재시작까지 남은 ms를 음수 시간으로 환산해 노트 피드
+                // 예: 남은 시간 3000ms → virtualMs = -3000 → 3초 후 도달할 노트들이 피드됨
+                const msUntilRestart = loopRestartAt - performance.now();
+                const virtualMs = -msUntilRestart;
+                while (pendingNotes.length > 0 && pendingNotes[0].time - lookAhead < virtualMs) {
+                    activeNotes.push(pendingNotes.shift());
+                }
+                // 대기 중엔 miss/hold 처리 스킵
+            } else {
+                while (pendingNotes.length > 0 && pendingNotes[0].time - lookAhead < currentMs) {
+                    activeNotes.push(pendingNotes.shift());
+                }
+                // 롱노트 홀딩 유지 & miss 처리
+                activeNotes.forEach(n => {
+                    if (n.hit && n.len > 0 && !n.finished) {
+                        if (activeKeys[n.lane]) {
+                            if (currentMs >= n.endTime) {
+                                n.finished = true;
+                                showJudgePopup(JUDGE_TABLE[0], n.lane);
+                                spawnParticle(getLaneX(n.lane), lineY, palette[n.lane]);
+                            }
+                        }
+                        // 일찍 뗀 경우는 checkRelease에서 처리
+                    }
+                    if (!n.hit && !n.finished && currentMs - n.time > MAX_HIT_WINDOW + 50) {
+                        n.finished = true;
+                        showJudgePopup(JUDGE_TABLE[7], n.lane);
+                    }
+                });
+                activeNotes = activeNotes.filter(n => !n.finished);
+            }
+
+        } else if (gameState === 'FALLBACK') {
+            fbTick(now, H);
+            currentMs = fbVirtualMs;
+        }
+
+        // ── flash 감쇠/증가 — 부드럽게 ──
+        for (let i = 0; i < 4; i++) {
+            if (activeKeys[i]) laneFlash[i] += (0.85 - laneFlash[i]) * 0.18;
+            else               laneFlash[i] *= 0.82;
+            if (laneFlash[i] < 0.01) laneFlash[i] = 0;
+        }
+
+        // 노트 위치 계산용 시간: 대기 중엔 가상 음수 시간 사용
+        const effectiveMs = (gameState === 'PLAYING' && loopRestartAt !== null)
+            ? -(loopRestartAt - performance.now())
+            : currentMs;
+        const cvy = gameState === 'PLAYING' ? getVisualPos(effectiveMs) : currentMs * 0.1;
+
+        // ── 레인별 렌더 ──
+        for (let lane = 0; lane < 4; lane++) {
+            const x     = gearX + laneW * (lane + 0.5);
+            const col   = palette[lane];
+            const m     = getMetrics(skin, laneW, sizeScale);
+            const flash = laneFlash[lane];
+
+            ctx.save();
+            ctx.translate(x, lineY);
+
+            // ─ 레인 빔 (game.html drawLaneBeams 스타일) ─
+            if (flash > 0) {
+                const beamW = laneW * 0.88;
+                const grad  = ctx.createLinearGradient(0, 0, 0, -lineY);
+                grad.addColorStop(0,    hexA(col, flash * 0.38));
+                grad.addColorStop(0.4,  hexA(col, flash * 0.15));
+                grad.addColorStop(1,    hexA(col, 0));
+                ctx.globalCompositeOperation = 'lighter';
+                ctx.fillStyle = grad;
+                ctx.fillRect(-beamW / 2, -lineY, beamW, lineY + 2);
+                ctx.globalCompositeOperation = 'source-over';
+                // 엣지 라인
+                ctx.globalAlpha = flash * 0.45;
+                ctx.fillStyle   = col;
+                ctx.shadowColor = col;
+                ctx.shadowBlur  = flash * 14;
+                ctx.fillRect(-beamW/2,       -lineY, 1.5, lineY);
+                ctx.fillRect(beamW/2 - 1.5,  -lineY, 1.5, lineY);
+                ctx.shadowBlur = 0;
+                ctx.globalAlpha = 1;
+            }
+
+            // 판정선
+            drawLine(ctx, skin, 0, 0, lh, m, col, flash > 0.1);
+
+            // ─ 노트 렌더 ─
+            const notes = gameState === 'FALLBACK' ? fbActiveNotes.filter(n => n.lane === lane)
+                                                   : activeNotes.filter(n => n.lane === lane);
+
+            notes.forEach(n => {
+                const nVpos      = gameState === 'PLAYING' ? getVisualPos(n.time) : n.time * 0.1;
+                const headLocalY = -(nVpos - cvy) * gs;
+
+                // 히트된 롱노트는 클리핑 체크 없이 항상 렌더 (판정선에 고정)
+                const isHolding = n.hit && n.len > 0 && !n.finished;
+                if (!isHolding && (headLocalY < -lineY * 1.4 || headLocalY > 30)) return;
+
+                // 롱노트 바디
+                if (n.len > 0) {
+                    const endVpos   = gameState === 'PLAYING' ? getVisualPos(n.endTime) : n.endTime * 0.1;
+                    const endLocalY = -(endVpos - cvy) * gs;
+                    const drawHeadY = isHolding ? 0 : headLocalY;
+                    const top = Math.max(-lineY, Math.min(drawHeadY, endLocalY));
+                    const bot = Math.min(isHolding ? lineY * 0.1 : 30, Math.max(drawHeadY, endLocalY));
+
+                    if (bot > top) {
+                        const holdW = Math.max(8, m.w * (skin==='circle'||skin==='star' ? 0.44 : 0.74));
+                        const holdR = Math.min(holdW/2, m.r||4);
+                        ctx.save();
+                        if (skin === 'neon-core') {
+                            ctx.globalAlpha = 0.55; ctx.fillStyle = '#06080e'; ctx.shadowBlur = 0;
+                            roundRect(ctx, -holdW/2, top, holdW, bot-top, holdR); ctx.fill();
+                            ctx.globalAlpha = isHolding ? 0.80 : 0.50;
+                            ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = isHolding ? 10 : 5;
+                            ctx.fillRect(-holdW/2, top, 2, bot-top);
+                            ctx.fillRect(holdW/2-2, top, 2, bot-top);
+                            ctx.globalAlpha = isHolding ? 0.22 : 0.10; ctx.shadowBlur = 0;
+                            roundRect(ctx, -holdW/2, top, holdW, bot-top, holdR); ctx.fill();
+                        } else {
+                            ctx.globalAlpha = isHolding ? 0.30 : 0.16;
+                            ctx.fillStyle = col; ctx.shadowBlur = 0;
+                            roundRect(ctx, -holdW/2, top, holdW, bot-top, holdR); ctx.fill();
+                            ctx.globalAlpha = isHolding ? 0.70 : 0.42;
+                            ctx.fillStyle = col; ctx.shadowColor = col; ctx.shadowBlur = isHolding ? 8 : 0;
+                            ctx.fillRect(-holdW/2, top, 2, bot-top);
+                            ctx.fillRect(holdW/2-2, top, 2, bot-top);
+                        }
+                        ctx.restore();
+                    }
+                }
+
+                // 노트 헤드
+                if (isHolding) {
+                    drawNote(ctx, skin, 0, 0, m, col);   // 홀딩 중: 판정선에 고정
+                } else if (!n.hit) {
+                    drawNote(ctx, skin, 0, headLocalY, m, col);
+                }
+                // finished(일반노트 히트 완료, 롱노트 완료): 표시 안 함
+            });
+
+            ctx.globalAlpha = 1; ctx.shadowBlur = 0;
+            ctx.restore();
+        }
+
+        drawParticles(W, H);
+    }
+
+    // ─── 파티클 ──────────────────────────────────────
+    function spawnParticle(x, y, col) {
+        for (let i = 0; i < 12; i++) {
+            const a = Math.random() * Math.PI * 2, s = Math.random() * 14 + 4;
+            particles.push({ x, y, vx:Math.cos(a)*s*0.5, vy:Math.sin(a)*s-9, life:1, col, size:Math.random()*5+2 });
+        }
+    }
+    function drawParticles(W, H) {
+        for (let i = particles.length - 1; i >= 0; i--) {
+            const p = particles[i];
+            p.x += p.vx; p.y += p.vy; p.vy += 0.42; p.life -= 0.038;
+            if (p.life <= 0) { particles.splice(i, 1); continue; }
+            ctx.globalAlpha = p.life * 0.75;
+            ctx.fillStyle   = p.col;
+            ctx.shadowColor = p.col; ctx.shadowBlur = 7;
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI*2); ctx.fill();
+            ctx.shadowBlur  = 0;
+        }
+        ctx.globalAlpha = 1;
+    }
+
+    function updateStatus(text) {
+        statusEl.textContent = text;
+        statusEl.classList.remove('saved');
+    }
+
+    // ─── Init ────────────────────────────────────────
+    buildControls();
+    syncControls();
+    applyFont(config.uiFont || 'orbitron');
+    resize();
+    window.addEventListener('resize', () => { resize(); drawSkinPreviews(); });
+    loadPreview();
+    requestAnimationFrame(draw);
+    </script>
+</body>
+</html>

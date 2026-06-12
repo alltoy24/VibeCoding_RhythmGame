@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
@@ -26,13 +26,13 @@
         #bg-container {
             position: absolute;
             width: 100%; height: 100%;
-            background: radial-gradient(circle at center, #0d021a 0%, #000 100%); /* 조금 더 어둡고 깊은 보라색 */
+            background: radial-gradient(circle at center, #0d021a 0%, #000 100%); /* 議곌툑 ???대몼怨?源딆? 蹂대씪??*/
             z-index: -1;
             perspective: 800px;
             overflow: hidden;
         }
 
-        /* 별들이 앞으로 쏟아지는 듯한 애니메이션 */
+        /* 蹂꾨뱾???욎쑝濡??잛븘吏????븳 ?좊땲硫붿씠??*/
         .star {
             position: absolute;
             background: #fff; 
@@ -54,7 +54,7 @@
             }
         }
 
-        /* --- 진입 오버레이 --- */
+        /* --- 吏꾩엯 ?ㅻ쾭?덉씠 --- */
         #entry-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: #000; z-index: 1000;
@@ -63,7 +63,7 @@
         }
         .entry-text { font-family: 'Orbitron'; font-size: 24px; letter-spacing: 10px; color: var(--accent); animation: pulse 1.5s infinite; }
 
-        /* --- 메인 UI 컨테이너 --- */
+        /* --- 硫붿씤 UI 而⑦뀒?대꼫 --- */
         #main-ui {
             height: 100vh; display: flex; flex-direction: column;
             align-items: center; justify-content: center;
@@ -71,7 +71,7 @@
             position: relative;
         }
 
-        /* --- 프로필 카드 (이식됨) --- */
+        /* --- ?꾨줈??移대뱶 (?댁떇?? --- */
         .profile-card {
             position: absolute; top: 30px; left: 40px;
             display: flex; flex-direction: column; gap: 6px;
@@ -99,24 +99,16 @@
         .custom-login-btn:hover { box-shadow: 0 0 15px var(--accent-glow); filter: brightness(1.1); }
         .btn-logout { background: #ff0055; color: #fff; }
         .btn-logout:hover { box-shadow: 0 0 15px rgba(255, 0, 85, 0.6); }
+        .archive-btn {
+            margin-top: 8px; padding: 8px 0; width: 100%;
+            background: rgba(0,229,255,0.08); border: 1px solid rgba(0,229,255,0.25);
+            color: var(--accent); font-family: 'Orbitron'; font-weight: 900;
+            font-size: 11px; letter-spacing: 2px; cursor: pointer; border-radius: 4px;
+            transition: 0.2s; text-transform: uppercase;
+        }
+        .archive-btn:hover { background: rgba(0,229,255,0.16); box-shadow: 0 0 18px rgba(0,229,255,0.28); }
 
-        /* --- 우측 상단 설정 버튼 --- */
-        .top-right-group {
-            position: absolute; top: 30px; right: 40px; 
-            display: flex; gap: 15px; align-items: center; z-index: 100;
-        }
-        .btn-icon {
-            width: 45px; height: 45px; border-radius: 50%;
-            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2);
-            color: #fff; font-size: 20px; cursor: pointer;
-            display: flex; justify-content: center; align-items: center;
-            transition: all 0.3s ease; backdrop-filter: blur(5px);
-        }
-        .btn-icon:hover { 
-            border-color: var(--accent); color: var(--accent); 
-            box-shadow: 0 0 15px var(--accent-glow); transform: rotate(90deg); 
-        }
-
+        /* --- ?곗륫 ?곷떒 ?ㅼ젙 踰꾪듉 --- */
         .title-logo {
             font-family: 'Orbitron';
             font-size: 110px; 
@@ -128,7 +120,7 @@
             background: linear-gradient(to bottom, #ffffff 30%, #a3e5ff 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            /* 다중 그림자로 강렬한 글로우 효과 생성 */
+            /* ?ㅼ쨷 洹몃┝?먮줈 媛뺣젹??湲濡쒖슦 ?④낵 ?앹꽦 */
             filter: drop-shadow(0 0 10px rgba(0,229,255,0.6)) 
                     drop-shadow(0 0 30px rgba(0,229,255,0.3))
                     drop-shadow(0 0 60px rgba(255,0,85,0.3));
@@ -143,10 +135,10 @@
         .mode-wrapper { 
             display: flex;
             gap: 60px; 
-            perspective: 1500px; /* 3D 왜곡 깊이 조정 */
+            perspective: 1500px; /* 3D ?쒓끝 源딆씠 議곗젙 */
         }
 
-        /* --- 모드 카드 베이스 --- */
+        /* --- 紐⑤뱶 移대뱶 踰좎씠??--- */
         .mode-card {
             position: relative;
             width: 380px; 
@@ -160,7 +152,7 @@
             transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* 왼쪽 카드는 오른쪽으로, 오른쪽 카드는 왼쪽으로 비스듬히 눕히기 */
+        /* ?쇱そ 移대뱶???ㅻⅨ履쎌쑝濡? ?ㅻⅨ履?移대뱶???쇱そ?쇰줈 鍮꾩뒪?ы엳 ?뺥엳湲?*/
         .mode-card.single { 
             --card-color: var(--accent);
             --card-glow: rgba(0, 229, 255, 0.4); 
@@ -172,7 +164,7 @@
             transform: rotateY(-20deg) rotateX(5deg);
         }
 
-        /* 마우스 호버 시 정면으로 튀어나오는 극적인 효과 */
+        /* 留덉슦???몃쾭 ???뺣㈃?쇰줈 ??대굹?ㅻ뒗 洹뱀쟻???④낵 */
         .mode-card:hover {
             transform: rotateY(0deg) rotateX(0deg) translateY(-25px) scale(1.05) !important;
             border-color: var(--card-color); 
@@ -202,7 +194,7 @@
             background-size: 100% 4px, 3px 100%; pointer-events: none;
         }
 
-        /* --- 설정 및 공통 모달 스타일 --- */
+        /* --- ?ㅼ젙 諛?怨듯넻 紐⑤떖 ?ㅽ???--- */
         .modal-overlay { 
             display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
             background: rgba(0, 0, 0, 0.8); z-index: 2000; 
@@ -217,13 +209,6 @@
             font-family: 'Orbitron'; font-size: 24px; color: var(--accent); 
             margin-bottom: 30px; letter-spacing: 2px; border-bottom: 1px solid #333; padding-bottom: 15px; 
         }
-        .setting-row { 
-            display: flex; align-items: center; justify-content: space-between; 
-            margin-bottom: 25px; font-family: 'Orbitron'; color: #ccc; font-size: 14px; 
-        }
-        .setting-val { color: var(--accent); font-weight: bold; width: 60px; text-align: right; }
-        input[type="range"] { accent-color: var(--accent); cursor: pointer; width: 180px; }
-        
         .btn-full { 
             width: 100%; padding: 14px; margin-top: 15px; background: #222; 
             border: 1px solid #444; color: var(--accent); font-family: 'Orbitron'; 
@@ -231,33 +216,9 @@
         }
         .btn-full:hover { background: #333; border-color: var(--accent); }
 
-        /* 키 바인딩 스타일 */
-        .key-bind-container { display: flex; gap: 10px; }
-        .key-btn { 
-            width: 50px; height: 50px; border: 2px solid #444; border-radius: 8px; 
-            background: #222; color: #fff; font-family: 'Orbitron'; font-weight: bold; font-size: 18px;
-            cursor: pointer; transition: 0.2s; text-transform: uppercase;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-        }
-        .key-btn:hover { border-color: var(--accent); color: var(--accent); }
-        
-        #key-overlay {
-            display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95); z-index: 10; border-radius: 16px;
-            flex-direction: column; align-items: center; justify-content: center;
-        }
-
-        /* 싱크 마법사 스타일 */
-        .calib-circle { 
-            width: 150px; height: 150px; border-radius: 50%; border: 2px solid var(--accent); 
-            display: flex; align-items: center; justify-content: center; font-size: 20px; 
-            color: var(--accent); font-family: 'Orbitron'; cursor: pointer; transition: 0.1s; 
-            box-shadow: 0 0 20px var(--accent-glow); margin: 0 auto 30px; 
-        }
-        .calib-circle:active { transform: scale(0.9); background: var(--accent); color: #000; }
-        .calib-circle.flash { background: #fff; box-shadow: 0 0 50px #fff; }
-
-        /* 닉네임 입력 모달 인풋 */
+        /* ??諛붿씤???ㅽ???*/
+        /* ?깊겕 留덈쾿???ㅽ???*/
+        /* ?됰꽕???낅젰 紐⑤떖 ?명뭼 */
         .modal-input { background: transparent; border: none; border-bottom: 2px solid var(--accent); color: #fff; font-size: 24px; font-family: 'Orbitron'; text-align: center; width: 100%; outline: none; padding: 10px; margin: 20px 0; }
 
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
@@ -280,13 +241,10 @@
             <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
             <div class="nickname-container" style="margin-top:8px;">
                 <div id="user-name-display">GUEST MODE</div>
-                <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)" style="display:none;">✏️</button>
+                <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)" style="display:none;">EDIT</button>
             </div>
             <button id="main-login-btn" class="custom-login-btn" onclick="handleAuth()">LOGIN</button>
-        </div>
-
-        <div class="top-right-group">
-            <button class="btn-icon" onclick="openSettings()" title="Global Settings">⚙️</button>
+            <button class="archive-btn" onclick="location.href='archive.html'">ARCHIVE</button>
         </div>
 
         <div class="title-logo">WEB BEAT</div>
@@ -296,9 +254,9 @@
                 <div class="scanline"></div>
                 <div class="card-bg-text">01</div>
                 <div class="card-content">
-                    <div class="mode-icon">✦</div>
+                    <div class="mode-icon">&#9835;</div>
                     <div class="mode-name">SINGLE PLAY</div>
-                    <div class="mode-desc">나만의 속도로 실력을 연마하세요.<br>다양한 곡들이 당신을 기다립니다.</div>
+                    <div class="mode-desc">Play at your own pace.<br>Choose a song and chase your best score.</div>
                 </div>
             </div>
 
@@ -306,61 +264,14 @@
                 <div class="scanline"></div>
                 <div class="card-bg-text">02</div>
                 <div class="card-content">
-                    <div class="mode-icon">⚔</div>
+                    <div class="mode-icon">VS</div>
                     <div class="mode-name">RANKED MATCH</div>
-                    <div class="mode-desc">실시간으로 경쟁하고 티어를 올리세요.<br>진정한 챔피언은 누구입니까?</div>
+                    <div class="mode-desc">Compete in real time.<br>Climb the ladder against other players.</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <div id="settings-modal" class="modal-overlay" onclick="closeSettings(event)">
-        <div class="modal-box" onclick="event.stopPropagation()">
-            <div class="modal-title">SYSTEM SETTINGS</div>
-            
-            <div class="setting-row">
-                <span>NOTE SPEED</span>
-                <input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0">
-                <span class="setting-val" id="speed-display">5.0</span>
-            </div>
-
-            <div class="setting-row">
-                <span>SFX VOLUME</span>
-                <input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7">
-                <span class="setting-val" id="sfx-val">70%</span>
-            </div>
-
-            <div class="setting-row">
-                <span>GEAR OPACITY</span>
-                <input type="range" id="opacity-slider" min="0" max="100" step="5" value="70">
-                <span class="setting-val" id="opacity-val">70%</span>
-            </div>
-
-            <div class="setting-row">
-                <span>AUDIO OFFSET</span>
-                <div style="display:flex; align-items:center; gap:10px;">
-                    <span class="setting-val" id="offset-display" style="width:auto;">0</span> ms
-                </div>
-            </div>
-
-            <div class="setting-row">
-                <span>KEY CONFIG</span>
-                <div class="key-bind-container" id="key-bind-group">
-                    </div>
-            </div>
-
-            <button class="btn-full" onclick="openCalib()">🔊 SYNC WIZARD</button>
-            <button class="btn-full" onclick="closeSettings()" style="background:#444; color:#fff; margin-top:10px;">CLOSE</button>
-            
-            <div id="key-overlay">
-                <div style="font-family:'Orbitron'; font-size:20px; color:#fff; margin-bottom:20px;" id="key-msg">PRESS KEY...</div>
-                <div id="key-confirm-btns" style="display:none; gap:20px;">
-                    <button class="btn-icon" style="border-color:#00e676; color:#00e676;" onclick="confirmKey(true)">✔</button>
-                    <button class="btn-icon" style="border-color:#ff0055; color:#ff0055;" onclick="confirmKey(false)">✖</button>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <div id="name-modal" class="modal-overlay">
         <div class="modal-box">
@@ -371,24 +282,11 @@
         </div>
     </div>
 
-    <div id="calib-overlay" class="modal-overlay" style="z-index:3000;">
-        <div class="modal-box" style="background:rgba(0,0,0,0.95); width:500px;">
-            <h2 style="font-family:'Orbitron'; color:var(--accent); margin-bottom:40px;">AUDIO SYNC</h2>
-            <div id="calib-circle" class="calib-circle" onclick="handleTap(event)">TAP</div>
-            <div id="calib-msg" style="color:#aaa; margin-bottom:20px;">Listen to the beat and tap!</div>
-            <div style="display:flex; justify-content:center; gap:15px; margin-bottom:20px;">
-                <button class="btn-icon" onclick="adjustOffset(-1)">-</button>
-                <input type="number" id="offset-input" value="0" onchange="manualInput()" style="background:transparent; border:none; color:#fff; font-size:24px; width:80px; text-align:center; font-family:'Orbitron';">
-                <button class="btn-icon" onclick="adjustOffset(1)">+</button>
-            </div>
-            <button class="btn-full" onclick="closeCalib()">SAVE & EXIT</button>
-        </div>
-    </div>
 
     <script>
         const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app";
 
-        // --- 배경 별 생성 ---
+        // --- 諛곌꼍 蹂??앹꽦 ---
         const bg = document.getElementById('bg-container');
         for(let i=0; i<150; i++) {
             const star = document.createElement('div');
@@ -400,7 +298,7 @@
             bg.appendChild(star);
         }
 
-        // --- BGM 및 진입 ---
+        // --- BGM 諛?吏꾩엯 ---
         const titleBgm = new Audio('BGM/title.mp3'); 
         titleBgm.loop = true; 
         titleBgm.volume = 0.5;
@@ -412,17 +310,15 @@
                 document.getElementById('main-ui').style.opacity = '1';
             }, 1000);
             
-            // [★ 수정] 클릭 시 BGM 재생
+            // [???섏젙] ?대┃ ??BGM ?ъ깮
             titleBgm.play().catch(e => console.log("Audio play failed", e));
         }
 
-        // --- 초기화 ---
+        // --- 珥덇린??---
         window.onload = function() {
-            initSettings();
-            initKeyBindings();
-            checkLoginStatus(); // 로그인 상태 확인
+            checkLoginStatus(); // 濡쒓렇???곹깭 ?뺤씤
             
-            // 로그인 직후 닉네임 설정 모달 띄우기 처리
+            // 濡쒓렇??吏곹썑 ?됰꽕???ㅼ젙 紐⑤떖 ?꾩슦湲?泥섎━
             const justLoggedIn = localStorage.getItem('wb_just_logged_in');
             if (justLoggedIn === 'true') {
                 openNicknameModal(true);
@@ -431,7 +327,7 @@
         };
 
         // ==========================================
-        // ★ [로그인 및 프로필 로직 (이식됨)] ★
+        // ??[濡쒓렇??諛??꾨줈??濡쒖쭅 (?댁떇??] ??
         // ==========================================
         function openNicknameModal(forceOpen) { 
             if (!forceOpen && localStorage.getItem('wb_nickname')) { 
@@ -449,7 +345,7 @@
             const input = document.getElementById('nickname-input'); 
             const newNickname = input.value.trim(); 
             if (newNickname.length < 2 || newNickname.length > 12) { 
-                alert("2~12글자 사이로 입력해주세요."); return; 
+                alert("Please enter 2 to 12 characters."); return; 
             } 
             localStorage.setItem('wb_nickname', newNickname); 
             const profile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}'); 
@@ -463,7 +359,7 @@
             } 
             document.getElementById('name-modal').style.display = 'none'; 
             checkLoginStatus(); 
-            alert(`환영합니다, [${newNickname}]님!`); 
+            alert(`Welcome, ${newNickname}!`); 
         }
 
         function checkLoginStatus() { 
@@ -491,7 +387,7 @@
         function handleAuth() { 
             const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true'; 
             if (isLoggedIn) { 
-                if(confirm("로그아웃 하시겠습니까?")) { localStorage.clear(); location.reload(); } 
+                if(confirm("Log out?")) { localStorage.clear(); location.reload(); } 
             } else { location.href = 'login.html'; } 
         }
 
@@ -504,181 +400,6 @@
             document.getElementById('user-xp-text').innerText = `${xp} / ${nextXp} XP`; 
         }
 
-        // ==========================================
-        // ★ [설정 관련 스크립트] ★
-        // ==========================================
-        const settingsModal = document.getElementById('settings-modal');
-        const speedSlider = document.getElementById('speed-slider');
-        const speedDisplay = document.getElementById('speed-display');
-        const sfxSlider = document.getElementById('sfx-volume');
-        const sfxVal = document.getElementById('sfx-val');
-        const opacitySlider = document.getElementById('opacity-slider');
-        const opacityVal = document.getElementById('opacity-val');
-        const offsetDisplay = document.getElementById('offset-display');
-
-        function openSettings() { 
-            settingsModal.style.display = 'flex'; 
-            offsetDisplay.innerText = localStorage.getItem('wb_global_offset') || 0; 
-        }
-        function closeSettings(e) { 
-            if (e && e.target !== settingsModal && !e.target.classList.contains('btn-full')) return; 
-            settingsModal.style.display = 'none'; 
-        }
-        
-        function initSettings() {
-            const savedSpeed = localStorage.getItem('wb_user_speed') || "5.0";
-            if(speedSlider) { speedSlider.value = savedSpeed; speedDisplay.innerText = parseFloat(savedSpeed).toFixed(1); }
-            const savedVol = localStorage.getItem('wb_sfx_volume') || "0.7";
-            if(sfxSlider) { sfxSlider.value = savedVol; sfxVal.innerText = Math.round(savedVol * 100) + "%"; }
-            const savedOpacity = localStorage.getItem('wb_gear_opacity') || "70";
-            if(opacitySlider) { opacitySlider.value = savedOpacity; opacityVal.innerText = savedOpacity + "%"; }
-        }
-        
-        speedSlider.addEventListener('input', (e) => { 
-            const val = parseFloat(e.target.value).toFixed(1); 
-            speedDisplay.innerText = val; 
-            localStorage.setItem('wb_user_speed', val); 
-        });
-        sfxSlider.addEventListener('input', (e) => { 
-            const vol = e.target.value; 
-            sfxVal.innerText = Math.round(vol * 100) + "%"; 
-            localStorage.setItem('wb_sfx_volume', vol); 
-        });
-        opacitySlider.addEventListener('input', (e) => { 
-            const val = e.target.value; 
-            opacityVal.innerText = val + "%"; 
-            localStorage.setItem('wb_gear_opacity', val); 
-        });
-
-        // --- 키 바인딩 로직 ---
-        let currentKeys = JSON.parse(localStorage.getItem('wb_key_layout')) || ['d', 'f', 'j', 'k'];
-        let bindingIndex = -1;
-        let tempKey = "";
-
-        function initKeyBindings() {
-            const container = document.getElementById('key-bind-group');
-            container.innerHTML = "";
-            currentKeys.forEach((key, idx) => {
-                const btn = document.createElement('button');
-                btn.className = 'key-btn';
-                btn.innerText = key.toUpperCase();
-                btn.onclick = () => startBinding(idx);
-                container.appendChild(btn);
-            });
-        }
-
-        function startBinding(idx) {
-            bindingIndex = idx;
-            const overlay = document.getElementById('key-overlay');
-            const msg = document.getElementById('key-msg');
-            const btns = document.getElementById('key-confirm-btns');
-            
-            overlay.style.display = 'flex';
-            msg.innerText = "PRESS ANY KEY...";
-            msg.style.color = "#fff";
-            btns.style.display = 'none';
-            window.addEventListener('keydown', handleKeyInput);
-        }
-
-        function handleKeyInput(e) {
-            e.preventDefault();
-            if (e.key === "Escape") { cancelBinding(); return; }
-            tempKey = e.key.toLowerCase();
-            
-            const msg = document.getElementById('key-msg');
-            const btns = document.getElementById('key-confirm-btns');
-            
-            let displayKey = tempKey.toUpperCase();
-            if(displayKey === " ") displayKey = "SPACE";
-
-            msg.innerHTML = `SET TO <span style="color:#00e5ff; font-weight:bold;">[ ${displayKey} ]</span> ?`;
-            btns.style.display = 'flex';
-            window.removeEventListener('keydown', handleKeyInput);
-        }
-
-        function confirmKey(isYes) {
-            if (isYes && bindingIndex !== -1) {
-                currentKeys[bindingIndex] = tempKey;
-                localStorage.setItem('wb_key_layout', JSON.stringify(currentKeys));
-                initKeyBindings();
-            }
-            cancelBinding();
-        }
-
-        function cancelBinding() {
-            bindingIndex = -1; tempKey = "";
-            document.getElementById('key-overlay').style.display = 'none';
-            window.removeEventListener('keydown', handleKeyInput);
-        }
-
-        // --- 싱크 마법사 (Calibration) ---
-        let audioCtx; let calibInterval; let nextBeatTime = 0; const BPM = 120; const INTERVAL_SEC = 60 / BPM; let tapDiffs = []; let isCalibrating = false;
-        
-        function openCalib() { 
-            settingsModal.style.display = 'none'; 
-            document.getElementById('calib-overlay').style.display = 'flex'; 
-            document.getElementById('offset-input').value = localStorage.getItem('wb_global_offset') || 0; 
-            document.getElementById('calib-msg').innerText = "Click circle to start test"; 
-            tapDiffs = []; isCalibrating = false; 
-        }
-        function closeCalib() { 
-            document.getElementById('calib-overlay').style.display = 'none'; 
-            stopCalib(); openSettings(); 
-        }
-        function manualInput() { 
-            const val = document.getElementById('offset-input').value; 
-            localStorage.setItem('wb_global_offset', val); 
-            offsetDisplay.innerText = val; 
-        }
-        function adjustOffset(amount) { 
-            const input = document.getElementById('offset-input'); 
-            input.value = parseInt(input.value) + amount; manualInput(); 
-        }
-        function startCalib() { 
-            if(isCalibrating) return; isCalibrating = true; tapDiffs = []; 
-            document.getElementById('calib-msg').innerText = "Listen & Tap to the beat!"; 
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); 
-            if (audioCtx.state === 'suspended') audioCtx.resume(); 
-            nextBeatTime = audioCtx.currentTime + 0.5; scheduleBeep(); 
-        }
-        function stopCalib() { clearTimeout(calibInterval); isCalibrating = false; }
-        function scheduleBeep() { 
-            if(!isCalibrating) return; 
-            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain(); 
-            osc.connect(gain); gain.connect(audioCtx.destination); 
-            osc.frequency.value = 1000; gain.gain.value = 0.1; 
-            osc.start(nextBeatTime); osc.stop(nextBeatTime + 0.05); 
-            const delay = (nextBeatTime - audioCtx.currentTime) * 1000; 
-            setTimeout(() => { 
-                const circle = document.getElementById('calib-circle'); 
-                circle.classList.add('flash'); 
-                setTimeout(() => circle.classList.remove('flash'), 50); 
-            }, delay); 
-            nextBeatTime += INTERVAL_SEC; calibInterval = setTimeout(scheduleBeep, delay + 200); 
-        }
-        function handleTap(e) { 
-            if(e && (e.target.tagName === 'INPUT' || e.target.tagName === 'BUTTON')) return; 
-            if (!isCalibrating) { startCalib(); return; } 
-            const tapTime = audioCtx.currentTime; 
-            const timeFromPrev = (tapTime - (nextBeatTime - INTERVAL_SEC)); 
-            const timeToNext = (nextBeatTime - tapTime); 
-            let diff = (Math.abs(timeFromPrev) < Math.abs(timeToNext)) ? timeFromPrev : -timeToNext; 
-            if(Math.abs(diff) < 0.2) { 
-                tapDiffs.push(diff * 1000); 
-                const circle = document.getElementById('calib-circle'); 
-                circle.style.transform = "scale(0.9)"; 
-                setTimeout(() => circle.style.transform = "scale(1)", 100); 
-                const currentAvg = Math.round(tapDiffs.reduce((a,b)=>a+b, 0) / tapDiffs.length); 
-                document.getElementById('offset-input').value = currentAvg; manualInput(); 
-                if(tapDiffs.length >= 8) { 
-                    stopCalib(); 
-                    document.getElementById('calib-msg').innerHTML = "<span style='color:#00e5ff; font-weight:bold;'>SYNC COMPLETE!</span>"; 
-                } 
-            } 
-        }
-        window.addEventListener('keydown', (e) => { 
-            if(e.code === 'Space' && document.getElementById('calib-overlay').style.display === 'flex') handleTap(); 
-        });
     </script>
 </body>
 </html>

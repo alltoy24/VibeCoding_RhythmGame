@@ -518,6 +518,10 @@
         .setting-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; font-family: 'Orbitron'; color: #888; font-size: 12px; }
         .setting-val { color: var(--accent); font-weight: bold; width: 58px; text-align: right; }
         input[type="range"] { accent-color: var(--accent); cursor: pointer; width: 150px; }
+        .setting-select { width: 150px; background: rgba(255,255,255,0.04); border: 1px solid rgba(0,242,255,0.18); border-radius: 6px; color: #ddd; font-family: 'Orbitron'; font-size: 10px; padding: 7px 8px; outline: none; }
+        .setting-toggle { width: 150px; display: flex; gap: 6px; }
+        .toggle-btn { flex: 1; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03); color: #555; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; padding: 7px 0; cursor: pointer; transition: 0.2s; }
+        .toggle-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,242,255,0.08); text-shadow: 0 0 8px rgba(0,242,255,0.5); }
         .key-bind-container { display: flex; gap: 7px; }
         .key-btn { width: 44px; height: 44px; border: 2px solid #222; border-radius: 8px; background: rgba(255,255,255,0.03); color: #ccc; font-family: 'Orbitron'; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .key-btn:hover { border-color: var(--accent); color: var(--accent); }
@@ -711,11 +715,17 @@
     <div class="modal-box" onclick="event.stopPropagation()">
         <div class="modal-title">SYSTEM SETTINGS</div>
         <div class="setting-row"><span>NOTE SPEED</span><input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0"><span class="setting-val" id="speed-display">5.0</span></div>
+        <div class="setting-row"><span>MUSIC VOLUME</span><input type="range" id="music-volume" min="0" max="1" step="0.05" value="0.65"><span class="setting-val" id="music-val">65%</span></div>
         <div class="setting-row"><span>SFX VOLUME</span><input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7"><span class="setting-val" id="sfx-val">70%</span></div>
         <div class="setting-row"><span>GEAR OPACITY</span><input type="range" id="opacity-slider" min="0" max="100" step="5" value="70"><span class="setting-val" id="opacity-val">70%</span></div>
-        <div class="setting-row"><span>AUDIO OFFSET</span><span class="setting-val" id="offset-display" style="width:auto;">0 ms</span></div>
+        <div class="setting-row"><span>JUDGE SIZE</span><input type="range" id="judge-size" min="40" max="140" step="5" value="100"><span class="setting-val" id="judge-size-val">100%</span></div>
+        <div class="setting-row"><span>HIT METER SIZE</span><input type="range" id="hit-meter-size" min="50" max="150" step="5" value="100"><span class="setting-val" id="hit-meter-size-val">100%</span></div>
+        <div class="setting-row"><span>JUDGE STYLE</span><select id="judge-style" class="setting-select"><option value="neon">NEON</option><option value="flat">FLAT</option><option value="outline">OUTLINE</option><option value="ripple">RIPPLE</option><option value="linewave">LINE WAVE</option></select><span class="setting-val"></span></div>
+        <div class="setting-row"><span>FEVER</span><div class="setting-toggle"><button type="button" class="toggle-btn" id="fever-on" onclick="setFeverEnabled(true)">ON</button><button type="button" class="toggle-btn" id="fever-off" onclick="setFeverEnabled(false)">OFF</button></div><span class="setting-val"></span></div>
+        <div class="setting-row"><span>VISUAL OFFSET</span><span class="setting-val" id="offset-display" style="width:auto;">0 ms</span></div>
         <div class="setting-row"><span>KEY CONFIG</span><div class="key-bind-container" id="key-bind-group"></div></div>
-        <button class="btn-full" onclick="openCalib()">🔊 SYNC WIZARD</button>
+        <button class="btn-full" onclick="location.href='note_skin.html'">NOTE SKIN LAB</button>
+        <button class="btn-full" onclick="location.href='offset.html'" style="margin-top:6px;">SYNC LAB</button>
         <button class="btn-full" onclick="closeSettings()" style="background:rgba(255,255,255,0.04);color:#888;margin-top:6px;">CLOSE</button>
         <div id="key-overlay">
             <div style="font-family:'Orbitron';font-size:17px;color:#fff;margin-bottom:18px;" id="key-msg">PRESS KEY...</div>
@@ -835,6 +845,9 @@ function startPreview() {
 }
 
 function fadeVolume(from, to, dur, cb) {
+    const musicVol = getMusicVolume();
+    from *= musicVol;
+    to *= musicVol;
     const interval = 50, steps = dur / interval, step = (to - from) / steps;
     let n = 0; previewAudio.volume = from;
     const fade = setInterval(() => {
@@ -847,7 +860,7 @@ function fadeVolume(from, to, dur, cb) {
 
 function stopPreview() {
     if (_previewStopTimer) { clearTimeout(_previewStopTimer); _previewStopTimer = null; }
-    previewAudio.pause(); previewAudio.volume = 0.48; previewAudio.src = '';
+    previewAudio.pause(); previewAudio.volume = 0.48 * getMusicVolume(); previewAudio.src = '';
     document.getElementById('np-row').classList.remove('visible');
     document.getElementById('big-cover').classList.remove('playing');
     stopVisualizer();
@@ -1413,16 +1426,31 @@ document.addEventListener('keydown', e => {
 });
 
 // ═══════════ SETTINGS ═══════════
-function openSettings()  { document.getElementById('settings-modal').style.display='flex'; document.getElementById('offset-display').textContent=(localStorage.getItem('wb_global_offset')||0)+' ms'; }
+function openSettings()  { document.getElementById('settings-modal').style.display='flex'; document.getElementById('offset-display').textContent=(localStorage.getItem('wb_visual_offset')||localStorage.getItem('wb_start_offset')||localStorage.getItem('wb_global_offset')||0)+' ms'; }
 function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
+function getMusicVolume() { const value=parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || '0.65'); return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0.65)); }
+function setFeverEnabled(enabled) {
+    localStorage.setItem('wb_fever_enabled', enabled ? '1' : '0');
+    document.getElementById('fever-on').classList.toggle('active', enabled);
+    document.getElementById('fever-off').classList.toggle('active', !enabled);
+}
 function initSettings() {
     const spd=localStorage.getItem('wb_user_speed')||'5.0'; document.getElementById('speed-slider').value=spd; document.getElementById('speed-display').textContent=parseFloat(spd).toFixed(1);
+    const music=getMusicVolume(); document.getElementById('music-volume').value=music; document.getElementById('music-val').textContent=Math.round(music*100)+'%';
     const vol=localStorage.getItem('wb_sfx_volume')||'0.7'; document.getElementById('sfx-volume').value=vol; document.getElementById('sfx-val').textContent=Math.round(vol*100)+'%';
     const op=localStorage.getItem('wb_gear_opacity')||'70'; document.getElementById('opacity-slider').value=op; document.getElementById('opacity-val').textContent=op+'%';
+    const judgeSize=localStorage.getItem('wb_judge_size')||'100'; document.getElementById('judge-size').value=judgeSize; document.getElementById('judge-size-val').textContent=judgeSize+'%';
+    const hitMeterSize=localStorage.getItem('wb_hit_meter_size')||'100'; document.getElementById('hit-meter-size').value=hitMeterSize; document.getElementById('hit-meter-size-val').textContent=hitMeterSize+'%';
+    document.getElementById('judge-style').value=localStorage.getItem('wb_judge_style')||'neon';
+    setFeverEnabled(localStorage.getItem('wb_fever_enabled')!=='0');
 }
 document.getElementById('speed-slider').addEventListener('input',e=>{const v=parseFloat(e.target.value).toFixed(1);document.getElementById('speed-display').textContent=v;localStorage.setItem('wb_user_speed',v);});
+document.getElementById('music-volume').addEventListener('input',e=>{document.getElementById('music-val').textContent=Math.round(e.target.value*100)+'%';localStorage.setItem('wb_bgm_volume',e.target.value);localStorage.setItem('wb_music_volume',e.target.value);if(!previewAudio.paused)previewAudio.volume=0.48*parseFloat(e.target.value);});
 document.getElementById('sfx-volume').addEventListener('input',e=>{document.getElementById('sfx-val').textContent=Math.round(e.target.value*100)+'%';localStorage.setItem('wb_sfx_volume',e.target.value);});
 document.getElementById('opacity-slider').addEventListener('input',e=>{document.getElementById('opacity-val').textContent=e.target.value+'%';localStorage.setItem('wb_gear_opacity',e.target.value);});
+document.getElementById('judge-size').addEventListener('input',e=>{document.getElementById('judge-size-val').textContent=e.target.value+'%';localStorage.setItem('wb_judge_size',e.target.value);});
+document.getElementById('hit-meter-size').addEventListener('input',e=>{document.getElementById('hit-meter-size-val').textContent=e.target.value+'%';localStorage.setItem('wb_hit_meter_size',e.target.value);});
+document.getElementById('judge-style').addEventListener('change',e=>{localStorage.setItem('wb_judge_style',e.target.value);});
 
 // ═══════════ KEY BINDING ═══════════
 let currentKeys=JSON.parse(localStorage.getItem('wb_key_layout'))||['d','f','j','k'];

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>WEB BEAT : OFFSET</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@400;600;700&display=swap');
+    :root {
+      --bg: #03050b;
+      --accent: #00e5ff;
+      --good: #00ff88;
+      --warn: #ffd34d;
+      --bad: #ff2d78;
+      --muted: #778094;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; width: 100%; height: 100%; overflow: hidden;
+      background: #000; color: #fff; font-family: 'Exo 2', sans-serif; user-select: none;
+    }
+    body { display: grid; place-items: center; background: var(--bg); }
+    .app {
+      position: relative; z-index: 1;
+      width: min(520px, calc(100vw - 36px));
+      height: min(760px, calc(100vh - 36px));
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: hidden;
+    }
+    canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+    .hud {
+      position: absolute; inset: 0; pointer-events: none;
+      display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+      padding: 30px 22px 26px;
+    }
+    .title {
+      font-family: 'Orbitron'; font-weight: 900; letter-spacing: 4px; font-size: 18px;
+      color: var(--accent); text-shadow: 0 0 18px rgba(0,229,255,0.45);
+    }
+    .center {
+      text-align: center;
+      transform: translateY(-6px);
+    }
+    .main {
+      font-family: 'Orbitron'; font-size: 38px; font-weight: 900; letter-spacing: 2px;
+      text-shadow: 0 0 22px rgba(255,255,255,0.24);
+      margin-bottom: 10px;
+    }
+    .sub {
+      color: var(--muted); font-size: 14px; line-height: 1.45;
+    }
+    .grade {
+      font-family: 'Orbitron'; font-size: 96px; font-weight: 900; line-height: 1;
+      text-shadow: 0 0 34px currentColor;
+    }
+    .bottom {
+      width: 100%;
+      display: grid; gap: 10px;
+    }
+    .meter {
+      height: 34px; border-radius: 8px; background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.08); position: relative; overflow: hidden;
+    }
+    .meter::before {
+      content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 2px;
+      background: #fff; box-shadow: 0 0 14px #fff;
+    }
+    .dot {
+      position: absolute; top: 0; width: 3px; height: 100%;
+      background: var(--accent); box-shadow: 0 0 12px var(--accent);
+    }
+    .stats {
+      display: flex; justify-content: space-between; color: #9aa5b8;
+      font-family: 'Orbitron'; font-size: 10px; letter-spacing: 1px;
+    }
+    .back {
+      position: absolute; left: 16px; top: 16px; z-index: 2;
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 8px;
+      background: rgba(255,255,255,0.04); color: #fff;
+      font-family: 'Orbitron'; font-weight: 700; padding: 8px 12px; cursor: pointer;
+    }
+    .back:hover { border-color: var(--accent); color: var(--accent); }
+  </style>
+</head>
+<body>
+  <button class="back" onclick="location.href='select.html'">BACK</button>
+  <main class="app">
+    <canvas id="stage"></canvas>
+    <div class="hud">
+      <div class="title">OFFSET CHECK</div>
+      <div class="center">
+        <div class="main" id="main-text">A TO START</div>
+        <div class="sub" id="sub-text">A키를 누르면 보정이 시작됩니다.</div>
+      </div>
+      <div class="bottom">
+        <div class="meter" id="meter"></div>
+        <div class="stats">
+          <span id="sample-text">0 HIT</span>
+          <span id="offset-text">0 ms</span>
+          <span id="grade-text">READY</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    const BPM = 125;
+    const NOTES_PER_MEASURE = 4;
+    const NOTE_COUNT = 64;
+    const NOTE_INTERVAL = (60000 / BPM) * (4 / NOTES_PER_MEASURE);
+    const TRAVEL = 1700;
+    const MUSIC_SRC = 'BGM/offset.mp3';
+    // 보정 음악 파일 안에서 첫 박자가 시작되는 지점입니다. 파일에 앞 공백이 있으면 양수로 조정하세요.
+    const CALIBRATION_MUSIC_OFFSET_MS = 123;
+
+    const canvas = document.getElementById('stage');
+    const ctx = canvas.getContext('2d');
+    const meter = document.getElementById('meter');
+    const mainText = document.getElementById('main-text');
+    const subText = document.getElementById('sub-text');
+    const sampleText = document.getElementById('sample-text');
+    const offsetText = document.getElementById('offset-text');
+    const gradeText = document.getElementById('grade-text');
+
+    let audioCtx = null;
+    let musicBuffer = null;
+    let source = null;
+    let musicGain = null;
+    let state = 'wait';
+    let raf = null;
+    let startAt = 0;
+    let lengthMs = CALIBRATION_MUSIC_OFFSET_MS + (NOTE_COUNT - 1) * NOTE_INTERVAL + 900;
+    let notes = [];
+    let hits = [];
+    let hitFlashes = [];
+    let savedVisualOffset = parseInt(localStorage.getItem('wb_visual_offset') || localStorage.getItem('wb_start_offset') || localStorage.getItem('wb_global_offset') || '0', 10) || 0;
+
+    document.body.tabIndex = 0;
+    document.body.focus();
+
+    function resize() {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+      draw(performance.now());
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    async function ensureAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+      if (musicBuffer !== null) return;
+      try {
+        const res = await fetch(MUSIC_SRC, { cache: 'no-store' });
+        if (!res.ok) throw new Error('no music');
+        musicBuffer = await audioCtx.decodeAudioData(await res.arrayBuffer());
+      } catch (e) {
+        musicBuffer = false;
+      }
+    }
+
+    function buildNotes() {
+      notes = [];
+      for (let i = 0; i < NOTE_COUNT; i++) {
+        notes.push({ time: startAt + CALIBRATION_MUSIC_OFFSET_MS + i * NOTE_INTERVAL, hit: false, miss: false });
+      }
+    }
+
+    async function startCalibration() {
+      await ensureAudio();
+      stopMusic();
+      state = 'run';
+      hits = [];
+      clearMeter();
+      startAt = performance.now() + 800;
+      buildNotes();
+      mainText.textContent = 'HIT A';
+      subText.textContent = '32개의 노트를 A키로 치세요.';
+      gradeText.textContent = 'RUN';
+      if (musicBuffer) {
+        source = audioCtx.createBufferSource();
+        musicGain = audioCtx.createGain();
+        source.buffer = musicBuffer;
+        musicGain.gain.value = parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || '0.65');
+        source.connect(musicGain);
+        musicGain.connect(audioCtx.destination);
+        source.start(audioCtx.currentTime + 0.8);
+        source.onended = finishCalibration;
+      }
+      loop();
+    }
+
+    function stopMusic() {
+      if (!source) return;
+      try { source.stop(); } catch(e) {}
+      source = null;
+      musicGain = null;
+    }
+
+    function fadeOutMusic() {
+      if (!source || !musicGain || !audioCtx) return;
+      const now = audioCtx.currentTime;
+      const current = musicGain.gain.value;
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setValueAtTime(current, now);
+      musicGain.gain.linearRampToValueAtTime(0, now + 0.75);
+      setTimeout(stopMusic, 820);
+    }
+
+    function finishCalibration() {
+      if (state !== 'run') return;
+      state = 'result';
+      fadeOutMusic();
+      cancelAnimationFrame(raf);
+      const result = analyze();
+      showResult(result);
+    }
+
+    function loop() {
+      const now = performance.now();
+      draw(now);
+      if (state === 'run' && now > startAt + lengthMs) finishCalibration();
+      if (state === 'run') raf = requestAnimationFrame(loop);
+    }
+
+    function geom() {
+      const laneW = Math.min(100, canvas.width * 0.22);
+      const laneX = (canvas.width - laneW) / 2;
+      const hitY = canvas.height * 0.84;
+      return { laneX, laneW, hitY };
+    }
+
+    function draw(now) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const g = geom();
+      ctx.fillStyle = 'rgba(0,0,0,0.62)';
+      ctx.fillRect(g.laneX, 0, g.laneW, canvas.height);
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(g.laneX, 0);
+      ctx.lineTo(g.laneX, canvas.height);
+      ctx.moveTo(g.laneX + g.laneW, 0);
+      ctx.lineTo(g.laneX + g.laneW, canvas.height);
+      ctx.stroke();
+
+      ctx.shadowBlur = 18;
+      ctx.shadowColor = '#00e5ff';
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 4;
+      ctx.beginPath();
+      ctx.moveTo(0, g.hitY);
+      ctx.lineTo(canvas.width, g.hitY);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      if (state !== 'run') return;
+
+      hitFlashes = hitFlashes.filter(f => now - f.time < 140);
+      hitFlashes.forEach(f => {
+        const age = (now - f.time) / 140;
+        const alpha = 1 - age;
+        const x = g.laneX + g.laneW / 2;
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.strokeStyle = '#00ff88';
+        ctx.shadowColor = '#00ff88';
+        ctx.shadowBlur = 18;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(x, g.hitY, 18 + age * 24, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      notes.forEach(note => {
+        if (note.hit) return;
+        const progress = (now - (note.time - TRAVEL)) / TRAVEL;
+        if (progress < 0 || progress > 1.16) return;
+        const y = -26 + progress * (g.hitY + 26);
+        if (!note.hit && !note.miss && now - note.time > 180) note.miss = true;
+        const x = g.laneX + g.laneW / 2;
+        ctx.fillStyle = note.miss ? '#ff2d78' : '#00e5ff';
+        ctx.shadowColor = ctx.fillStyle;
+        ctx.shadowBlur = 10;
+        roundRect(x - g.laneW * 0.28, y - 7, g.laneW * 0.56, 14, 5);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+    }
+
+    function roundRect(x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    window.addEventListener('keydown', e => {
+      if (e.key.toLowerCase() !== 'a') return;
+      e.preventDefault();
+      if (state === 'wait' || state === 'result') {
+        startCalibration();
+        return;
+      }
+      const now = performance.now();
+      const candidates = notes
+        .filter(n => !n.hit && Math.abs(now - n.time) <= 260)
+        .sort((a, b) => Math.abs(now - a.time) - Math.abs(now - b.time));
+      if (!candidates.length) return;
+      const note = candidates[0];
+      note.hit = true;
+      hitFlashes.push({ time: now });
+      const diff = now - note.time;
+      hits.push(diff);
+      addDot(diff);
+      updateRunStats();
+    });
+
+    function median(values) {
+      if (!values.length) return 0;
+      const sorted = [...values].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    function analyze() {
+      const med = Math.round(median(hits));
+      const abs = hits.map(v => Math.abs(v - med));
+      const precision = Math.round(median(abs));
+      const hitRate = notes.length ? hits.length / notes.length : 0;
+      let grade = 'F';
+      if (hits.length >= 8 && hitRate >= 0.55) {
+        if (precision <= 14) grade = 'S';
+        else if (precision <= 24) grade = 'A';
+        else if (precision <= 38) grade = 'B';
+        else if (precision <= 56) grade = 'C';
+        else if (precision <= 78) grade = 'D';
+      }
+      return {
+        median: med,
+        precision,
+        hitRate,
+        grade,
+        recommended: Math.round(savedVisualOffset + med)
+      };
+    }
+
+    function showResult(result) {
+      const pass = ['S', 'A', 'B', 'C'].includes(result.grade);
+      mainText.innerHTML = `<span class="grade" style="color:${gradeColor(result.grade)}">${result.grade}</span>`;
+      sampleText.textContent = `${hits.length} HIT`;
+      offsetText.textContent = `${result.recommended} ms`;
+      gradeText.textContent = `PREC ${result.precision} ms`;
+      if (pass) {
+        localStorage.setItem('wb_visual_offset', String(result.recommended));
+        localStorage.setItem('wb_start_offset', String(result.recommended));
+        localStorage.setItem('wb_global_offset', String(result.recommended));
+        localStorage.setItem('wb_input_offset', '0');
+        subText.textContent = `시각 오프셋 ${result.recommended} ms 저장됨. 잠시 후 돌아갑니다.`;
+        setTimeout(() => { location.href = 'select.html'; }, 2600);
+      } else {
+        subText.textContent = '정밀도가 낮습니다. A키를 눌러 다시 보정하세요.';
+      }
+    }
+
+    function gradeColor(grade) {
+      return ({ S:'#ffffff', A:'#00e5ff', B:'#00ff88', C:'#ffd34d', D:'#ff8a33', F:'#ff2d78' })[grade] || '#fff';
+    }
+
+    function updateRunStats() {
+      const med = Math.round(median(hits));
+      sampleText.textContent = `${hits.length} HIT`;
+      offsetText.textContent = `${savedVisualOffset + med} ms`;
+      gradeText.textContent = `${med} ms`;
+    }
+
+    function clearMeter() {
+      meter.querySelectorAll('.dot').forEach(dot => dot.remove());
+    }
+
+    function addDot(diff) {
+      const dot = document.createElement('div');
+      dot.className = 'dot';
+      const pct = Math.max(0, Math.min(100, 50 + (diff / 140) * 50));
+      dot.style.left = `calc(${pct}% - 1px)`;
+      dot.style.background = Math.abs(diff) <= 35 ? '#00ff88' : diff < 0 ? '#3b9eff' : '#ff2d78';
+      meter.appendChild(dot);
+      const dots = meter.querySelectorAll('.dot');
+      if (dots.length > 36) dots[0].remove();
+    }
+  </script>
+</body>
+</html>

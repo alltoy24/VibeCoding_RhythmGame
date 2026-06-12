@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>WEB BEAT : ARCHIVE</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg: #03040a;
+            --panel: rgba(8, 10, 22, 0.88);
+            --line: rgba(0, 229, 255, 0.16);
+            --accent: #00e5ff;
+            --accent-soft: rgba(0, 229, 255, 0.22);
+            --hot: #ff2d78;
+            --gold: #ffd700;
+            --text: #ffffff;
+            --muted: #6f7890;
+        }
+
+        * { box-sizing: border-box; }
+        html, body {
+            margin: 0; min-height: 100%; background: #000; color: var(--text);
+            font-family: 'Exo 2', sans-serif; overflow-x: hidden;
+        }
+        body {
+            background:
+                radial-gradient(circle at 18% 12%, rgba(0,229,255,0.14), transparent 28%),
+                radial-gradient(circle at 82% 10%, rgba(255,45,120,0.12), transparent 26%),
+                radial-gradient(circle at 50% 92%, rgba(255,215,0,0.08), transparent 24%),
+                var(--bg);
+        }
+        body::before {
+            content: ""; position: fixed; inset: 0; pointer-events: none; opacity: 0.45;
+            background-image:
+                linear-gradient(rgba(0,229,255,0.035) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0,229,255,0.025) 1px, transparent 1px);
+            background-size: 42px 42px;
+            mask-image: radial-gradient(ellipse at center, black 38%, transparent 88%);
+        }
+        body::after {
+            content: ""; position: fixed; inset: 0; pointer-events: none;
+            background: repeating-linear-gradient(180deg, transparent, transparent 3px, rgba(0,0,0,0.16) 3px, rgba(0,0,0,0.16) 4px);
+        }
+
+        .shell { position: relative; z-index: 1; width: min(1220px, calc(100vw - 48px)); margin: 0 auto; padding: 28px 0 40px; }
+        .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+        .brand { font-family: 'Orbitron'; font-weight: 900; letter-spacing: 5px; font-size: 28px; text-shadow: 0 0 18px var(--accent-soft); }
+        .brand span { color: var(--accent); }
+        .back-btn {
+            border: 1px solid rgba(255,255,255,0.12); color: #dfefff; background: rgba(255,255,255,0.04);
+            border-radius: 8px; padding: 10px 16px; font-family: 'Orbitron'; font-weight: 700;
+            letter-spacing: 1px; cursor: pointer; transition: 0.2s;
+        }
+        .back-btn:hover { border-color: var(--accent); color: var(--accent); box-shadow: 0 0 18px rgba(0,229,255,0.22); }
+
+        .hero {
+            display: grid; grid-template-columns: 1fr 300px; gap: 22px; align-items: stretch;
+            border: 1px solid var(--line); border-radius: 14px; padding: 24px;
+            background: linear-gradient(135deg, rgba(255,255,255,0.055), rgba(255,255,255,0.018));
+            box-shadow: 0 18px 70px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.06);
+            overflow: hidden; position: relative;
+        }
+        .hero::before {
+            content: "ARCHIVE"; position: absolute; right: 18px; top: -20px;
+            font-family: 'Orbitron'; font-size: 118px; font-weight: 900; color: rgba(255,255,255,0.025);
+        }
+        .kicker { font-family: 'Orbitron'; letter-spacing: 5px; font-size: 11px; color: rgba(0,229,255,0.7); margin-bottom: 8px; }
+        h1 { margin: 0; font-family: 'Orbitron'; font-size: 42px; letter-spacing: 3px; line-height: 1.08; }
+        .sub { color: var(--muted); margin-top: 10px; max-width: 650px; font-size: 15px; }
+        .player-line { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 22px; }
+        .pill {
+            border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.24);
+            border-radius: 999px; padding: 7px 12px; font-family: 'Orbitron'; font-size: 11px; color: #aeb8c9;
+        }
+        .ring {
+            width: 220px; height: 220px; border-radius: 50%; justify-self: center; align-self: center;
+            background: conic-gradient(var(--accent) var(--progress, 0%), rgba(255,255,255,0.07) 0);
+            display: grid; place-items: center; box-shadow: 0 0 34px rgba(0,229,255,0.18);
+        }
+        .ring-core {
+            width: 164px; height: 164px; border-radius: 50%; background: #050711; border: 1px solid rgba(255,255,255,0.08);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+        }
+        .ring-num { font-family: 'Orbitron'; font-size: 40px; font-weight: 900; }
+        .ring-label { font-family: 'Orbitron'; font-size: 10px; letter-spacing: 2px; color: var(--muted); }
+
+        .metric-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin: 18px 0; }
+        .metric {
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 10px; padding: 14px;
+            background: rgba(255,255,255,0.035);
+        }
+        .metric-label { font-family: 'Orbitron'; font-size: 9px; letter-spacing: 2px; color: var(--muted); }
+        .metric-value { font-family: 'Orbitron'; font-weight: 900; font-size: 22px; margin-top: 6px; }
+
+        .main-grid { display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 18px; }
+        .panel {
+            border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; background: var(--panel);
+            padding: 18px; box-shadow: 0 12px 40px rgba(0,0,0,0.28);
+        }
+        .panel-title { font-family: 'Orbitron'; font-size: 13px; letter-spacing: 3px; color: var(--accent); margin-bottom: 14px; }
+        .bars { display: grid; gap: 9px; }
+        .bar-row { display: grid; grid-template-columns: 92px 1fr 80px; align-items: center; gap: 10px; color: #aeb8c9; font-size: 13px; }
+        .track { height: 9px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+        .fill { height: 100%; border-radius: 999px; background: var(--accent); box-shadow: 0 0 14px currentColor; }
+        .bar-val { text-align: right; font-family: 'Orbitron'; font-size: 11px; color: #dfefff; }
+
+        .records { display: grid; gap: 8px; max-height: 430px; overflow: auto; padding-right: 4px; }
+        .record {
+            display: grid; grid-template-columns: 1fr 116px 84px; gap: 12px; align-items: center;
+            padding: 12px 13px; border-radius: 8px; background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.07);
+        }
+        .record-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .record-meta { margin-top: 3px; color: var(--muted); font-size: 11px; }
+        .record-score { font-family: 'Orbitron'; font-weight: 900; text-align: right; }
+        .record-badge { font-family: 'Orbitron'; font-size: 10px; text-align: right; color: var(--gold); }
+        .empty { color: var(--muted); border: 1px dashed rgba(255,255,255,0.14); border-radius: 10px; padding: 34px; text-align: center; }
+
+        @media (max-width: 920px) {
+            .hero, .main-grid { grid-template-columns: 1fr; }
+            .metric-grid { grid-template-columns: repeat(2, 1fr); }
+            .ring { width: 190px; height: 190px; }
+            h1 { font-size: 32px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shell">
+        <div class="topbar">
+            <div class="brand">WEB <span>BEAT</span></div>
+            <button class="back-btn" onclick="location.href='index.html'">BACK</button>
+        </div>
+
+        <section class="hero">
+            <div>
+                <div class="kicker">PLAYER RECORD VAULT</div>
+                <h1 id="archive-title">PLAYER ARCHIVE</h1>
+                <div class="sub">A complete local summary of your saved chart records, clear history, grade spread, pack progress, and best performances.</div>
+                <div class="player-line">
+                    <div class="pill" id="player-name">GUEST</div>
+                    <div class="pill" id="player-level">LV. 1</div>
+                    <div class="pill" id="player-xp">0 XP</div>
+                </div>
+            </div>
+            <div class="ring" id="completion-ring">
+                <div class="ring-core">
+                    <div class="ring-num" id="completion-num">0%</div>
+                    <div class="ring-label">COMPLETION</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="metric-grid">
+            <div class="metric"><div class="metric-label">PLAYED</div><div class="metric-value" id="m-played">0</div></div>
+            <div class="metric"><div class="metric-label">CLEARED</div><div class="metric-value" id="m-cleared">0</div></div>
+            <div class="metric"><div class="metric-label">AVG SCORE</div><div class="metric-value" id="m-average">000000</div></div>
+            <div class="metric"><div class="metric-label">BEST</div><div class="metric-value" id="m-best">000000</div></div>
+            <div class="metric"><div class="metric-label">FULL COMBO</div><div class="metric-value" id="m-fc">0</div></div>
+            <div class="metric"><div class="metric-label">TROLL BEAT</div><div class="metric-value" id="m-tb">0</div></div>
+        </section>
+
+        <main class="main-grid">
+            <section class="panel">
+                <div class="panel-title">GRADE DISTRIBUTION</div>
+                <div class="bars" id="grade-bars"></div>
+            </section>
+            <section class="panel">
+                <div class="panel-title">PACK PROGRESS</div>
+                <div class="bars" id="pack-bars"></div>
+            </section>
+            <section class="panel">
+                <div class="panel-title">JUDGMENT DETAIL</div>
+                <div class="bars" id="judge-bars"></div>
+            </section>
+            <section class="panel">
+                <div class="panel-title">TOP RECORDS</div>
+                <div class="records" id="top-records"></div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const GRADE_THRESHOLDS = [
+            { min: 1000000, grade: 'TB', hex: '#ffffff' },
+            { min: 980000,  grade: 'S+', hex: '#00ffff' },
+            { min: 950000,  grade: 'S',  hex: '#00e5ff' },
+            { min: 925000,  grade: 'A+', hex: '#00ff88' },
+            { min: 880000,  grade: 'A',  hex: '#00cc66' },
+            { min: 800000,  grade: 'B',  hex: '#3b9eff' },
+            { min: 600000,  grade: 'C',  hex: '#ffc832' },
+            { min: 0.01,    grade: 'F',  hex: '#ff4455' }
+        ];
+
+        function chartKey(chart) {
+            if (typeof chart === 'string') return chart.replace(/\.json$/i, '');
+            return (chart.file || '').replace(/\.json$/i, '');
+        }
+
+        function chartLabel(chart) {
+            if (typeof chart === 'string') {
+                const key = chart.toLowerCase();
+                if (key.includes('normal')) return 'NORMAL';
+                if (key.includes('hard')) return 'HARD';
+                if (key.includes('troll')) return 'TROLL';
+                return 'CUSTOM';
+            }
+            return (chart.name || 'Custom').toUpperCase();
+        }
+
+        function chartLevel(chart) {
+            if (typeof chart === 'string') {
+                const m = chart.match(/_(\d+)/);
+                return m ? m[1] : '?';
+            }
+            return chart.level ?? '?';
+        }
+
+        function gradeFor(score) {
+            return GRADE_THRESHOLDS.find(g => score >= g.min) || { grade: '-', hex: '#667' };
+        }
+
+        function fmtScore(score) {
+            return String(score || 0).padStart(6, '0');
+        }
+
+        function readDetail(folder, key) {
+            try { return JSON.parse(localStorage.getItem(`wb_detail_${folder}_${key}`) || 'null'); }
+            catch(e) { return null; }
+        }
+
+        function collectStats(songs) {
+            const records = [];
+            const packs = {};
+            const gradeCounts = Object.fromEntries(GRADE_THRESHOLDS.map(g => [g.grade, 0]));
+            const judgeTotals = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
+            let totalCharts = 0;
+
+            songs.forEach(song => {
+                const pack = song.pack || 'ALL SONGS';
+                if (!packs[pack]) packs[pack] = { total: 0, played: 0 };
+                (song.charts || []).forEach(chart => {
+                    const key = chartKey(chart);
+                    if (!key) return;
+                    totalCharts++;
+                    packs[pack].total++;
+                    const score = parseInt(localStorage.getItem(`wb_score_${song.folder}_${key}`) || '0', 10) || 0;
+                    const badge = localStorage.getItem(`wb_badge_${song.folder}_${key}`) || '';
+                    const detail = readDetail(song.folder, key);
+                    if (score > 0) {
+                        packs[pack].played++;
+                        const grade = gradeFor(score);
+                        gradeCounts[grade.grade] = (gradeCounts[grade.grade] || 0) + 1;
+                        records.push({
+                            title: song.title || song.folder,
+                            artist: song.artist || '',
+                            pack,
+                            diff: chartLabel(chart),
+                            level: chartLevel(chart),
+                            folder: song.folder,
+                            key,
+                            score,
+                            badge,
+                            grade,
+                            detail
+                        });
+                    }
+                    if (detail && detail.judgeStats) {
+                        Object.keys(judgeTotals).forEach(k => judgeTotals[k] += parseInt(detail.judgeStats[k] || 0, 10));
+                    }
+                });
+            });
+
+            records.sort((a, b) => b.score - a.score);
+            const played = records.length;
+            const cleared = records.filter(r => r.score >= 600000).length;
+            const avg = played ? Math.round(records.reduce((s, r) => s + r.score, 0) / played) : 0;
+            const best = played ? records[0].score : 0;
+            const fc = records.filter(r => r.badge === 'FC' || r.badge === 'TB').length;
+            const tb = records.filter(r => r.badge === 'TB').length;
+            return { records, packs, gradeCounts, judgeTotals, totalCharts, played, cleared, avg, best, fc, tb };
+        }
+
+        function barRow(label, valueText, pct, color) {
+            return `<div class="bar-row">
+                <div>${label}</div>
+                <div class="track"><div class="fill" style="width:${Math.max(0, Math.min(100, pct))}%;background:${color};color:${color}"></div></div>
+                <div class="bar-val">${valueText}</div>
+            </div>`;
+        }
+
+        function renderArchive(stats) {
+            const completion = stats.totalCharts ? Math.round((stats.played / stats.totalCharts) * 100) : 0;
+            document.getElementById('completion-ring').style.setProperty('--progress', completion + '%');
+            document.getElementById('completion-num').textContent = completion + '%';
+            document.getElementById('player-name').textContent = localStorage.getItem('wb_nickname') || 'GUEST';
+            document.getElementById('player-level').textContent = 'LV. ' + (localStorage.getItem('wb_user_lv') || '1');
+            document.getElementById('player-xp').textContent = (localStorage.getItem('wb_user_xp') || '0') + ' XP';
+            document.getElementById('m-played').textContent = `${stats.played}/${stats.totalCharts}`;
+            document.getElementById('m-cleared').textContent = stats.cleared;
+            document.getElementById('m-average').textContent = fmtScore(stats.avg);
+            document.getElementById('m-best').textContent = fmtScore(stats.best);
+            document.getElementById('m-fc').textContent = stats.fc;
+            document.getElementById('m-tb').textContent = stats.tb;
+
+            const maxGrade = Math.max(1, ...Object.values(stats.gradeCounts));
+            document.getElementById('grade-bars').innerHTML = GRADE_THRESHOLDS.map(g =>
+                barRow(g.grade, stats.gradeCounts[g.grade] || 0, ((stats.gradeCounts[g.grade] || 0) / maxGrade) * 100, g.hex)
+            ).join('');
+
+            document.getElementById('pack-bars').innerHTML = Object.entries(stats.packs).map(([pack, p]) => {
+                const pct = p.total ? (p.played / p.total) * 100 : 0;
+                return barRow(pack, `${p.played}/${p.total}`, pct, '#00e5ff');
+            }).join('') || '<div class="empty">No pack data.</div>';
+
+            const totalJudges = Object.values(stats.judgeTotals).reduce((a, b) => a + b, 0);
+            const judgeColors = { perfectEx:'#ffffff', perfect:'#ffe000', great:'#00f2ff', good:'#88ff00', notBad:'#ffb300', save:'#ff7733', oh:'#ff2d78', miss:'#555566' };
+            document.getElementById('judge-bars').innerHTML = totalJudges
+                ? Object.entries(stats.judgeTotals).map(([k, v]) => barRow(k.toUpperCase(), v, (v / totalJudges) * 100, judgeColors[k] || '#00e5ff')).join('')
+                : '<div class="empty">Detailed judgment logs will appear after future plays.</div>';
+
+            document.getElementById('top-records').innerHTML = stats.records.length
+                ? stats.records.slice(0, 12).map(r => `<div class="record">
+                    <div><div class="record-name">${r.title}</div><div class="record-meta">${r.diff} Lv.${r.level} / ${r.pack}</div></div>
+                    <div class="record-score" style="color:${r.grade.hex}">${fmtScore(r.score)}</div>
+                    <div class="record-badge">${r.badge || r.grade.grade}</div>
+                </div>`).join('')
+                : '<div class="empty">No saved records yet. Play a song first.</div>';
+        }
+
+        async function boot() {
+            try {
+                const res = await fetch('song_list.json', { cache: 'no-store' });
+                const songs = await res.json();
+                renderArchive(collectStats(songs));
+            } catch (e) {
+                document.getElementById('top-records').innerHTML = '<div class="empty">Could not load song_list.json.</div>';
+                console.error(e);
+            }
+        }
+
+        boot();
+    </script>
+</body>
+</html>

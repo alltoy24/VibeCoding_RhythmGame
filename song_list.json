@@ -92,7 +92,7 @@
     "pack": "Reference1",
     "previewStart": 85,
     "charts": [
-      { "name": "hard", "level": "10+", "file": "normal_10.json" },
+      { "name": "Normal", "level": 10, "file": "normal_10.json" },
       { "name": "Troll", "level": "19+", "file": "troll_19.json" }
     ]
   },
@@ -105,6 +105,16 @@
     "charts": [
       { "name": "Hard", "level": 5, "file": "hard_5.json" },
       { "name": "Extra", "level": 9, "file": "extra_9.json", "customColor": "#00ff88" }
+    ]
+  },
+  {
+    "folder": "Stroll",
+    "title": "Stroll",
+    "artist": "Cansol",
+    "pack": "Core2",
+    "previewStart": 0,
+    "charts": [
+      { "name": "Normal", "level": 3, "file": "normal_3.json" }
     ]
   }
 ]
