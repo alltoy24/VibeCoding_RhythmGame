@@ -619,6 +619,8 @@
         .judge-effect-linewave {
             width: var(--wave-width);
             height: 2px;
+            transform: translate(-50%, -50%) rotate(var(--judge-angle, 0deg));
+            transform-origin: center center;
         }
         .judge-effect-linewave::before,
         .judge-effect-linewave::after {
@@ -1040,14 +1042,15 @@
     let NOTE_WIDTH     = 90;
     let NOTE_X_PADDING = 5;
     let HIT_LINE_Y   = window.innerHeight * 0.85;
+    const LANE_COUNT = 7; // 에디터와 동일: 라인은 항상 7개 (활성/비활성은 activeEvents로 결정)
 
     // 노트가 모이는 중앙 영역 (editor의 GEAR 영역과 동일 개념)
     let GEAR_W = 0, GEAR_X = 0;
     function computeGear(){
-        GEAR_W = Math.min(400, window.innerWidth * 0.95);
+        GEAR_W = Math.min(700, window.innerWidth * 0.95);
         GEAR_X = (window.innerWidth - GEAR_W) / 2;
         TRACK_X_OFFSET = GEAR_X;
-        LANE_WIDTH = GEAR_W / 4;
+        LANE_WIDTH = GEAR_W / LANE_COUNT;
         NOTE_WIDTH = LANE_WIDTH - 10;
     }
 
@@ -1084,7 +1087,7 @@
         size: 100,
         colorTheme: 'default',
         uiFont: 'orbitron',
-        customColors: [null, null, null, null],
+        customColors: [null, null, null, null, null, null, null],
         useCustomColors: false,
         hud: {
             combo: { x: 50, y: 48 },
@@ -1103,11 +1106,11 @@
         oxanium:   "'Oxanium', sans-serif",
     };
     const COLOR_THEMES = {
-        default: ['#b84060', '#2a9558', '#3d8fb0', '#b07830'],
-        deuteranopia: ['#0072b2', '#e69f00', '#56b4e9', '#f0e442'],
-        protanopia: ['#0072b2', '#d55e00', '#56b4e9', '#cc79a7'],
-        tritanopia: ['#e69f00', '#009e73', '#d55e00', '#0072b2'],
-        monochrome: ['#f4f4f4', '#bdbdbd', '#888888', '#555555']
+        default: ['#b84060', '#2a9558', '#3d8fb0', '#b07830', '#8a5fc0', '#c05f7a', '#3fa8a0'],
+        deuteranopia: ['#0072b2', '#e69f00', '#56b4e9', '#f0e442', '#009e73', '#d55e00', '#cc79a7'],
+        protanopia: ['#0072b2', '#d55e00', '#56b4e9', '#cc79a7', '#e69f00', '#f0e442', '#009e73'],
+        tritanopia: ['#e69f00', '#009e73', '#d55e00', '#0072b2', '#56b4e9', '#cc79a7', '#f0e442'],
+        monochrome: ['#f4f4f4', '#d0d0d0', '#acacac', '#888888', '#666666', '#484848', '#2e2e2e']
     };
 
     function readNoteSkinConfig() {
@@ -1119,7 +1122,7 @@
         hud.rate  = Object.assign({}, NOTE_SKIN_DEFAULTS.hud.rate,  hud.rate  || {});
         const customColors = Array.isArray(saved.customColors)
             ? [...saved.customColors]
-            : [null, null, null, null];
+            : new Array(LANE_COUNT).fill(null);
         return Object.assign({}, NOTE_SKIN_DEFAULTS, saved, { hud, customColors });
     }
 
@@ -1464,17 +1467,116 @@
     // ============================================================
     // ★ LINE CHOREOGRAPHY SYSTEM (에디터에서 이식)
     // ============================================================
-    const LANE_COLORS = ['#b84060','#2a9558','#3d8fb0','#b07830'];
-    const DEFAULT_LINE = [
-      {x:0.125,y:0.85,angle:0},
-      {x:0.375,y:0.85,angle:0},
-      {x:0.625,y:0.85,angle:0},
-      {x:0.875,y:0.85,angle:0},
-    ];
-    let lineEvents  = [[],[],[],[]];
-    let pulseEvents = [[],[],[],[]];
+    const LANE_COLORS = ['#ff4081','#00e676','#29b6f6','#ffa726','#c084fc','#ff6b6b','#4dd0e1'];
+    // 7개 라인 모두 기본적으로 한 줄에 균등 간격으로 나란히 배치 (에디터와 동일)
+    const DEFAULT_LINE = Array.from({length:LANE_COUNT},(_,i)=>({x:(i+0.5)/LANE_COUNT, y:0.85, angle:0}));
+    let lineEvents  = Array.from({length:LANE_COUNT},()=>[]);
+    let pulseEvents = Array.from({length:LANE_COUNT},()=>[]);
+    let activeEvents = Array.from({length:LANE_COUNT},()=>[]); // 라인 등장/퇴장(온오프) 이벤트
+    let DEFAULT_ACTIVE_SET = [1,2,4,5]; // 기존 맵은 다 4키(D F J K)로 만들어졌으니, 정보가 없으면 기본 4키 (차트의 initKeyCount/activeEvents로 갱신됨)
+    function defaultLineActive(lane){ return DEFAULT_ACTIVE_SET.includes(lane); }
+    // 흔히 쓰는 키 개수별 관례적 구성 (라인 인덱스 순서: S,D,F,SPACE,J,K,L — 에디터와 완전히 동일)
+    // 4키=D F J K, 5키=D F SPACE J K, 6키=S D F J K L, 7키=S D F SPACE J K L
+    const ACTIVE_KEY_SETS = {
+        3: [2,4,5],           // F J K
+        4: [1,2,4,5],         // D F J K
+        5: [1,2,3,4,5],       // D F SPACE J K
+        6: [0,1,2,4,5,6],     // S D F J K L
+        7: [0,1,2,3,4,5,6],   // S D F SPACE J K L
+    };
+    // 활성화될 라인 수(n)에 맞춰, 그 라인들을 화면 가운데에 원래 간격(100px) 그대로 나란히 재배치
+    // (에디터의 "초기 키 개수" 설정과 완전히 동일한 로직)
+    function applyInitialKeyLayout(n){
+        n = Math.max(1, Math.min(LANE_COUNT, Math.round(n) || 4));
+        const indices = (ACTIVE_KEY_SETS[n] || Array.from({length:n},(_,i)=>i)).slice();
+        DEFAULT_ACTIVE_SET = indices.slice();
+        // 1) 우선 7개 라인 전부를 "가상의 7키 전체 배치" 슬롯 위치로 되돌림 (비활성 라인들의 기본 위치)
+        for(let i=0;i<LANE_COUNT;i++){
+            DEFAULT_LINE[i].x = (i+0.5)/LANE_COUNT;
+            DEFAULT_LINE[i].y = 0.85;
+            DEFAULT_LINE[i].angle = 0;
+        }
+        // 2) 이번에 켜지는 라인들만, 원래 길이(간격)를 유지한 채 화면 가운데에 나란히 재배치
+        const spacingFrac = 100 / GEAR_W; // 항상 100px 간격 유지
+        indices.forEach((lineIdx,k)=>{
+            DEFAULT_LINE[lineIdx].x = 0.5 + (k-(n-1)/2)*spacingFrac;
+            DEFAULT_LINE[lineIdx].y = 0.85;
+            DEFAULT_LINE[lineIdx].angle = 0;
+        });
+    }
+    function getLineActive(lane, chartMs){
+        const events = activeEvents[lane];
+        let active = defaultLineActive(lane);
+        if(events && events.length){
+            for(let i=0;i<events.length;i++){
+                if(evTimeMs(events[i])<=chartMs) active = events[i].active;
+                else break;
+            }
+        }
+        return active;
+    }
+    applyInitialKeyLayout(4); // 기본값: 4키 가운데 정렬 (차트에 initKeyCount가 있으면 parseChartData에서 다시 적용됨)
     let lineStates  = DEFAULT_LINE.map(l=>({...l}));
-    let linePulsePhase = [0,0,0,0];
+    let linePulsePhase = new Array(LANE_COUNT).fill(0);
+
+    // ── 카메라 (이동/회전/반전/줌) — 라인과는 별개의 단일 타임라인 ──
+    let cameraEvents = [], camFlipXEvents = [], camFlipYEvents = [], camZoomEvents = [];
+    let effectEvents = []; // ★ 화면 이펙트(글리치/필터/날씨 등) 트리거 목록 — 에디터 FX 탭에서 만든 것
+    const DEFAULT_CAMERA = {x:0,y:0,angle:0};
+    const DEFAULT_ZOOM_PERCENT = 100;
+    let camState = {x:0,y:0,angle:0}, camFlipX=false, camFlipY=false, camZoom=1;
+    function getCameraState(chartMs){
+        const events=cameraEvents;
+        let baseX=DEFAULT_CAMERA.x, baseY=DEFAULT_CAMERA.y, baseAngle=DEFAULT_CAMERA.angle;
+        let resultX=baseX, resultY=baseY, resultAngle=baseAngle;
+        if(!events||events.length===0) return {x:resultX,y:resultY,angle:resultAngle};
+        for(let i=0;i<events.length;i++){
+            const ev=events[i];
+            const startT=evTimeMs(ev);
+            if(chartMs<startT) break;
+            let t=(chartMs-startT)/Math.max(1,ev.duration);
+            if(t>1) t=1;
+            const et=applyEasing(t,ev.easing,ev);
+            let curX,curY,curAngle;
+            if(ev.moveType==='absolute'){
+                curX=baseX+(ev.x-baseX)*et; curY=baseY+(ev.y-baseY)*et; curAngle=baseAngle+(ev.angle-baseAngle)*et;
+            }else{
+                curX=baseX+ev.x*et; curY=baseY+ev.y*et; curAngle=baseAngle+ev.angle*et;
+            }
+            resultX=curX; resultY=curY; resultAngle=curAngle;
+            if(t>=1){ baseX=curX; baseY=curY; baseAngle=curAngle; }
+        }
+        return {x:resultX,y:resultY,angle:resultAngle};
+    }
+    function getCameraFlip(axis, chartMs){
+        const events = axis==='x'?camFlipXEvents:camFlipYEvents;
+        let flipped=false;
+        if(events&&events.length){
+            for(let i=0;i<events.length;i++){
+                if(evTimeMs(events[i])<=chartMs) flipped=events[i].flipped;
+                else break;
+            }
+        }
+        return flipped;
+    }
+    function getCameraZoomPercent(chartMs){
+        const events=camZoomEvents;
+        let base=DEFAULT_ZOOM_PERCENT, result=base;
+        if(!events||events.length===0) return result;
+        for(let i=0;i<events.length;i++){
+            const ev=events[i];
+            const startT=evTimeMs(ev);
+            if(chartMs<startT) break;
+            let t=(chartMs-startT)/Math.max(1,ev.duration);
+            if(t>1) t=1;
+            const et=applyEasing(t,ev.easing,ev);
+            let cur=(ev.moveType==='absolute')?base+(ev.value-base)*et:base+ev.value*et;
+            result=cur;
+            if(t>=1) base=cur;
+        }
+        return result;
+    }
+    function getCameraZoom(chartMs){ return getCameraZoomPercent(chartMs)/100; }
 
     function evTimeMs(ev){
       if(ev.measureIdx!==undefined){
@@ -1483,6 +1585,582 @@
       }
       return ev.time||0;
     }
+
+    // ==================================================================
+    // ★ 화면 이펙트(FX) 러타임 엔진 — 에디터 FX 탭에서 만든 트리거를 그대로 재생
+    // ==================================================================
+    function getActiveEffects(chartMs,events){
+      const src=events||effectEvents;
+      if(!src||!src.length) return [];
+      const out=[];
+      for(let i=0;i<src.length;i++){
+        const ev=src[i];
+        const st=evTimeMs(ev);
+        const dur=Math.max(1,ev.duration||1);
+        const en=st+dur;
+        if(chartMs>=st&&chartMs<=en){
+          const t=chartMs-st;
+          const fadeMs=Math.min(200,dur/2);
+          const attack=ev.attack||'fade';
+          const release=ev.release||'fade';
+          let env=1;
+          if(attack!=='instant' && t<fadeMs) env=Math.min(env,t/fadeMs);
+          if(release!=='instant' && (dur-t)<fadeMs) env=Math.min(env,(dur-t)/fadeMs);
+          env=Math.max(0,Math.min(1,env));
+          out.push({type:ev.type,intensity:(ev.intensity??60)/100,env,progress:t/dur,durMs:dur,tMs:t});
+        }
+      }
+      return out;
+    }
+
+const weatherParticles={snow:[],rain:[],heavyrain:[],sakura:[],fog:[],confetti:[],embers:[],snowstorm:[],splash:[]};
+let fxLightningAlpha=0;           // 폭우 이펙트의 번개 플래시
+
+// 시간에 따라 부드럽게 흔들리는 바람 세기(-1~1). 파티클마다 seed를 다르게 주면
+// 같은 바람이라도 입자별로 살짝 다른 위상으로 흩날려서 자연스러워짐
+function fxWind(ct,seed){
+  return Math.sin(ct*0.00035+seed)*0.65 + Math.sin(ct*0.0009+seed*1.7)*0.35;
+}
+
+// 픽셀화(8비트)용 오프스크린 캔버스
+const fxPixelCanvas=document.createElement('canvas');
+const fxPixelCtx=fxPixelCanvas.getContext('2d');
+fxPixelCtx.imageSmoothingEnabled=false;
+// 글리치/색수차용 스냅샷 캔버스
+const fxSnapCanvas=document.createElement('canvas');
+const fxSnapCtx=fxSnapCanvas.getContext('2d');
+// 글리치/색수차 색상 틴트용 임시 캔버스
+const fxTintCanvas=document.createElement('canvas');
+const fxTintCtx=fxTintCanvas.getContext('2d');
+
+function resetFxRuntime(){
+  activeEffectsNow=[];
+  fxShakeOffset={x:0,y:0};
+  fxLastTime=null;
+  fxLightningAlpha=0;
+  Object.keys(weatherParticles).forEach(k=>weatherParticles[k].length=0);
+  if(gameCanvas) gameCanvas.style.filter='';
+}
+
+// 매 프레임 카메라 계산 시점에서 호출 — 지금 활성 이펙트 목록 + 흔들림 오프셋을 계산
+function updateFxRuntime(currentTime){
+  activeEffectsNow=getActiveEffects(currentTime, window.runtimeEffectEvents);
+  let sx=0, sy=0;
+  activeEffectsNow.forEach(fx=>{
+    if(fx.type==='shake'){
+      const amp=10*fx.intensity*fx.env;
+      sx+=(Math.random()*2-1)*amp;
+      sy+=(Math.random()*2-1)*amp;
+    }
+    if(fx.type==='heavyrain'){
+      const amp=3*fx.intensity*fx.env;
+      sx+=(Math.random()*2-1)*amp;
+      sy+=(Math.random()*2-1)*amp*0.6;
+    }
+    if(fx.type==='snowstorm'){
+      const amp=2.2*fx.intensity*fx.env;
+      sx+=(Math.random()*2-1)*amp;
+      sy+=(Math.random()*2-1)*amp*0.5;
+    }
+  });
+  fxShakeOffset={x:sx,y:sy};
+}
+
+// ── 파티클 헬퍼 ──
+function spawnIfNeeded(arr,targetCount,factory){
+  while(arr.length<targetCount) arr.push(factory());
+}
+function rnd(a,b){ return a+Math.random()*(b-a); }
+
+function updateWeatherParticles(dt,gw,gh,ct){
+  activeEffectsNow.forEach(fx=>{
+    const I=fx.intensity*fx.env;
+    if(fx.type==='snow'){
+      const arr=weatherParticles.snow;
+      spawnIfNeeded(arr,Math.round(140*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),depth:rnd(0.35,1.5),
+        sway:rnd(0,Math.PI*2),swaySpd:rnd(0.5,1.6),seed:rnd(0,200),
+        rot:rnd(0,Math.PI*2),rotSpd:rnd(-1,1)
+      }));
+      arr.forEach(p=>{
+        p.sway+=dt*0.001*p.swaySpd;
+        const wind=fxWind(ct,p.seed)*34;
+        p.x+=(Math.sin(p.sway)*0.5*p.depth + wind*p.depth*0.02)*dt*0.06;
+        p.y+=(18+p.depth*42)*dt*0.001*Math.max(0.15,I);
+        p.rot+=p.rotSpd*dt*0.001;
+        if(p.y>gh+10){p.y=-10;p.x=rnd(0,gw);}
+        if(p.x<-12)p.x=gw+12; else if(p.x>gw+12)p.x=-12;
+      });
+    } else if(fx.type==='snowstorm'){
+      const arr=weatherParticles.snowstorm;
+      spawnIfNeeded(arr,Math.round(240*fx.intensity),()=>({
+        x:rnd(-40,gw+40),y:rnd(-40,gh+40),len:rnd(10,26),thick:rnd(1,2.4),
+        seed:rnd(0,200)
+      }));
+      const windBase=150+90*Math.sin(ct*0.00055);
+      arr.forEach(p=>{
+        const gust=fxWind(ct,p.seed)*90;
+        const vx=-(windBase+gust)*Math.max(0.35,I);
+        const vy=(windBase*0.32+gust*0.25)*Math.max(0.35,I);
+        p.x+=vx*dt*0.001;
+        p.y+=vy*dt*0.001;
+        if(p.x<-50){p.x=gw+50;p.y=rnd(-40,gh+40);}
+        if(p.y>gh+50){p.y=-50;p.x=rnd(-50,gw+50);}
+        if(p.y<-50){p.y=gh+50;}
+      });
+    } else if(fx.type==='rain'){
+      const arr=weatherParticles.rain;
+      spawnIfNeeded(arr,Math.round(150*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),depth:rnd(0.4,1.4),seed:rnd(0,200)
+      }));
+      arr.forEach(p=>{
+        const wind=fxWind(ct,p.seed)*60;
+        const vy=(650+p.depth*420)*Math.max(0.2,I);
+        p.y+=vy*dt*0.001;
+        p.x+=(wind*p.depth*0.35 - vy*0.03)*dt*0.001;
+        if(p.y>gh-2){
+          spawnSplash(weatherParticles.splash,p.x,gh-1,p.depth);
+          p.y=-rnd(0,gh*0.3);p.x=rnd(0,gw);
+        }
+        if(p.x<-20)p.x=gw+20; else if(p.x>gw+20)p.x=-20;
+      });
+    } else if(fx.type==='heavyrain'){
+      const arr=weatherParticles.heavyrain;
+      spawnIfNeeded(arr,Math.round(280*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),depth:rnd(0.4,1.4),seed:rnd(0,200)
+      }));
+      arr.forEach(p=>{
+        const wind=fxWind(ct,p.seed)*110;
+        const vy=(1050+p.depth*500)*Math.max(0.2,I);
+        p.y+=vy*dt*0.001;
+        p.x+=(wind*p.depth*0.5 - vy*0.045)*dt*0.001;
+        if(p.y>gh-2){
+          spawnSplash(weatherParticles.splash,p.x,gh-1,p.depth*1.3);
+          p.y=-rnd(0,gh*0.3);p.x=rnd(0,gw);
+        }
+        if(p.x<-30)p.x=gw+30; else if(p.x>gw+30)p.x=-30;
+      });
+      // 번개
+      fxLightningAlpha=Math.max(0,fxLightningAlpha-dt*0.0025);
+      if(Math.random()<0.008*I) fxLightningAlpha=rnd(0.35,0.7);
+    } else if(fx.type==='sakura'){
+      const arr=weatherParticles.sakura;
+      spawnIfNeeded(arr,Math.round(55*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),r:rnd(3,7),sway:rnd(0,Math.PI*2),
+        swaySpd:rnd(0.4,1.0),rot:rnd(0,Math.PI*2),rotSpd:rnd(-1.5,1.5),
+        depth:rnd(0.5,1.3),seed:rnd(0,200)
+      }));
+      arr.forEach(p=>{
+        p.sway+=dt*0.001*p.swaySpd;
+        const wind=fxWind(ct,p.seed)*26;
+        p.x+=(Math.sin(p.sway)*0.6+wind*0.02)*p.depth*dt*0.06;
+        p.y+=(16+p.depth*24)*dt*0.001*Math.max(0.15,I);
+        p.rot+=p.rotSpd*dt*0.001;
+        if(p.y>gh+10){p.y=-10;p.x=rnd(0,gw);}
+        if(p.x<-12)p.x=gw+12; else if(p.x>gw+12)p.x=-12;
+      });
+    } else if(fx.type==='confetti'){
+      const arr=weatherParticles.confetti;
+      const cols=['#ff5ecb','#ffd700','#00e5ff','#00ff88','#ff8800'];
+      spawnIfNeeded(arr,Math.round(90*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),w:rnd(4,8),h:rnd(6,12),vy:rnd(60,140),
+        sway:rnd(0,Math.PI*2),swaySpd:rnd(1,2.4),rot:rnd(0,Math.PI*2),rotSpd:rnd(-4,4),
+        color:cols[(Math.random()*cols.length)|0]
+      }));
+      arr.forEach(p=>{
+        p.sway+=dt*0.001*p.swaySpd;
+        p.x+=Math.sin(p.sway)*1.1;
+        p.y+=p.vy*dt*0.001*Math.max(0.2,I);
+        p.rot+=p.rotSpd*dt*0.001;
+        if(p.y>gh+10){p.y=-10;p.x=rnd(0,gw);}
+      });
+    } else if(fx.type==='embers'){
+      const arr=weatherParticles.embers;
+      spawnIfNeeded(arr,Math.round(85*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(gh*0.55,gh+20),r:rnd(1.4,3.2),
+        vx:rnd(-8,8),sway:rnd(0,Math.PI*2),swaySpd:rnd(0.8,2.1),
+        age:0,maxLife:rnd(1.1,2.1),trail:[],flicker:rnd(0,10)
+      }));
+      arr.forEach(p=>{
+        p.age+=dt*0.001;
+        const t=Math.min(1,p.age/p.maxLife);
+        p.sway+=dt*0.001*p.swaySpd*(1+t*1.5);
+        const jitter=t*10;
+        p.x+=(Math.sin(p.sway)*(0.6+jitter*0.05)+p.vx*0.015)*dt*0.06;
+        p.y-=(55+t*70)*dt*0.001*Math.max(0.25,I);
+        p.trail.push({x:p.x,y:p.y});
+        if(p.trail.length>7)p.trail.shift();
+        p.life=1-t;
+        if(p.life<=0||p.y<gh*0.05){
+          p.age=0;p.y=gh+rnd(0,20);p.x=rnd(0,gw);p.trail.length=0;
+        }
+      });
+    } else if(fx.type==='fog'){
+      spawnIfNeeded(weatherParticles.fog,7,()=>({
+        x:rnd(0,gw),y:rnd(gh*0.32,gh*1.05),r:rnd(gw*0.2,gw*0.4),
+        driftX:rnd(16,32)*(Math.random()<0.5?-1:1),
+        phase:rnd(0,Math.PI*2),phaseSpd:rnd(0.15,0.42),bob:rnd(6,16)
+      }));
+      weatherParticles.fog.forEach(p=>{
+        p.phase+=dt*0.001*p.phaseSpd;
+        p.x+=p.driftX*dt*0.001*Math.max(0.3,I);
+        p.y+=Math.sin(p.phase)*p.bob*dt*0.001;
+        if(p.driftX>0 && p.x-p.r>gw) p.x=-p.r;
+        if(p.driftX<0 && p.x+p.r<0) p.x=gw+p.r;
+      });
+    }
+  });
+  // 화면 밖으로 완전히 나간 물방울 튀김은 정리
+  weatherParticles.splash=weatherParticles.splash.filter(s=>s.life>0);
+  weatherParticles.splash.forEach(s=>{ s.life-=dt*0.0028; s.r+=dt*0.045*s.depth; });
+}
+function spawnSplash(arr,x,y,depth){
+  if(arr.length>140)return;
+  arr.push({x,y,r:1,depth:depth||1,life:1});
+}
+
+function drawWeatherParticles(ctx,gw,gh,ct){
+  const activeTypes=new Set(activeEffectsNow.filter(f=>weatherParticles[f.type]).map(f=>f.type));
+  const envOf=(type)=>{ const f=activeEffectsNow.find(f=>f.type===type); return f?f.env*f.intensity:0; };
+
+  if(activeTypes.has('fog')){
+    const env=envOf('fog');
+    ctx.save();ctx.globalCompositeOperation='screen';
+    weatherParticles.fog.forEach(p=>{
+      const pulse=0.8+0.2*Math.sin(p.phase*1.6);
+      ctx.globalAlpha=0.28*env*pulse;
+      const ox=Math.cos(p.phase)*10, oy=Math.sin(p.phase*0.7)*6;
+      const g=ctx.createRadialGradient(p.x+ox,p.y+oy,0,p.x+ox,p.y+oy,p.r);
+      g.addColorStop(0,'rgba(215,222,235,0.9)');g.addColorStop(0.6,'rgba(200,208,225,0.35)');g.addColorStop(1,'rgba(200,208,225,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x+ox,p.y+oy,p.r,0,Math.PI*2);ctx.fill();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('snow')){
+    const env=envOf('snow');
+    ctx.save();
+    weatherParticles.snow.forEach(p=>{
+      const r=1+p.depth*2.1;
+      ctx.globalAlpha=(0.45+p.depth*0.4)*env;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*1.8);
+      g.addColorStop(0,'rgba(255,255,255,0.95)');g.addColorStop(0.5,'rgba(255,255,255,0.55)');g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r*1.8,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=(0.7+p.depth*0.3)*env;
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(p.x,p.y,r*0.55,0,Math.PI*2);ctx.fill();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('snowstorm')){
+    const env=envOf('snowstorm');
+    ctx.save();ctx.lineCap='round';ctx.globalCompositeOperation='screen';
+    weatherParticles.snowstorm.forEach(p=>{
+      ctx.globalAlpha=0.55*env;
+      ctx.strokeStyle='rgba(235,245,255,0.9)';
+      ctx.lineWidth=p.thick;
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+p.len,p.y-p.len*0.32);ctx.stroke();
+    });
+    ctx.restore();
+    // 화이트아웃 — 강한 눈보라일수록 시야가 뿌옇게
+    ctx.save();
+    const a=0.22*env;
+    const wo=ctx.createLinearGradient(0,0,gw,gh*0.15);
+    wo.addColorStop(0,`rgba(235,245,255,${a*1.4})`);
+    wo.addColorStop(0.5,`rgba(235,245,255,${a*0.5})`);
+    wo.addColorStop(1,`rgba(235,245,255,${a*1.3})`);
+    ctx.fillStyle=wo;ctx.fillRect(0,0,gw,gh);
+    // 차가운 비네트
+    const vg=ctx.createRadialGradient(gw/2,gh/2,gh*0.3,gw/2,gh/2,gh*0.85);
+    vg.addColorStop(0,'rgba(180,210,255,0)');
+    vg.addColorStop(1,`rgba(150,190,255,${0.35*env})`);
+    ctx.fillStyle=vg;ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+  if(activeTypes.has('sakura')){
+    const env=envOf('sakura');
+    ctx.save();ctx.globalAlpha=0.9*env;
+    weatherParticles.sakura.forEach(p=>{
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      const g=ctx.createRadialGradient(0,0,0,0,0,p.r*1.3);
+      g.addColorStop(0,'#ffd6ea');g.addColorStop(1,'#ff9ecf');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.ellipse(0,0,p.r,p.r*0.58,0,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('rain')){
+    const env=envOf('rain');
+    ctx.save();ctx.lineCap='round';
+    weatherParticles.rain.forEach(p=>{
+      const len=14+p.depth*16;
+      const wind=fxWind(ct,p.seed)*10*p.depth;
+      const g=ctx.createLinearGradient(p.x,p.y-len,p.x,p.y);
+      g.addColorStop(0,'rgba(160,200,255,0)');
+      g.addColorStop(1,`rgba(180,210,255,${0.55*env*(0.5+p.depth*0.5)})`);
+      ctx.strokeStyle=g;ctx.lineWidth=0.9+p.depth*0.9;
+      ctx.beginPath();ctx.moveTo(p.x,p.y-len);ctx.lineTo(p.x-wind,p.y);ctx.stroke();
+    });
+    drawSplashes(ctx,weatherParticles.splash,env,'rgba(190,220,255,');
+    ctx.restore();
+  }
+  if(activeTypes.has('heavyrain')){
+    const env=envOf('heavyrain');
+    if(fxLightningAlpha>0.01){
+      ctx.save();ctx.fillStyle='#eaf2ff';ctx.globalAlpha=fxLightningAlpha*0.5;
+      ctx.fillRect(0,0,gw,gh);ctx.restore();
+    }
+    ctx.save();ctx.lineCap='round';
+    weatherParticles.heavyrain.forEach(p=>{
+      const len=22+p.depth*24;
+      const wind=fxWind(ct,p.seed)*20*p.depth;
+      const g=ctx.createLinearGradient(p.x,p.y-len,p.x,p.y);
+      g.addColorStop(0,'rgba(190,215,255,0)');
+      g.addColorStop(1,`rgba(200,225,255,${0.75*env*(0.5+p.depth*0.5)})`);
+      ctx.strokeStyle=g;ctx.lineWidth=1.4+p.depth*1.3;
+      ctx.beginPath();ctx.moveTo(p.x,p.y-len);ctx.lineTo(p.x-wind,p.y);ctx.stroke();
+    });
+    drawSplashes(ctx,weatherParticles.splash,env,'rgba(200,225,255,');
+    ctx.restore();
+  }
+  if(activeTypes.has('confetti')){
+    const env=envOf('confetti');
+    ctx.save();ctx.globalAlpha=0.95*env;
+    weatherParticles.confetti.forEach(p=>{
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('embers')){
+    const env=envOf('embers');
+    ctx.save();ctx.globalCompositeOperation='screen';
+    weatherParticles.embers.forEach(p=>{
+      const a=Math.max(0,p.life)*env;
+      const flick=0.75+0.25*Math.sin((performance.now()*0.02)+p.flicker);
+      p.trail.forEach((t,i)=>{
+        const ta=a*(i/Math.max(1,p.trail.length))*0.3;
+        if(ta<=0.01)return;
+        ctx.globalAlpha=ta;
+        const g=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,p.r*1.5);
+        g.addColorStop(0,'#ff9a44');g.addColorStop(1,'rgba(255,70,20,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(t.x,t.y,p.r*1.5,0,Math.PI*2);ctx.fill();
+      });
+      ctx.globalAlpha=a*flick*0.95;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*3.4);
+      g.addColorStop(0,'#fff4c8');g.addColorStop(0.28,'#ffcf6b');g.addColorStop(0.62,'#ff7a29');g.addColorStop(1,'rgba(255,50,10,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r*3.4,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=a*flick;
+      ctx.fillStyle='#fff8e6';
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*0.5,0,Math.PI*2);ctx.fill();
+    });
+    ctx.restore();
+  }
+}
+function drawSplashes(ctx,arr,env,rgbaPrefix){
+  arr.forEach(s=>{
+    if(s.life<=0)return;
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,s.life)*0.6*env;
+    ctx.strokeStyle=rgbaPrefix+'0.8)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(s.x,s.y,s.r*1.6,s.r*0.5,0,Math.PI,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  });
+}
+
+// 색조 틴트된 이미지를 만들어 지정 offset 만큼 이동시켜 그려주는 헬퍼 (색수차/글리치용)
+function drawTintedShift(ctx,srcCanvas,gw,gh,dx,dy,color,alpha,composite){
+  fxTintCanvas.width=gw; fxTintCanvas.height=gh;
+  fxTintCtx.clearRect(0,0,gw,gh);
+  fxTintCtx.drawImage(srcCanvas,0,0,gw,gh);
+  fxTintCtx.globalCompositeOperation='source-atop';
+  fxTintCtx.fillStyle=color;
+  fxTintCtx.fillRect(0,0,gw,gh);
+  fxTintCtx.globalCompositeOperation='source-over';
+  ctx.save();
+  ctx.globalCompositeOperation=composite||'screen';
+  ctx.globalAlpha=alpha;
+  ctx.drawImage(fxTintCanvas,dx,dy,gw,gh);
+  ctx.restore();
+}
+
+function applyChromaShift(ctx,gw,gh,strengthPx,alpha){
+  fxSnapCanvas.width=gw; fxSnapCanvas.height=gh;
+  fxSnapCtx.clearRect(0,0,gw,gh);
+  fxSnapCtx.drawImage(ctx.canvas,0,0,gw,gh);
+  drawTintedShift(ctx,fxSnapCanvas,gw,gh,-strengthPx,0,'#ff2255',alpha,'screen');
+  drawTintedShift(ctx,fxSnapCanvas,gw,gh, strengthPx,0,'#22e0ff',alpha,'screen');
+}
+
+function applyGlitchDistort(ctx,gw,gh,intensity,env){
+  if(intensity*env<=0.01)return;
+  fxSnapCanvas.width=gw; fxSnapCanvas.height=gh;
+  fxSnapCtx.clearRect(0,0,gw,gh);
+  fxSnapCtx.drawImage(ctx.canvas,0,0,gw,gh);
+  ctx.save();ctx.globalCompositeOperation='copy';
+  ctx.drawImage(fxSnapCanvas,0,0,gw,gh);
+  ctx.restore();
+  const bands=Math.round(3+intensity*10);
+  ctx.save();
+  for(let i=0;i<bands;i++){
+    if(Math.random()>0.55*Math.max(0.2,intensity))continue;
+    const bandH=rnd(4,gh*0.05*Math.max(0.3,intensity));
+    const y=rnd(0,gh-bandH);
+    const shift=rnd(-1,1)*40*intensity*env;
+    ctx.drawImage(fxSnapCanvas,0,y,gw,bandH, shift,y,gw,bandH);
+  }
+  ctx.restore();
+  applyChromaShift(ctx,gw,gh,4*intensity*env,0.35*env);
+}
+
+function applyPixelate(ctx,gw,gh,intensity,env){
+  const blockAmt=Math.max(0.02,intensity*env);
+  const pw=Math.max(4,Math.round(gw*(1-blockAmt*0.94)/8));
+  const ph=Math.max(3,Math.round(gh*(1-blockAmt*0.94)/8));
+  fxPixelCanvas.width=pw; fxPixelCanvas.height=ph;
+  fxPixelCtx.imageSmoothingEnabled=false;
+  fxPixelCtx.drawImage(ctx.canvas,0,0,gw,gh,0,0,pw,ph);
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalCompositeOperation='copy';
+  ctx.drawImage(fxPixelCanvas,0,0,pw,ph,0,0,gw,gh);
+  ctx.restore();
+  ctx.imageSmoothingEnabled=true;
+}
+
+// 카메라 트랜스폼이 끝난 뒤(화면 고정 좌표계)에 호출 — 왜곡·오버레이·날씨·필터를 모두 적용
+function renderScreenEffects(ctx,gw,gh,ct){
+  const now=performance.now();
+  let dt=fxLastTime==null?16:(now-fxLastTime);
+  if(dt<0||dt>200)dt=16;
+  fxLastTime=now;
+
+  if(!activeEffectsNow.length){
+    if(gameCanvas.style.filter) gameCanvas.style.filter='';
+    return;
+  }
+
+  updateWeatherParticles(dt,gw,gh,ct);
+
+  // ── 픽셀화 / 글리치 (캔버스 픽셀 조작, 다른 오버레이보다 먼저 적용) ──
+  activeEffectsNow.forEach(fx=>{
+    if(fx.type==='pixel8') applyPixelate(ctx,gw,gh,fx.intensity,fx.env);
+  });
+  activeEffectsNow.forEach(fx=>{
+    if(fx.type==='glitch') applyGlitchDistort(ctx,gw,gh,fx.intensity,fx.env);
+    else if(fx.type==='chromatic') applyChromaShift(ctx,gw,gh,6*fx.intensity*fx.env,0.45*fx.env);
+  });
+
+  // ── 날씨 파티클 ──
+  drawWeatherParticles(ctx,gw,gh,ct);
+
+  // ── 스캔라인 (CRT, 위아래로 흐르는 롤링 밴드 + 미세 색수차 + 깜빡임) ──
+  const scan=activeEffectsNow.find(f=>f.type==='scanline');
+  if(scan){
+    const I=scan.intensity*scan.env;
+    ctx.save();
+    const gap=Math.max(2,Math.round(5-I*2));
+    const roll=(ct*0.045*Math.max(0.35,I))%gap;
+    const flicker=0.85+0.15*Math.sin(ct*0.03)+(Math.random()-0.5)*0.08;
+    ctx.globalCompositeOperation='multiply';
+    ctx.globalAlpha=Math.min(1,0.32*I*flicker);
+    ctx.fillStyle='#111';
+    for(let y=-gap;y<gh+gap;y+=gap) ctx.fillRect(0,y+roll,gw,Math.max(1,gap*0.4));
+    ctx.globalCompositeOperation='screen';
+    ctx.globalAlpha=0.09*I;
+    ctx.fillStyle='#ff3355';
+    for(let y=-gap*2;y<gh+gap*2;y+=gap*2) ctx.fillRect(0,y+roll-1,gw,1);
+    ctx.fillStyle='#33e0ff';
+    for(let y=-gap*2;y<gh+gap*2;y+=gap*2) ctx.fillRect(0,y+roll+1,gw,1);
+    // 위에서 아래로 천천히 흘러가는 밝은 롤링 밴드 — 옛날 CRT 특유의 화면 흔들림
+    const barY=((ct*0.075*Math.max(0.4,I))%(gh+160))-80;
+    const bar=ctx.createLinearGradient(0,barY-50,0,barY+50);
+    bar.addColorStop(0,'rgba(255,255,255,0)');
+    bar.addColorStop(0.5,`rgba(255,255,255,${0.14*I})`);
+    bar.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=bar;ctx.fillRect(0,barY-50,gw,100);
+    ctx.restore();
+  }
+  // ── 노이즈 / 지지직 (가로 줄무늬 정전기 + 블록 튐 + 밝기 플리커) ──
+  const noise=activeEffectsNow.find(f=>f.type==='noise');
+  if(noise){
+    const I=noise.intensity*noise.env;
+    ctx.save();
+    // 밝기 전체 플리커 (지지직 거리는 화면 느낌)
+    if(Math.random()<0.15*I){
+      ctx.globalCompositeOperation='screen';
+      ctx.globalAlpha=0.12*I;
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,gw,gh);
+    }
+    // 정전기 도트 (가로로 살짝 늘어난 형태로 더 "노이즈"스럽게)
+    ctx.globalCompositeOperation='screen';
+    const dotN=Math.round(500*I);
+    for(let i=0;i<dotN;i++){
+      ctx.globalAlpha=Math.random()*0.55*I;
+      ctx.fillStyle=Math.random()<0.5?'#fff':'#8899aa';
+      ctx.fillRect(Math.random()*gw,Math.random()*gh,rnd(1,3),1);
+    }
+    // 가끔 한두 줄 블록이 옆으로 튀는 지지직 라인
+    const glitchLines=Math.round(2*I);
+    for(let i=0;i<glitchLines;i++){
+      if(Math.random()>0.5)continue;
+      const y=Math.random()*gh, h=rnd(2,8), shift=rnd(-14,14)*I;
+      ctx.globalAlpha=0.35*I;
+      ctx.drawImage(ctx.canvas,0,y,gw,h,shift,y,gw,h);
+    }
+    ctx.restore();
+  }
+  // ── 비네트 ──
+  const vig=activeEffectsNow.find(f=>f.type==='vignette');
+  if(vig){
+    ctx.save();
+    const g=ctx.createRadialGradient(gw/2,gh/2,gh*0.35,gw/2,gh/2,gh*0.85);
+    g.addColorStop(0,'rgba(0,0,0,0)');
+    g.addColorStop(1,`rgba(10,0,20,${0.75*vig.intensity*vig.env})`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+  // ── 화이트 플래시 (초반에 확 밝았다가 감쇠) ──
+  const fw=activeEffectsNow.find(f=>f.type==='flashwhite');
+  if(fw){
+    const decay=Math.max(0,1-fw.progress);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='#ffffff';ctx.globalAlpha=decay*fw.intensity;
+    ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+  // ── 블랙아웃 ──
+  const fb=activeEffectsNow.find(f=>f.type==='flashblack');
+  if(fb){
+    const decay=Math.max(0,1-fb.progress);
+    ctx.save();ctx.fillStyle='#000000';ctx.globalAlpha=decay*fb.intensity*0.95;
+    ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+
+  // ── CSS filter 계열 (흑백/반전/세피아/무지개/고대비/블러) — 캔버스 전체에 합성 ──
+  const parts=[];
+  const gs=activeEffectsNow.find(f=>f.type==='grayscale');
+  if(gs) parts.push(`grayscale(${Math.round(gs.intensity*gs.env*100)}%)`);
+  const inv=activeEffectsNow.find(f=>f.type==='invert');
+  if(inv) parts.push(`invert(${Math.round(inv.intensity*inv.env*100)}%)`);
+  const sep=activeEffectsNow.find(f=>f.type==='sepia');
+  if(sep) parts.push(`sepia(${Math.round(sep.intensity*sep.env*100)}%)`);
+  const hc=activeEffectsNow.find(f=>f.type==='highcontrast');
+  if(hc) parts.push(`contrast(${Math.round(100+hc.intensity*hc.env*150)}%) saturate(${Math.round(100+hc.intensity*hc.env*80)}%)`);
+  const bl=activeEffectsNow.find(f=>f.type==='blur');
+  if(bl) parts.push(`blur(${(bl.intensity*bl.env*8).toFixed(1)}px)`);
+  const rb=activeEffectsNow.find(f=>f.type==='rainbow');
+  if(rb){
+    const hue=(ct*0.25*rb.intensity)%360;
+    parts.push(`hue-rotate(${hue.toFixed(0)}deg) saturate(${Math.round(100+rb.intensity*rb.env*120)}%)`);
+  }
+  gameCanvas.style.filter=parts.length?parts.join(' '):'';
+}
+
     const DEFAULT_CURVE = [{x:0,y:0},{x:1,y:1}];
     function clamp01(v){return v<0?0:v>1?1:v;}
     function catmull(p0,p1,p2,p3,t){
@@ -1528,12 +2206,13 @@
         default: return t;
       }
     }
-    // 누적 이동 방식 (키프레임 x/y/angle = 더할 이동량)
+    // 누적 이동 방식(~만큼) + 절대 위치 이동(~로) 모두 지원 (에디터와 동일)
     function getLineState(lane,chartMs){
       const def=DEFAULT_LINE[lane];
       const events=lineEvents[lane];
-      let cx=def.x, cy=def.y, ca=def.angle;
-      if(!events||events.length===0) return {x:cx,y:cy,angle:ca};
+      let baseX=def.x, baseY=def.y, baseAngle=def.angle;
+      let resultX=baseX, resultY=baseY, resultAngle=baseAngle;
+      if(!events||events.length===0) return {x:resultX,y:resultY,angle:resultAngle};
       for(let i=0;i<events.length;i++){
         const ev=events[i];
         const startT=evTimeMs(ev);
@@ -1541,9 +2220,16 @@
         let t=(chartMs-startT)/Math.max(1,ev.duration);
         if(t>1)t=1;
         const et=applyEasing(t,ev.easing,ev);
-        cx+=ev.x*et; cy+=ev.y*et; ca+=ev.angle*et;
+        let curX,curY,curAngle;
+        if(ev.moveType==='absolute'){
+          curX=baseX+(ev.x-baseX)*et; curY=baseY+(ev.y-baseY)*et; curAngle=baseAngle+(ev.angle-baseAngle)*et;
+        }else{
+          curX=baseX+ev.x*et; curY=baseY+ev.y*et; curAngle=baseAngle+ev.angle*et;
+        }
+        resultX=curX; resultY=curY; resultAngle=curAngle;
+        if(t>=1){ baseX=curX; baseY=curY; baseAngle=curAngle; }
       }
-      return {x:cx,y:cy,angle:ca};
+      return {x:resultX,y:resultY,angle:resultAngle};
     }
     function getPulseMagnitude(lane,chartMs){
       const events=pulseEvents[lane];
@@ -1578,12 +2264,49 @@
       ctx.closePath();
     }
     // 라인 좌표(0~1) → 캔버스 픽셀 (중앙 GEAR 영역 기준)
-    function laneHalfW(){ return (GEAR_W/4)*0.44; }
+    function laneHalfW(){ return (GEAR_W/LANE_COUNT)*0.44; }
     function lineX(st){
         return GEAR_X + st.x * GEAR_W;
     }
     function lineY(st){
         return st.y * gameCanvas.height;
+    }
+    function getLaneRenderAnchor(lane){
+        const safeLane = Math.max(0, Math.min(LANE_COUNT - 1, lane || 0));
+        const st = lineStates[safeLane] || DEFAULT_LINE[safeLane];
+        const pulse = linePulsePhase[safeLane] || 0;
+        const ang = (st.angle * Math.PI) / 180;
+        return {
+            x: lineX(st) - Math.sin(ang) * pulse,
+            y: lineY(st) + Math.cos(ang) * pulse,
+            angle: st.angle,
+        };
+    }
+    function transformPointToJudgeOverlay(x, y){
+        const cx = gameCanvas.width / 2;
+        const cy = gameCanvas.height / 2;
+        const scaleX = (camFlipX ? -1 : 1) * camZoom;
+        const scaleY = (camFlipY ? -1 : 1) * camZoom;
+        const dx = (x - cx) * scaleX;
+        const dy = (y - cy) * scaleY;
+        const camRad = (camState.angle * Math.PI) / 180;
+        const cos = Math.cos(camRad);
+        const sin = Math.sin(camRad);
+        return {
+            x: cx + camState.x * gameCanvas.width + fxShakeOffset.x + (dx * cos - dy * sin),
+            y: cy + camState.y * gameCanvas.height + fxShakeOffset.y + (dx * sin + dy * cos),
+        };
+    }
+    function getLaneJudgeAnchor(lane){
+        const anchor = getLaneRenderAnchor(lane);
+        const screen = transformPointToJudgeOverlay(anchor.x, anchor.y);
+        const rad = (anchor.angle * Math.PI) / 180;
+        const next = transformPointToJudgeOverlay(anchor.x + Math.cos(rad), anchor.y + Math.sin(rad));
+        return {
+            x: screen.x,
+            y: screen.y,
+            angle: Math.atan2(next.y - screen.y, next.x - screen.x) * 180 / Math.PI,
+        };
     }
 
     let gameFinished    = false;
@@ -1594,7 +2317,7 @@
     let speedEvents     = [];
     let speedMap        = [];
 
-    let activeKeys      = [false, false, false, false];
+    let activeKeys      = new Array(LANE_COUNT).fill(false);
     let combo           = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, score = 0;
     let gameAnimId;
     let baseNoteSpeed   = 5.0;
@@ -1634,9 +2357,9 @@
     function createParticlesForJudge(lane, judgeInfo) {
         const colors = judgeInfo.particleColors;
         const count  = judgeInfo.comboBreak ? 4 : 14;
-        const st = lineStates[lane] || DEFAULT_LINE[lane];
-        const ox = lineX(st);
-        const oy = lineY(st);
+        const anchor = getLaneRenderAnchor(lane);
+        const ox = anchor.x;
+        const oy = anchor.y;
         for(let i = 0; i < count; i++) {
             const angle  = Math.random() * Math.PI * 2;
             const speed  = Math.random() * 18 + 4;
@@ -1666,38 +2389,54 @@
     // ============================================================
     // ★ CSS 판정 팝업 (canvas 대신 DOM)
     // ============================================================
-    const judgePopupTimeouts = [null, null, null, null];
+    const judgePopupTimeouts = new Array(LANE_COUNT).fill(null);
+
+    function syncJudgePopupPosition(el) {
+        if(!el || !el.isConnected) return;
+        const safeLane = Math.max(0, Math.min(LANE_COUNT - 1, parseInt(el.dataset.lane || '0', 10)));
+        const anchor = getLaneJudgeAnchor(safeLane);
+        const offsetY = parseFloat(el.dataset.offsetY || '0') || 0;
+        el.style.left = `${anchor.x}px`;
+        el.style.top = `${anchor.y + offsetY}px`;
+        if(el.classList.contains('judge-effect-linewave')) {
+            el.style.setProperty('--judge-angle', `${anchor.angle.toFixed(3)}deg`);
+        }
+    }
+
+    function syncJudgePopups() {
+        if(!judgeDisplayEl) return;
+        judgeDisplayEl.querySelectorAll('[data-lane]').forEach(syncJudgePopupPosition);
+    }
 
     function showJudgePopup(judgeInfo, lane) {
-        const safeLane = Math.max(0, Math.min(3, lane || 0));
+        const safeLane = Math.max(0, Math.min(LANE_COUNT-1, lane || 0));
         if(judgePopupTimeouts[safeLane]) clearTimeout(judgePopupTimeouts[safeLane]);
         judgeDisplayEl.querySelectorAll(`[data-lane="${safeLane}"]`).forEach(el => el.remove());
 
         const judgeStyle = localStorage.getItem('wb_judge_style') || 'neon';
         const judgeSize = Math.max(40, Math.min(140, parseFloat(localStorage.getItem('wb_judge_size') || '100') || 100));
-        const laneState = lineStates[safeLane] || DEFAULT_LINE[safeLane];
-        const x = lineX(laneState);
-        const hitY = lineY(laneState);
+        const anchor = getLaneJudgeAnchor(safeLane);
         const isRainbowPerfect = judgeInfo.key === 'perfectEx' || judgeInfo.cssClass === 'judge-perfect-ex';
         const el = document.createElement(judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 'div' : 'span');
-        el.dataset.lane = safeLane;
-        el.style.left = `${x}px`;
+        el.dataset.lane = String(safeLane);
         el.style.setProperty('--judge-color', isRainbowPerfect ? '#ff0080' : judgeInfo.color);
         el.style.setProperty('--judge-scale', String(judgeSize / 100));
         if(judgeStyle === 'ripple') {
             el.className = `judge-effect judge-effect-ripple${isRainbowPerfect ? ' judge-effect-perfect' : ''}`;
-            el.style.top = `${hitY}px`;
+            el.dataset.offsetY = '0';
         } else if(judgeStyle === 'linewave') {
             el.className = `judge-effect judge-effect-linewave${isRainbowPerfect ? ' judge-effect-perfect' : ''}`;
-            el.style.top = `${hitY}px`;
+            el.dataset.offsetY = '0';
             el.style.setProperty('--wave-width', `${Math.max(44, LANE_WIDTH * 0.86) * judgeSize / 100}px`);
+            el.style.setProperty('--judge-angle', `${anchor.angle.toFixed(3)}deg`);
         } else {
             el.className = `judge-popup ${judgeInfo.cssClass} judge-style-${judgeStyle}`;
             el.textContent = judgeInfo.name;
             el.style.fontSize = `${32 * judgeSize / 100}px`;
-            el.style.top = `${hitY - 58}px`;
+            el.dataset.offsetY = '-58';
         }
         judgeDisplayEl.appendChild(el);
+        syncJudgePopupPosition(el);
 
         judgePopupTimeouts[safeLane] = setTimeout(() => {
             el.remove();
@@ -1902,10 +2641,37 @@
         if(data.msgEvents) msgEvents = data.msgEvents;
 
         // ★ 라인 안무 / 펄스 기믹 로딩 (에디터 export 포맷)
-        lineEvents  = data.lineEvents  ? data.lineEvents.map(arr=>arr.map(e=>({...e})))  : [[],[],[],[]];
-        pulseEvents = data.pulseEvents ? data.pulseEvents.map(arr=>arr.map(e=>({...e}))) : [[],[],[],[]];
-        while(lineEvents.length<4) lineEvents.push([]);
-        while(pulseEvents.length<4) pulseEvents.push([]);
+        const padToLaneCount = (arr) => {
+            const a = (arr||[]).map(e=>e);
+            while(a.length<LANE_COUNT) a.push([]);
+            return a.slice(0,LANE_COUNT);
+        };
+        lineEvents   = padToLaneCount(data.lineEvents  ? data.lineEvents.map(arr=>arr.map(e=>({...e})))  : []);
+        pulseEvents  = padToLaneCount(data.pulseEvents ? data.pulseEvents.map(arr=>arr.map(e=>({...e}))) : []);
+        activeEvents = padToLaneCount(data.activeEvents ? data.activeEvents.map(arr=>arr.map(e=>({...e}))) : []);
+
+        // ★ 곡 시작 시 기본으로 켜져있는 라인 + 가운데 정렬 배치 (에디터의 "초기 키 개수" 설정과 동일)
+        if(data.initKeyCount){
+            applyInitialKeyLayout(data.initKeyCount);
+        }
+
+        // ★ 카메라(이동/회전/반전/줌) 로딩
+        cameraEvents   = data.cameraEvents   ? data.cameraEvents.map(e=>({...e}))   : [];
+        camFlipXEvents = data.camFlipXEvents ? data.camFlipXEvents.map(e=>({...e})) : [];
+        camFlipYEvents = data.camFlipYEvents ? data.camFlipYEvents.map(e=>({...e})) : [];
+        camZoomEvents  = data.camZoomEvents  ? data.camZoomEvents.map(e=>({...e}))  : [];
+        effectEvents   = data.effectEvents   ? data.effectEvents.map(e=>({...e}))   : [];
+
+        // ★ 차트에 저장된 키 배치가 있고, 플레이어가 직접 키 설정을 바꾼 적이 없다면 그걸 기본값으로 사용
+        if(data.keyMap && Array.isArray(data.keyMap) && !localStorage.getItem('wb_key_layout')){
+            KEY_MAP = normalizeKeyMapData(data.keyMap);
+        }
+
+        // ★ 구버전(7라인 시스템 이전) 채보 호환: 그 시절 lane 0~3은 D,F,J,K를 의미했는데,
+        // 지금 인덱스 체계(S,D,F,SPACE,J,K,L)에서 D,F,J,K는 1,2,4,5번이라 그대로 리맵해줘야 함.
+        // 새 에디터로 만든 채보는 항상 lineEvents/activeEvents/keyMap/initKeyCount 중 하나는 들어있으므로 그걸로 구분.
+        const isLegacyChart = !('lineEvents' in data) && !('activeEvents' in data) && !('keyMap' in data) && !('initKeyCount' in data);
+        const LEGACY_LANE_REMAP = { 0:1, 1:2, 2:4, 3:5 };
 
         if(data.measures) {
             const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
@@ -1917,7 +2683,8 @@
                     const noteTime    = time + offset;
                     const noteEndTime = noteTime + duration;
                     if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
-                    gameNotes.push({ time: noteTime, endTime: noteEndTime, lane: n.lane, len: (n.len || 0) * ratio, hit: false, holding: false, finished: false });
+                    const lane = (isLegacyChart && LEGACY_LANE_REMAP[n.lane] !== undefined) ? LEGACY_LANE_REMAP[n.lane] : n.lane;
+                    gameNotes.push({ time: noteTime, endTime: noteEndTime, lane, len: (n.len || 0) * ratio, hit: false, holding: false, finished: false });
                     totalMaxHits++;
                     if(n.len > 0) totalMaxHits++;
                 });
@@ -1979,7 +2746,10 @@
         activeNotes = []; particles = []; recentHits = []; judgments = [];
         fireflies = []; gearParticles = []; lineFlash = null;
         lineStates = DEFAULT_LINE.map(l=>({...l}));
-        linePulsePhase = [0,0,0,0];
+        linePulsePhase = new Array(LANE_COUNT).fill(0);
+        camState = {x:0,y:0,angle:0}; camFlipX=false; camFlipY=false; camZoom=1;
+        resetFxRuntime();
+        heldKeyTokens.clear();
         resetFever();
 
         finishEffect.innerHTML = "";
@@ -2009,6 +2779,7 @@
         if (gameFinished) return;
         gameFinished = true;
         if (finishTimer) clearTimeout(finishTimer);
+        resetFxRuntime();
         showResultPreparing();
         audio.volume = getMusicVolumeSetting();
         await fadeAudioElement(audio, 0, 900, true);
@@ -2146,9 +2917,9 @@
             { main: '#ffd652', soft: 'rgba(255,214,82,0.25)' },
             { main: '#78ffb4', soft: 'rgba(120,255,180,0.28)' }
         ][level];
-        const cx = TRACK_X_OFFSET + LANE_WIDTH * 2;
+        const cx = TRACK_X_OFFSET + GEAR_W / 2;
         const cy = HIT_LINE_Y;
-        const width = LANE_WIDTH * 4;
+        const width = GEAR_W;
         const time = performance.now() * 0.001;
         const pulse = feverPulse;
 
@@ -2276,9 +3047,15 @@
         gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
         drawFeverGearEffect();
 
-        // ★ 라인 안무/펄스 상태 갱신 (에디터와 동일 타임라인)
-        lineStates    = [0,1,2,3].map(l=>getLineState(l, currentTime));
-        linePulsePhase = [0,1,2,3].map(l=>getPulseMagnitude(l, currentTime));
+        // ★ 라인 안무/펄스/카메라 상태 갱신 (에디터와 동일 타임라인)
+        lineStates    = Array.from({length:LANE_COUNT},(_,l)=>getLineState(l, currentTime));
+        linePulsePhase = Array.from({length:LANE_COUNT},(_,l)=>getPulseMagnitude(l, currentTime));
+        camState  = getCameraState(currentTime);
+        camFlipX  = getCameraFlip('x', currentTime);
+        camFlipY  = getCameraFlip('y', currentTime);
+        camZoom   = getCameraZoom(currentTime);
+        updateFxRuntime(currentTime);
+        syncJudgePopups();
 
         const currentVisualY = getVisualPos(currentTime);
         const GLOBAL_SCALE   = 0.1 * baseNoteSpeed;
@@ -2375,7 +3152,15 @@
         const laneHalf = laneHalfW();
         const safeLimit = Math.sqrt(gameCanvas.width*gameCanvas.width + gameCanvas.height*gameCanvas.height) * 3;
 
-        for(let lane=0; lane<4; lane++){
+        // ── 카메라 트랜스폼: 화면이 라인들을 바라보는 카메라라는 컨셉 (이동/회전/반전/줌) ──
+        gameCtx.save();
+        gameCtx.translate(gameCanvas.width/2 + camState.x*gameCanvas.width + fxShakeOffset.x, gameCanvas.height/2 + camState.y*gameCanvas.height + fxShakeOffset.y);
+        gameCtx.rotate(camState.angle*Math.PI/180);
+        gameCtx.scale((camFlipX?-1:1)*camZoom, (camFlipY?-1:1)*camZoom);
+        gameCtx.translate(-gameCanvas.width/2, -gameCanvas.height/2);
+
+        for(let lane=0; lane<LANE_COUNT; lane++){
+            if(!getLineActive(lane, currentTime)) continue; // 꺼져있는 라인은 완전히 숨김
             const st=lineStates[lane];
             const pulse=linePulsePhase[lane]||0;
             const px=lineX(st), py=lineY(st);
@@ -2451,6 +3236,8 @@
 
         drawParticles();
         drawGameFX();
+        gameCtx.restore(); // ── 카메라 트랜스폼 종료 (이 아래는 화면 고정 UI) ──
+        renderScreenEffects(gameCtx, gameCanvas.width, gameCanvas.height, currentTime);
         drawHitErrorBar();
     }
 
@@ -2485,8 +3272,87 @@
     // ============================================================
     // 키 입력
     // ============================================================
-    let KEY_MAP = JSON.parse(localStorage.getItem('wb_key_layout') || '["d","f","j","k"]');
-    KEY_MAP = KEY_MAP.map(k => k.toLowerCase());
+    // 라인별로 여러 키를 가질 수 있음(겸용키). 구버전(문자열 1개) 포맷도 그대로 호환
+    function normalizeKeyToken(token){
+        if(token === ' ') return 'space';
+        if(typeof token !== 'string') return '';
+        const lower = token.trim().toLowerCase();
+        if(!lower) return '';
+        const aliasMap = {
+            spacebar: 'space', space: 'space',
+            backquote: '`', '`': '`', '~': '`',
+            minus: '-', '-': '-', '_': '-',
+            equal: '=', '=': '=', '+': '=',
+            bracketleft: '[', '[': '[', '{': '[',
+            bracketright: ']', ']': ']', '}': ']',
+            backslash: '\\', '\\': '\\', '|': '\\',
+            semicolon: ';', ';': ';', ':': ';',
+            quote: "'", "'": "'", '"': "'",
+            comma: ',', ',': ',', '<': ',',
+            period: '.', '.': '.', '>': '.',
+            slash: '/', '/': '/', '?': '/',
+        };
+        if(aliasMap[lower]) return aliasMap[lower];
+        if(/^key[a-z]$/.test(lower)) return lower.slice(3);
+        if(/^digit[0-9]$/.test(lower)) return lower.slice(5);
+        if(/^numpad[0-9]$/.test(lower)) return lower;
+        if(lower.length===1 && lower>='a' && lower<='z') return lower;
+        return lower;
+    }
+    function normalizeKeyCodeToken(code){
+        if(typeof code !== 'string' || !code) return '';
+        if(code === 'Space') return 'space';
+        if(code === 'ShiftLeft') return 'shiftleft';
+        if(code === 'ShiftRight') return 'shiftright';
+        if(/^Key[A-Z]$/.test(code)) return code.slice(3).toLowerCase();
+        if(/^Digit[0-9]$/.test(code)) return code.slice(5);
+        if(/^Numpad[0-9]$/.test(code)) return `numpad${code.slice(6)}`;
+        const codeMap = {
+            Backquote: '`',
+            Minus: '-',
+            Equal: '=',
+            BracketLeft: '[',
+            BracketRight: ']',
+            Backslash: '\\',
+            Semicolon: ';',
+            Quote: "'",
+            Comma: ',',
+            Period: '.',
+            Slash: '/',
+        };
+        return codeMap[code] || '';
+    }
+    function normalizeKeyMapData(km){
+        if(!Array.isArray(km)) return null;
+        const norm = km.map(entry => {
+            const keys = (Array.isArray(entry) ? entry : [entry])
+                .map(normalizeKeyToken)
+                .filter(Boolean);
+            return Array.from(new Set(keys));
+        });
+        while(norm.length < LANE_COUNT) norm.push([]);
+        return norm.slice(0, LANE_COUNT);
+    }
+    // lane 순서는 에디터와 동일하게 S,D,F,SPACE,J,K,L. 기존 4키 맵 호환은 DEFAULT_ACTIVE_SET([1,2,4,5]=D F J K)과
+    // 구버전 채보 lane 리맵(parseChartData의 legacy remap)으로 처리
+    const KEY_MAP_DEFAULT = [['s'],['d'],['f'],['space'],['j'],['k'],['l']];
+    let KEY_MAP;
+    try {
+        const saved = JSON.parse(localStorage.getItem('wb_key_layout') || 'null');
+        KEY_MAP = normalizeKeyMapData(saved) || KEY_MAP_DEFAULT.map(a=>a.slice());
+    } catch(e) {
+        KEY_MAP = KEY_MAP_DEFAULT.map(a=>a.slice());
+    }
+    // 키보드 이벤트를 KEY_MAP과 비교 가능한 토큰으로 정규화 (스페이스바/좌우Shift 구분)
+    function normalizeKeyEvent(e){
+        return normalizeKeyCodeToken(e.code) || normalizeKeyToken(e.key || e.code || '');
+    }
+    function laneCandidatesForToken(tok){
+        const out=[];
+        KEY_MAP.forEach((keys,idx)=>{ if(keys && keys.includes(tok)) out.push(idx); });
+        return out;
+    }
+    let heldKeyTokens = new Set(); // 지금 눌려있는 물리 키 토큰 (겸용키/OS 키반복 방지용)
 
     window.addEventListener('keydown', e => {
         // ★ 일시정지 메뉴에서 키보드 탐색
@@ -2510,26 +3376,34 @@
         if (e.code === 'Escape') { togglePause(); return; }
         if(isPaused || isResuming) return;
 
-        const key  = e.key.toLowerCase();
-        const lane = KEY_MAP.indexOf(key);
-        if(lane !== -1) {
+        const tok = normalizeKeyEvent(e);
+        const candidateLanes = laneCandidatesForToken(tok);
+        if(candidateLanes.length){
             e.preventDefault();
-            if(!activeKeys[lane]) {
-                activeKeys[lane] = true;
-                checkHit(lane);
+            if(!heldKeyTokens.has(tok)){
+                heldKeyTokens.add(tok);
+                candidateLanes.forEach(l => activeKeys[l] = true);
+                checkHit(candidateLanes);
             }
         }
     });
 
     window.addEventListener('keyup', e => {
-        if(gameFinished || isPaused) return;
-        const key  = e.key.toLowerCase();
-        const lane = KEY_MAP.indexOf(key);
-        if(lane !== -1) { e.preventDefault(); activeKeys[lane] = false; checkRelease(lane); }
+        const tok = normalizeKeyEvent(e);
+        heldKeyTokens.delete(tok);
+        const candidateLanes = laneCandidatesForToken(tok);
+        if(candidateLanes.length){
+            e.preventDefault();
+            const releasedLanes = candidateLanes.filter(l => activeKeys[l]);
+            candidateLanes.forEach(l => activeKeys[l] = false);
+            if(gameFinished || isPaused || isResuming) return;
+            if(releasedLanes.length) checkRelease(releasedLanes);
+        }
     });
 
     function resetActiveKeys() {
-        activeKeys = [false, false, false, false];
+        activeKeys = new Array(LANE_COUNT).fill(false);
+        heldKeyTokens.clear();
     }
     window.addEventListener('blur', resetActiveKeys);
     document.addEventListener('visibilitychange', () => {
@@ -2548,12 +3422,12 @@
         const touches = e.changedTouches;
         for (let i = 0; i < touches.length; i++) {
             const touch = touches[i];
-            const lane  = Math.floor(touch.clientX / (window.innerWidth / 4));
-            if (lane >= 0 && lane < 4) {
+            const lane  = Math.floor(touch.clientX / (window.innerWidth / LANE_COUNT));
+            if (lane >= 0 && lane < LANE_COUNT) {
                 if (e.type === 'touchstart') {
-                    if (!activeKeys[lane]) { activeKeys[lane] = true; checkHit(lane); }
+                    if (!activeKeys[lane]) { activeKeys[lane] = true; checkHit([lane]); }
                 } else {
-                    activeKeys[lane] = false; checkRelease(lane);
+                    activeKeys[lane] = false; checkRelease([lane]);
                 }
             }
         }
@@ -2562,12 +3436,15 @@
     // ============================================================
     // ★ checkHit (8단계 판정)
     // ============================================================
-    function checkHit(lane) {
+    function checkHit(laneOrLanes) {
         let currentTime = getCurrentTime();
+        const candidateLanes = (Array.isArray(laneOrLanes)?laneOrLanes:[laneOrLanes])
+            .filter(l => getLineActive(l, currentTime));
+        if(candidateLanes.length===0) return;
 
         const MAX_WINDOW = 110; // Oh... 까지의 최대 윈도우
         const candidates = activeNotes.filter(n =>
-            n.lane === lane && !n.hit && !n.finished &&
+            candidateLanes.includes(n.lane) && !n.hit && !n.finished &&
             Math.abs(currentTime - n.time) <= MAX_WINDOW
         );
         if (candidates.length === 0) return;
@@ -2575,6 +3452,7 @@
         const n = candidates.reduce((prev, curr) =>
             Math.abs(currentTime - curr.time) < Math.abs(currentTime - prev.time) ? curr : prev
         );
+        const lane    = n.lane; // 후보 라인들 중 실제로 맞은 노트가 속한 라인
         const diff    = currentTime - n.time;
         const absDiff = Math.abs(diff);
 
@@ -2620,9 +3498,11 @@
     // ============================================================
     // ★ checkRelease (롱노트 해제)
     // ============================================================
-    function checkRelease(lane) {
-        const n = activeNotes.find(n => n.lane === lane && n.hit && !n.finished && n.len > 0);
+    function checkRelease(laneOrLanes) {
+        const candidateLanes = Array.isArray(laneOrLanes)?laneOrLanes:[laneOrLanes];
+        const n = activeNotes.find(n => candidateLanes.includes(n.lane) && n.hit && !n.finished && n.len > 0);
         if (!n) return;
+        const lane = n.lane;
 
         const currentTime   = getCurrentTime();
         const remaining     = n.endTime - currentTime;
@@ -3042,15 +3922,18 @@
                 { name:'Oh...',    val:judgeStats.oh,        color:'#FF2D78' },
                 { name:'No...',    val:judgeStats.miss,      color:'#555566' },
             ];
-            const maxJudge = Math.max(1, ...judgeRows.map(j => j.val));
-            const judgeHtml = judgeRows.map(j => `
+            const judgeTotal = Math.max(1, judgeRows.reduce((sum, j) => sum + j.val, 0));
+            const judgeHtml = judgeRows.map(j => {
+                const ratio = j.val / judgeTotal;
+                return `
                 <div class="res-judge-row">
                     <span class="res-judge-name" style="color:${j.color}">${j.name}</span>
                     <div class="res-judge-bar-wrap">
-                        <div class="res-judge-bar" style="color:${j.color};width:${(j.val/maxJudge*100).toFixed(1)}%" data-w="${(j.val/maxJudge*100).toFixed(1)}"></div>
+                        <div class="res-judge-bar" style="color:${j.color};width:100%" data-ratio="${ratio.toFixed(4)}"></div>
                     </div>
                     <span class="res-judge-count">${j.val}</span>
-                </div>`).join('');
+                </div>`;
+            }).join('');
 
             // ── Google login ──
             const loginHtml = (!userProfile)
@@ -3109,7 +3992,7 @@
             // ── 판정 bar 애니메이션 (약간 딜레이 후 scaleX 적용) ──
             setTimeout(() => {
                 resultOverlay.querySelectorAll('.res-judge-bar').forEach(bar => {
-                    bar.style.transform = `scaleX(${parseFloat(bar.dataset.w)/100})`;
+                    bar.style.transform = `scaleX(${parseFloat(bar.dataset.ratio || '0')})`;
                 });
             }, 700);
 

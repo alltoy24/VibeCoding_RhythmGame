@@ -104,6 +104,9 @@ input[type=file]{display:none;}
 .lane-sel-btn.active[data-lane="1"]{border-color:var(--lane1);background:rgba(0,230,118,0.12);}
 .lane-sel-btn.active[data-lane="2"]{border-color:var(--lane2);background:rgba(41,182,246,0.12);}
 .lane-sel-btn.active[data-lane="3"]{border-color:var(--lane3);background:rgba(255,167,38,0.12);}
+.lane-sel-btn.active[data-lane="4"]{border-color:#c084fc;background:rgba(192,132,252,0.12);}
+.lane-sel-btn.active[data-lane="5"]{border-color:#ff6b6b;background:rgba(255,107,107,0.12);}
+.lane-sel-btn.active[data-lane="6"]{border-color:#4dd0e1;background:rgba(77,208,225,0.12);}
 
 .kf-list{max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:3px;}
 .kf-list::-webkit-scrollbar{width:4px;}
@@ -122,12 +125,34 @@ input[type=file]{display:none;}
 .kf-del:hover{color:#ff0055;}
 
 .easing-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px;}
-.easing-btn{
+.easing-btn,.cam-easing-btn,.zoom-easing-btn{
   padding:6px;font-size:9px;border:1px solid #333;border-radius:4px;
   background:#111;color:#999;cursor:pointer;transition:0.15s;text-align:center;
 }
-.easing-btn:hover{border-color:#555;color:#ddd;}
+.easing-btn:hover,.cam-easing-btn:hover,.zoom-easing-btn:hover{border-color:#555;color:#ddd;}
 .easing-btn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,229,255,0.08);}
+.cam-easing-btn.active{border-color:#ffd166;color:#ffd166;background:rgba(255,209,102,0.1);}
+.zoom-easing-btn.active{border-color:#00ff88;color:#00ff88;background:rgba(0,255,136,0.1);}
+
+/* ── FX(이펙트) 타입 피커 ── */
+.fx-cat-label{font-size:9px;font-weight:800;color:#666;text-transform:uppercase;
+  letter-spacing:0.5px;margin:6px 0 3px;}
+.fx-type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;}
+.fx-type-btn{
+  padding:6px 2px;border-radius:5px;border:1.5px solid #333;background:#111;
+  color:#999;font-size:9px;font-weight:700;cursor:pointer;transition:0.15s;
+  display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.15;
+}
+.fx-type-btn .fx-ic{font-size:14px;}
+.fx-type-btn:hover{border-color:#555;color:#ddd;}
+.fx-type-btn.active{border-color:var(--fx-c,#ff5ecb);color:var(--fx-c,#ff5ecb);
+  background:rgba(255,94,203,0.1);}
+.fx-env-btn{
+  flex:1;padding:5px 2px;border-radius:5px;border:1.5px solid #333;background:#111;
+  color:#888;font-size:9px;font-weight:700;cursor:pointer;transition:0.15s;
+}
+.fx-env-btn:hover{border-color:#555;color:#ddd;}
+.fx-env-btn.active{border-color:#ff5ecb;color:#ff5ecb;background:rgba(255,94,203,0.1);}
 
 .coord-display{
   display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;
@@ -147,19 +172,24 @@ input[type=file]{display:none;}
    EDITOR VIEW
 ═══════════════════════════════════════════════════════ */
 #editor-view{flex:1;display:flex;flex-direction:column;position:relative;overflow:hidden;}
-.lane-header{display:flex;width:400px;margin:0 auto;font-weight:700;font-size:11px;
+.lane-header{display:flex;width:900px;margin:0 auto;font-weight:700;font-size:11px;
   text-align:center;border-bottom:2px solid #222;background:#111;flex-shrink:0;}
-.lane-header div{flex:1;padding:7px 0;border-right:1px solid #222;}
+.lane-header div{flex:0 0 100px;padding:7px 0;border-right:1px solid #222;}
 .lane-header div:nth-child(1){color:var(--lane0);}
 .lane-header div:nth-child(2){color:var(--lane1);}
 .lane-header div:nth-child(3){color:var(--lane2);}
 .lane-header div:nth-child(4){color:var(--lane3);}
+.lane-header div:nth-child(5){color:#c084fc;}
+.lane-header div:nth-child(6){color:#ff6b6b;}
+.lane-header div:nth-child(7){color:#4dd0e1;}
+.lane-header div:nth-child(8){color:#ffd166;background:#1a1608;font-size:9px;}
+.lane-header div:nth-child(9){color:#ff5ecb;background:#1a0c16;font-size:9px;}
 
 #editor-container{flex:1;overflow-y:scroll;background:#050505;
   display:flex;justify-content:center;position:relative;}
 #editor-container::-webkit-scrollbar{width:8px;}
 #editor-container::-webkit-scrollbar-thumb{background:#222;border-radius:4px;}
-#canvas-layer{position:relative;width:400px;}
+#canvas-layer{position:relative;width:900px;}
 #gridCanvas{position:sticky;top:0;display:block;background:#000;cursor:crosshair;}
 #play-head{position:absolute;left:0;width:100%;height:2px;background:#ff0055;
   z-index:5;display:none;pointer-events:none;box-shadow:0 0 8px #ff0055;will-change:transform;}
@@ -320,6 +350,8 @@ input[type=file]{display:none;}
     <div class="tab-bar">
       <button class="tab-btn active" onclick="switchTab('note')" id="tab-note">CHART</button>
       <button class="tab-btn" onclick="switchTab('line')" id="tab-line">LINE</button>
+      <button class="tab-btn" onclick="switchTab('cam')" id="tab-cam">CAM</button>
+      <button class="tab-btn" onclick="switchTab('fx')" id="tab-fx">FX</button>
     </div>
 
     <!-- ══════ CHART TAB ══════ -->
@@ -413,13 +445,35 @@ input[type=file]{display:none;}
     <!-- ══════ LINE TAB ══════ -->
     <div class="tab-pane" id="pane-line">
       <div class="cg">
-        <div class="gt">Select Lane</div>
-        <div class="lane-selector">
-          <button class="lane-sel-btn active" data-lane="0" onclick="selectLineLane(0)">L1</button>
-          <button class="lane-sel-btn" data-lane="1" onclick="selectLineLane(1)">L2</button>
-          <button class="lane-sel-btn" data-lane="2" onclick="selectLineLane(2)">L3</button>
-          <button class="lane-sel-btn" data-lane="3" onclick="selectLineLane(3)">L4</button>
+        <div class="gt" style="color:var(--gold);">초기 키 개수 (곡 시작 시)</div>
+        <div class="row">
+          <input type="number" id="init-key-count" value="4" min="3" max="7" style="text-align:center;">
+          <button onclick="applyInitialKeyLayout(parseInt(document.getElementById('init-key-count').value)||4)" style="flex:2;">적용 — 시작 시 켜질 키 개수 설정</button>
         </div>
+        <div id="init-key-hint" style="font-size:9px;color:#888;margin-top:4px;">지금 설정: 시작 시 D/F/J/K (4키)가 가운데 정렬로 시작</div>
+      </div>
+      <div class="cg">
+        <div class="gt" style="color:#00e5ff;">키 설정 (라인별 키보드 키)</div>
+        <div style="display:flex;gap:4px;margin-bottom:6px;flex-wrap:wrap;">
+          <button onclick="applyKeyPreset('key7')" style="flex:1;min-width:30%;font-size:9px;">7키 개별: S D F SPACE J K L</button>
+          <button onclick="applyKeyPreset('keyFJshared')" style="flex:1;min-width:30%;font-size:9px;">F/J 겸용: 스페이스 없이 S D F[F/J겸용] J K L</button>
+          <button onclick="applyKeyPreset('key8shared')" style="flex:1;min-width:30%;font-size:9px;">8키 공용: LShift A S [D/L] ; ' RShift</button>
+        </div>
+        <div id="keymap-list" style="display:flex;flex-direction:column;gap:4px;"></div>
+        <div style="font-size:9px;color:#444;margin-top:4px;">키 칩을 <b>클릭</b>하면 그 키를 바로 다른 키로 바꿀 수 있어요 (기본으로 설정된 키도 포함). "+ 키 추가"는 그 라인에 키를 하나 더 걸 때(겸용키), 칩의 ✕는 제거할 때 사용해요. 이미 다른 라인이 쓰는 키는 확인 후 겸용으로만 쓸 수 있어요.</div>
+      </div>
+      <div class="cg">
+        <div class="gt">Select Lane</div>
+        <div class="lane-selector" style="flex-wrap:wrap;">
+          <button class="lane-sel-btn active" data-lane="0" onclick="selectLineLane(0)" style="flex-basis:30%;" id="lane-sel-0">D L1</button>
+          <button class="lane-sel-btn" data-lane="1" onclick="selectLineLane(1)" style="flex-basis:30%;" id="lane-sel-1">F L2</button>
+          <button class="lane-sel-btn" data-lane="2" onclick="selectLineLane(2)" style="flex-basis:30%;" id="lane-sel-2">J L3</button>
+          <button class="lane-sel-btn" data-lane="3" onclick="selectLineLane(3)" style="flex-basis:30%;" id="lane-sel-3">K L4</button>
+          <button class="lane-sel-btn" data-lane="4" onclick="selectLineLane(4)" style="flex-basis:30%;color:#c084fc;" id="lane-sel-4">S L5</button>
+          <button class="lane-sel-btn" data-lane="5" onclick="selectLineLane(5)" style="flex-basis:30%;color:#ff6b6b;" id="lane-sel-5">L L6</button>
+          <button class="lane-sel-btn" data-lane="6" onclick="selectLineLane(6)" style="flex-basis:30%;color:#4dd0e1;" id="lane-sel-6">A L7</button>
+        </div>
+        <div style="font-size:9px;color:#444;margin-top:4px;">L1~L4는 기본적으로 항상 켜져있고, L5~L7은 기본적으로 꺼져있음 (실제 키는 위 "키 설정"에서 확인/변경) → 아래 "라인 등장/퇴장" 모드로 곡 중간에 켜고 끌 수 있음</div>
       </div>
 
       <!-- 현재 라인 좌표 실시간 표시 -->
@@ -448,17 +502,23 @@ input[type=file]{display:none;}
           <button onclick="deselectKf()" style="flex:1;font-size:9px;background:#222;color:#aaa;">＋ New (deselect)</button>
           <button onclick="deleteSelectedKf()" style="flex:1;font-size:9px;background:rgba(255,0,85,0.15);border:1px solid #ff0055;color:#ff5577;">🗑 Delete</button>
         </div>
+        <div style="font-size:9px;color:#555;margin-bottom:3px;">이동 방식</div>
+        <div style="display:flex;gap:4px;margin-bottom:6px;">
+          <button class="easing-btn active" onclick="selectMoveType('relative')" id="move-relative" style="flex:1;">↗ ~만큼 이동</button>
+          <button class="easing-btn" onclick="selectMoveType('absolute')" id="move-absolute" style="flex:1;">📍 ~로 이동</button>
+        </div>
+        <div style="font-size:8px;color:#444;margin-bottom:6px;">그리드 마커: ◆다이아몬드=~만큼(점선) · ●원+타겟점=~로(실선)</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:5px;">
           <div>
-            <div style="font-size:9px;color:#555;margin-bottom:2px;">X (0~1)</div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;" id="kf-x-label">X 이동량</div>
             <input type="number" id="kf-x" value="0.5" step="0.01" min="0" max="1" style="width:100%;text-align:center;">
           </div>
           <div>
-            <div style="font-size:9px;color:#555;margin-bottom:2px;">Y (0~1)</div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;" id="kf-y-label">Y 이동량</div>
             <input type="number" id="kf-y" value="0.85" step="0.01" min="0" max="1" style="width:100%;text-align:center;">
           </div>
           <div>
-            <div style="font-size:9px;color:#555;margin-bottom:2px;">Angle°</div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;" id="kf-angle-label">각도 변화°</div>
             <input type="number" id="kf-angle" value="0" step="1" min="-180" max="180" style="width:100%;text-align:center;">
           </div>
         </div>
@@ -534,7 +594,253 @@ input[type=file]{display:none;}
         </div>
       </div>
 
+      <!-- 라인 등장/퇴장 (키 개수 변화) -->
+      <div class="cg">
+        <div class="gt" style="color:#00ff88;">라인 등장/퇴장 (키 개수 변화)</div>
+        <div style="font-size:9px;color:#888;margin-bottom:5px;">
+          위에서 선택한 라인(L1~L7)이 켜져있는지 꺼져있는지를 <b>그 시점부터</b> 전환합니다.
+          같은 자리를 다시 클릭하면 취소. 기본: L1~L4는 항상 켜짐, L5~L7은 항상 꺼짐.
+        </div>
+        <button id="btn-mode-active" onclick="setEditMode('ACTIVE')"
+          style="width:100%;background:rgba(0,255,136,0.15);
+          border:1px solid #00ff88;color:#00ff88;">📍 등장/퇴장 배치 — 그리드 클릭</button>
+        <div style="font-size:9px;color:#444;text-align:center;margin-top:3px;">우클릭/Del = 해당 전환 삭제 · 초록=켜짐, 빨강=꺼짐</div>
+      </div>
+
     </div><!-- /pane-line -->
+
+    <!-- ══════ CAM TAB ══════ -->
+    <div class="tab-pane" id="pane-cam">
+      <div class="cg">
+        <div class="gt" style="color:#ffd166;">📷 카메라</div>
+        <div style="font-size:9px;color:#888;">지금 보는 화면은 라인들을 바라보는 "카메라" 화면이라는 컨셉이에요. 라인처럼 카메라도 이동/회전/반전을 시간에 따라 트리거할 수 있어요.</div>
+      </div>
+
+      <!-- 카메라 키프레임 추가 -->
+      <div class="cg">
+        <div class="gt" id="cam-kf-edit-banner" style="color:var(--accent);">Add Camera Keyframe (NEW)</div>
+        <div id="cam-kf-edit-actions" style="display:none;gap:4px;margin-bottom:6px;">
+          <button onclick="deselectCamKf()" style="flex:1;font-size:9px;background:#222;color:#aaa;">＋ New (deselect)</button>
+          <button onclick="deleteSelectedCamKf()" style="flex:1;font-size:9px;background:rgba(255,0,85,0.15);border:1px solid #ff0055;color:#ff5577;">🗑 Delete</button>
+        </div>
+
+        <div style="font-size:9px;color:#555;margin-bottom:3px;">이동 방식</div>
+        <div style="display:flex;gap:4px;margin-bottom:6px;">
+          <button class="cam-easing-btn active" onclick="selectCamMoveType('relative')" id="cam-move-relative" style="flex:1;">↗ ~만큼 이동</button>
+          <button class="cam-easing-btn" onclick="selectCamMoveType('absolute')" id="cam-move-absolute" style="flex:1;">📍 ~로 이동</button>
+        </div>
+        <div style="font-size:8px;color:#444;margin-bottom:6px;">그리드 마커: ■사각형=~만큼(점선) · ●원+타겟점=~로(실선)</div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-bottom:5px;">
+          <div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;" id="cam-kf-x-label">X 이동량</div>
+            <input type="number" id="cam-kf-x" value="0" step="0.01" min="-1" max="1" style="width:100%;text-align:center;">
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;" id="cam-kf-y-label">Y 이동량</div>
+            <input type="number" id="cam-kf-y" value="0" step="0.01" min="-1" max="1" style="width:100%;text-align:center;">
+          </div>
+          <div>
+            <div style="font-size:9px;color:#555;margin-bottom:2px;" id="cam-kf-angle-label">각도 변화°</div>
+            <input type="number" id="cam-kf-angle" value="0" step="1" min="-180" max="180" style="width:100%;text-align:center;">
+          </div>
+        </div>
+
+        <div style="font-size:9px;color:#555;margin-bottom:3px;">Transition</div>
+        <div class="easing-grid">
+          <button class="cam-easing-btn active" onclick="selectCamEasing('linear')" id="cam-ease-linear">▶ Linear</button>
+          <button class="cam-easing-btn" onclick="selectCamEasing('step')" id="cam-ease-step">⬛ Step</button>
+          <button class="cam-easing-btn" onclick="selectCamEasing('ease-in')" id="cam-ease-ease-in">◀◀ Ease In</button>
+          <button class="cam-easing-btn" onclick="selectCamEasing('ease-out')" id="cam-ease-ease-out">▶▶ Ease Out</button>
+          <button class="cam-easing-btn" onclick="selectCamEasing('ease-inout')" id="cam-ease-ease-inout">◀▶ Ease InOut</button>
+          <button class="cam-easing-btn" onclick="selectCamEasing('circ')" id="cam-ease-circ">○ Circular</button>
+          <button class="cam-easing-btn" onclick="selectCamEasing('custom')" id="cam-ease-custom" style="grid-column:1/3;">✎ Custom Curve (EQ)</button>
+        </div>
+
+        <!-- 카메라 전용 커스텀 속도 곡선 에디터 -->
+        <div id="cam-curve-editor-box" style="display:none;margin-top:6px;">
+          <div style="font-size:9px;color:#555;margin-bottom:3px;display:flex;justify-content:space-between;">
+            <span>Camera Speed Curve — 클릭:점추가 · 드래그:이동 · 우클릭:삭제</span>
+            <span style="color:#666;cursor:pointer;text-decoration:underline;" onclick="resetCamCurve()">↺ reset</span>
+          </div>
+          <canvas id="cam-curve-canvas" width="276" height="120"
+            style="width:100%;height:120px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;cursor:crosshair;display:block;"></canvas>
+          <div style="font-size:8px;color:#444;text-align:center;margin-top:2px;">가로=진행시간 · 세로=속도</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <span style="font-size:9px;color:#555;width:50px;">Duration</span>
+          <input type="number" id="cam-kf-dur" min="0" step="50" value="500"
+            style="flex:1;width:100%;text-align:right;">
+          <span id="cam-kf-dur-val" style="font-size:10px;color:var(--accent);width:52px;text-align:right;">500ms</span>
+        </div>
+
+        <button id="btn-mode-camera" onclick="setEditMode('CAMERA')"
+          style="width:100%;margin-top:5px;background:rgba(255,209,102,0.15);
+          border:1px solid #ffd166;color:#ffd166;">📍 CAMERA 배치 — 그리드 아무 곳이나 클릭(시간만 지정)</button>
+      </div>
+
+      <!-- 카메라 키프레임 리스트 -->
+      <div class="cg" style="flex:1;min-height:0;">
+        <div class="gt" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Camera Keyframes</span>
+          <button onclick="clearAllCamKeyframes()" style="background:none;border:none;color:#444;
+            font-size:10px;cursor:pointer;padding:0;">✕ Clear All</button>
+        </div>
+        <div class="kf-list" id="cam-kf-list"></div>
+      </div>
+
+      <!-- 반전 트리거 -->
+      <div class="cg">
+        <div class="gt" style="color:#00ff88;">반전 트리거</div>
+        <div style="font-size:9px;color:#888;margin-bottom:5px;">그리드의 아무 시점이나 클릭하면 그 순간부터 좌우/상하 반전이 토글돼요. 같은 자리 다시 클릭하면 취소.</div>
+        <div style="display:flex;gap:4px;">
+          <button id="btn-mode-flipx" onclick="setEditMode('FLIPX')" style="flex:1;background:rgba(0,255,136,0.15);
+            border:1px solid #00ff88;color:#00ff88;font-size:10px;">↔ 좌우 반전 배치</button>
+          <button id="btn-mode-flipy" onclick="setEditMode('FLIPY')" style="flex:1;background:rgba(0,229,255,0.15);
+            border:1px solid #00e5ff;color:#00e5ff;font-size:10px;">↕ 상하 반전 배치</button>
+        </div>
+        <div style="font-size:9px;color:#444;text-align:center;margin-top:3px;">우클릭/Del = 해당 반전 트리거 삭제</div>
+      </div>
+
+      <!-- 카메라 확대/축소 (줌) -->
+      <div class="cg">
+        <div class="gt" style="color:#00ff88;">🔍 카메라 확대/축소 (줌)</div>
+        <div style="font-size:9px;color:#888;margin-bottom:6px;">이동/회전과는 완전히 별개의 타임라인이에요. 기본값은 100%(지금 화면 그대로)이고, 원하는 시점에 원하는 배율로 자유롭게 바꿀 수 있어요.</div>
+
+        <div class="gt" id="zoom-kf-edit-banner" style="color:var(--accent);">Add Zoom Keyframe (NEW)</div>
+        <div id="zoom-kf-edit-actions" style="display:none;gap:4px;margin-bottom:6px;">
+          <button onclick="deselectCamZoomKf()" style="flex:1;font-size:9px;background:#222;color:#aaa;">＋ New (deselect)</button>
+          <button onclick="deleteSelectedCamZoomKf()" style="flex:1;font-size:9px;background:rgba(255,0,85,0.15);border:1px solid #ff0055;color:#ff5577;">🗑 Delete</button>
+        </div>
+
+        <div style="font-size:9px;color:#555;margin-bottom:3px;">이동 방식</div>
+        <div style="display:flex;gap:4px;margin-bottom:6px;">
+          <button class="zoom-easing-btn active" onclick="selectZoomMoveType('relative')" id="zoom-move-relative" style="flex:1;">↗ ~만큼 확대/축소</button>
+          <button class="zoom-easing-btn" onclick="selectZoomMoveType('absolute')" id="zoom-move-absolute" style="flex:1;">📍 ~로 확대/축소</button>
+        </div>
+
+        <div style="margin-bottom:5px;">
+          <div style="font-size:9px;color:#555;margin-bottom:2px;" id="zoom-kf-value-label">확대/축소 변화량 (%p)</div>
+          <input type="number" id="zoom-kf-value" value="0" step="5" style="width:100%;text-align:center;">
+          <div style="font-size:8px;color:#444;margin-top:2px;">예: ~만큼 모드에서 "50" = 지금보다 50%p 확대 · ~로 모드에서 "150" = 화면을 150%(1.5배)로</div>
+        </div>
+
+        <div style="font-size:9px;color:#555;margin-bottom:3px;">Transition</div>
+        <div class="easing-grid">
+          <button class="zoom-easing-btn active" onclick="selectZoomEasing('linear')" id="zoom-ease-linear">▶ Linear</button>
+          <button class="zoom-easing-btn" onclick="selectZoomEasing('step')" id="zoom-ease-step">⬛ Step</button>
+          <button class="zoom-easing-btn" onclick="selectZoomEasing('ease-in')" id="zoom-ease-ease-in">◀◀ Ease In</button>
+          <button class="zoom-easing-btn" onclick="selectZoomEasing('ease-out')" id="zoom-ease-ease-out">▶▶ Ease Out</button>
+          <button class="zoom-easing-btn" onclick="selectZoomEasing('ease-inout')" id="zoom-ease-ease-inout">◀▶ Ease InOut</button>
+          <button class="zoom-easing-btn" onclick="selectZoomEasing('circ')" id="zoom-ease-circ">○ Circular</button>
+          <button class="zoom-easing-btn" onclick="selectZoomEasing('custom')" id="zoom-ease-custom" style="grid-column:1/3;">✎ Custom Curve (EQ)</button>
+        </div>
+
+        <div id="zoom-curve-editor-box" style="display:none;margin-top:6px;">
+          <div style="font-size:9px;color:#555;margin-bottom:3px;display:flex;justify-content:space-between;">
+            <span>Zoom Speed Curve — 클릭:점추가 · 드래그:이동 · 우클릭:삭제</span>
+            <span style="color:#666;cursor:pointer;text-decoration:underline;" onclick="resetZoomCurve()">↺ reset</span>
+          </div>
+          <canvas id="zoom-curve-canvas" width="276" height="120"
+            style="width:100%;height:120px;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:4px;cursor:crosshair;display:block;"></canvas>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:5px;margin-top:5px;">
+          <span style="font-size:9px;color:#555;width:50px;">Duration</span>
+          <input type="number" id="zoom-kf-dur" min="0" step="50" value="500"
+            style="flex:1;width:100%;text-align:right;">
+          <span id="zoom-kf-dur-val" style="font-size:10px;color:var(--accent);width:52px;text-align:right;">500ms</span>
+        </div>
+
+        <button id="btn-mode-camzoom" onclick="setEditMode('CAMZOOM')"
+          style="width:100%;margin-top:5px;background:rgba(0,255,136,0.15);
+          border:1px solid #00ff88;color:#00ff88;">📍 ZOOM 배치 — 그리드 아무 곳이나 클릭(시간만 지정)</button>
+
+        <div class="gt" style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;">
+          <span>Zoom Keyframes</span>
+          <button onclick="clearAllCamZoomKeyframes()" style="background:none;border:none;color:#444;
+            font-size:10px;cursor:pointer;padding:0;">✕ Clear All</button>
+        </div>
+        <div class="kf-list" id="zoom-kf-list"></div>
+      </div>
+
+    </div><!-- /pane-cam -->
+
+    <!-- ══════ EFFECT TAB ══════ -->
+    <div class="tab-pane" id="pane-fx">
+      <div class="cg">
+        <div class="gt" style="color:#ff5ecb;">✨ 화면 이펙트</div>
+        <div style="font-size:9px;color:#888;">카메라와 마찬가지로 화면 전체에 씌워지는 트리거예요. 시간(한 점)에 배치하면 그 순간부터 지정한 길이(Duration) 동안 재생돼요. 같은 시간에 여러 종류를 겹쳐 배치할 수 있어요 (예: 폭우 + 흔들림 + 플래시).</div>
+      </div>
+
+      <div class="cg">
+        <div class="gt" id="fx-kf-edit-banner" style="color:#ff5ecb;">Add Effect Trigger (NEW)</div>
+        <div id="fx-kf-edit-actions" style="display:none;gap:4px;margin-bottom:4px;">
+          <button onclick="deselectFxKf()" style="flex:1;font-size:9px;background:#222;color:#aaa;">＋ New (deselect)</button>
+          <button onclick="deleteSelectedFxKf()" style="flex:1;font-size:9px;background:rgba(255,0,85,0.15);border:1px solid #ff0055;color:#ff5577;">🗑 Delete</button>
+        </div>
+
+        <div class="fx-cat-label" style="color:#66aaff;">🎨 색/화면 필터</div>
+        <div class="fx-type-grid" id="fx-type-grid-filter"></div>
+
+        <div class="fx-cat-label" style="color:#ff6666;">📼 왜곡 / 글리치</div>
+        <div class="fx-type-grid" id="fx-type-grid-glitch"></div>
+
+        <div class="fx-cat-label" style="color:#66ffbb;">🌦 날씨 / 파티클</div>
+        <div class="fx-type-grid" id="fx-type-grid-weather"></div>
+
+        <div style="margin-top:8px;">
+          <div style="font-size:9px;color:#555;margin-bottom:2px;display:flex;justify-content:space-between;">
+            <span>강도 (Intensity)</span><span id="fx-kf-intensity-val" style="color:#ff5ecb;">60%</span>
+          </div>
+          <input type="range" id="fx-kf-intensity" min="5" max="100" step="5" value="60" style="width:100%;">
+        </div>
+
+        <div style="display:flex;align-items:center;gap:5px;margin-top:8px;">
+          <span style="font-size:9px;color:#555;width:50px;">Duration</span>
+          <input type="number" id="fx-kf-dur" min="0" step="50" value="800"
+            style="flex:1;width:100%;text-align:right;">
+          <span id="fx-kf-dur-val" style="font-size:10px;color:#ff5ecb;width:52px;text-align:right;">800ms</span>
+        </div>
+
+        <div style="display:flex;gap:6px;margin-top:8px;">
+          <div style="flex:1;">
+            <div style="font-size:9px;color:#555;margin-bottom:2px;">시작 (Attack)</div>
+            <div style="display:flex;gap:3px;">
+              <button class="fx-env-btn" data-field="attack" data-val="instant" onclick="setFxEnvOption('attack','instant')">⚡ 즉시</button>
+              <button class="fx-env-btn" data-field="attack" data-val="fade" onclick="setFxEnvOption('attack','fade')">🌊 페이드인</button>
+            </div>
+          </div>
+          <div style="flex:1;">
+            <div style="font-size:9px;color:#555;margin-bottom:2px;">종료 (Release)</div>
+            <div style="display:flex;gap:3px;">
+              <button class="fx-env-btn" data-field="release" data-val="instant" onclick="setFxEnvOption('release','instant')">⚡ 즉시</button>
+              <button class="fx-env-btn" data-field="release" data-val="fade" onclick="setFxEnvOption('release','fade')">🌊 페이드아웃</button>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:9px;color:#444;text-align:center;margin-top:3px;">
+          예: 흔들림은 "즉시 시작"으로 하면 트리거하자마자 바로 최대 강도로 흔들려요. 필터 계열은 "페이드"로 하면 스르륵 나타나요.
+        </div>
+
+        <button id="btn-mode-effect" onclick="setEditMode('EFFECT')"
+          style="width:100%;margin-top:6px;background:rgba(255,94,203,0.15);
+          border:1px solid #ff5ecb;color:#ff5ecb;">📍 EFFECT 배치 — 그리드 아무 곳이나 클릭(시간만 지정) · 드래그=길이</button>
+        <div style="font-size:9px;color:#444;text-align:center;margin-top:3px;">라인은 얇게 3개까지 — 빈 곳 클릭=새로 배치 · 이미 있는 라인 클릭=그 트리거 수정 · 우클릭/Del=삭제</div>
+        <div id="fx-kf-warn" style="display:none;font-size:9px;color:#ff5577;text-align:center;
+          margin-top:4px;font-weight:700;"></div>
+      </div>
+
+      <div class="cg" style="flex:1;min-height:0;">
+        <div class="gt" style="display:flex;justify-content:space-between;align-items:center;">
+          <span>Effect Triggers</span>
+          <button onclick="clearAllFxKeyframes()" style="background:none;border:none;color:#444;
+            font-size:10px;cursor:pointer;padding:0;">✕ Clear All</button>
+        </div>
+        <div class="kf-list" id="fx-kf-list"></div>
+      </div>
+    </div><!-- /pane-fx -->
 
   </div><!-- /sidebar-inner -->
 </div><!-- /sidebar -->
@@ -542,12 +848,12 @@ input[type=file]{display:none;}
 <!-- ════ EDITOR VIEW ════ -->
 <div id="editor-view">
   <div class="lane-header">
-    <div>D &nbsp; L1</div><div>F &nbsp; L2</div><div>J &nbsp; L3</div><div>K &nbsp; L4</div>
+    <div id="lane-hdr-0">D &nbsp; L1</div><div id="lane-hdr-1">F &nbsp; L2</div><div id="lane-hdr-2">J &nbsp; L3</div><div id="lane-hdr-3">K &nbsp; L4</div><div id="lane-hdr-4">S &nbsp; L5</div><div id="lane-hdr-5">L &nbsp; L6</div><div id="lane-hdr-6">A &nbsp; L7</div><div>📷 CAM</div><div>✨ FX</div>
   </div>
   <div id="editor-container">
     <div id="canvas-layer">
       <div id="play-head"></div>
-      <canvas id="gridCanvas" width="400" height="2400"></canvas>
+      <canvas id="gridCanvas" width="900" height="2400"></canvas>
     </div>
   </div>
 </div>
@@ -615,11 +921,13 @@ input[type=file]{display:none;}
 //  CONSTANTS & GLOBALS
 // ═══════════════════════════════════════════════════════════════
 const BASE_RES = 192;
-const LANE_COUNT = 4;
+const LANE_COUNT = 7;   // 실제 존재하는 라인(=키) 개수. 기본 4개(D/F/J/K)는 항상 켜져 있고, 나머지 3개는 곡 중간에 켜고 끌 수 있음
+let DEFAULT_ACTIVE_COUNT = 4;
+let DEFAULT_ACTIVE_SET = [1,2,4,5]; // 기본 4키 = D F J K (KEY_MAP 인덱스 기준, applyInitialKeyLayout에서 갱신됨)
 const LANE_W = 100;
-const CANVAS_W = 800;
-// Muted, desaturated lane colors — less eye-straining
-const LANE_COLORS = ['#b84060','#2a9558','#3d8fb0','#b07830'];
+const CANVAS_W = 900;
+// 7개 라인 각각의 고유색 — 몇 개가 켜져있든 항상 구별되도록
+const LANE_COLORS = ['#ff4081','#00e676','#29b6f6','#ffa726','#c084fc','#ff6b6b','#4dd0e1'];
 
 // -- audio --
 const audioCtx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive',sampleRate:44100});
@@ -674,7 +982,7 @@ const btnModeSpeed=document.getElementById('btn-mode-speed');
 const btnModeMsg=document.getElementById('btn-mode-msg');
 
 // Game canvas sizing (full viewport)
-const GEAR_W = 400;
+const GEAR_W = 700; // 7키가 원래 길이(laneHalf)를 유지한 채 겹치지 않도록 넉넉한 폭 확보 (100px 간격 x 7)
 let GW = window.innerWidth;
 let GH = window.innerHeight;
 let GEAR_X = (GW - GEAR_W) / 2;
@@ -732,7 +1040,7 @@ function toggleSidebar(){
 //  TABS
 // ═══════════════════════════════════════════════════════════════
 function switchTab(tab){
-  ['note','line'].forEach(t=>{
+  ['note','line','cam','fx'].forEach(t=>{
     document.getElementById('tab-'+t).classList.toggle('active',t===tab);
     document.getElementById('pane-'+t).classList.toggle('active',t===tab);
   });
@@ -744,20 +1052,23 @@ function switchTab(tab){
 let editMode='NOTE';
 function setEditMode(m){
   editMode=m;
-  const allModeBtns=['btn-mode-note','btn-mode-speed','btn-mode-msg','btn-mode-line','btn-mode-pulse','btn-mode-stop'];
+  const allModeBtns=['btn-mode-note','btn-mode-speed','btn-mode-msg','btn-mode-line','btn-mode-pulse','btn-mode-stop','btn-mode-active','btn-mode-camera','btn-mode-flipx','btn-mode-flipy','btn-mode-camzoom','btn-mode-effect'];
   allModeBtns.forEach(id=>{const el=document.getElementById(id);if(el)el.classList.remove('mode-active');});
-  const map={NOTE:'btn-mode-note',SPEED:'btn-mode-speed',MSG:'btn-mode-msg',LINE:'btn-mode-line',PULSE:'btn-mode-pulse',STOP:'btn-mode-stop'};
+  const map={NOTE:'btn-mode-note',SPEED:'btn-mode-speed',MSG:'btn-mode-msg',LINE:'btn-mode-line',PULSE:'btn-mode-pulse',STOP:'btn-mode-stop',ACTIVE:'btn-mode-active',CAMERA:'btn-mode-camera',FLIPX:'btn-mode-flipx',FLIPY:'btn-mode-flipy',CAMZOOM:'btn-mode-camzoom',EFFECT:'btn-mode-effect'};
   const el=document.getElementById(map[m]);if(el)el.classList.add('mode-active');
-  if(m==='LINE'||m==='PULSE'||m==='STOP') switchTab('line');
+  if(m==='LINE'||m==='PULSE'||m==='STOP'||m==='ACTIVE') switchTab('line');
+  if(m==='CAMERA'||m==='FLIPX'||m==='FLIPY'||m==='CAMZOOM') switchTab('cam');
+  if(m==='EFFECT') switchTab('fx');
 }
 
 // ═══════════════════════════════════════════════════════════════
 //  LINE CHOREOGRAPHY SYSTEM
 // ═══════════════════════════════════════════════════════════════
-let lineEvents = [[],[],[],[]];
-let pulseEvents = [[],[],[],[]];
+let lineEvents = Array.from({length:LANE_COUNT},()=>[]);
+let pulseEvents = Array.from({length:LANE_COUNT},()=>[]);
 let selectedLineLane = 0;
 let selectedEasing = 'linear';
+let selectedMoveType = 'relative'; // 'relative'=~만큼 이동(누적), 'absolute'=~로 이동(절대 목표 위치)
 let selectedKfIdx = -1;
 
 // ── 커스텀 곡선 작업 상태 ──
@@ -778,12 +1089,33 @@ function loadKfToInputs(kf){
   document.getElementById('kf-angle').value=kf.angle;
   document.getElementById('kf-dur').value=kf.duration;
   document.getElementById('kf-dur-val').innerText=kf.duration+'ms';
+  selectedMoveType=kf.moveType||'relative';
+  syncMoveTypeButtons();
+  updateMoveTypeLabels();
   selectedEasing=kf.easing||'linear';
   document.querySelectorAll('.easing-btn').forEach(b=>b.classList.remove('active'));
   const eb=document.getElementById('ease-'+selectedEasing); if(eb)eb.classList.add('active');
+  const mb=document.getElementById('move-'+selectedMoveType); if(mb)mb.classList.add('active');
   const isCustom=selectedEasing==='custom';
   document.getElementById('curve-editor-box').style.display=isCustom?'block':'none';
   if(isCustom){ if(!kf.curve)kf.curve=cloneCurve(workCurve); workCurve=kf.curve; drawCurveEditor(); }
+}
+function syncMoveTypeButtons(){
+  document.querySelectorAll('#move-relative,#move-absolute').forEach(b=>b.classList.remove('active'));
+  const mb=document.getElementById('move-'+selectedMoveType); if(mb)mb.classList.add('active');
+}
+function updateMoveTypeLabels(){
+  const isAbs=selectedMoveType==='absolute';
+  document.getElementById('kf-x-label').textContent=isAbs?'X 목표 위치':'X 이동량';
+  document.getElementById('kf-y-label').textContent=isAbs?'Y 목표 위치':'Y 이동량';
+  document.getElementById('kf-angle-label').textContent=isAbs?'각도 목표값°':'각도 변화°';
+}
+function selectMoveType(t){
+  selectedMoveType=t;
+  syncMoveTypeButtons();
+  updateMoveTypeLabels();
+  const kf=getSelectedKf();
+  if(kf){ pushHistory(); kf.moveType=t; renderKfList(); drawGrid(); }
 }
 function updateEditBanner(){
   const banner=document.getElementById('kf-edit-banner');
@@ -827,6 +1159,7 @@ function commitInputsToKf(){
   kf.angle=parseFloat(document.getElementById('kf-angle').value)||0;
   kf.duration=parseInt(document.getElementById('kf-dur').value)||0;
   kf.easing=selectedEasing;
+  kf.moveType=selectedMoveType;
   renderKfList();drawGrid();
   return true;
 }
@@ -839,19 +1172,150 @@ function deleteSelection(){
       measures.forEach(m=>{const i=m.notes.indexOf(s.ref);if(i!==-1)m.notes.splice(i,1);});
     }else if(s.type==='speed'){const i=speedEvents.indexOf(s.ref);if(i!==-1)speedEvents.splice(i,1);}
     else if(s.type==='msg'){const i=msgEvents.indexOf(s.ref);if(i!==-1)msgEvents.splice(i,1);}
-    else if(s.type==='line'){for(let l=0;l<4;l++){const i=lineEvents[l].indexOf(s.ref);if(i!==-1)lineEvents[l].splice(i,1);}}
-    else if(s.type==='pulse'){for(let l=0;l<4;l++){const i=pulseEvents[l].indexOf(s.ref);if(i!==-1)pulseEvents[l].splice(i,1);}}
+    else if(s.type==='line'){for(let l=0;l<LANE_COUNT;l++){const i=lineEvents[l].indexOf(s.ref);if(i!==-1)lineEvents[l].splice(i,1);}}
+    else if(s.type==='pulse'){for(let l=0;l<LANE_COUNT;l++){const i=pulseEvents[l].indexOf(s.ref);if(i!==-1)pulseEvents[l].splice(i,1);}}
+    else if(s.type==='active'){for(let l=0;l<LANE_COUNT;l++){const i=activeEvents[l].indexOf(s.ref);if(i!==-1)activeEvents[l].splice(i,1);}}
+    else if(s.type==='camera'){const i=cameraEvents.indexOf(s.ref);if(i!==-1)cameraEvents.splice(i,1);}
+    else if(s.type==='flipx'){const i=camFlipXEvents.indexOf(s.ref);if(i!==-1)camFlipXEvents.splice(i,1);}
+    else if(s.type==='flipy'){const i=camFlipYEvents.indexOf(s.ref);if(i!==-1)camFlipYEvents.splice(i,1);}
+    else if(s.type==='camzoom'){const i=camZoomEvents.indexOf(s.ref);if(i!==-1)camZoomEvents.splice(i,1);}
   });
   clearSelection();
   renderKfList();drawGrid();
 }
 
-const DEFAULT_LINE = [
-  {x:0.125,y:0.85,angle:0},
-  {x:0.375,y:0.85,angle:0},
-  {x:0.625,y:0.85,angle:0},
-  {x:0.875,y:0.85,angle:0},
-];
+// 7개 라인 모두 기본적으로 한 줄에 균등 간격으로 나란히 배치 (KEY_MAP 순서 = S D F SPACE J K L 순서 그대로)
+// 활성/비활성(등장·퇴장) 여부와 무관하게 위치 자체는 항상 이 나란한 배치가 기본값 — 필요하면 좌표 키프레임으로 자유롭게 재배치
+const DEFAULT_LINE = Array.from({length:LANE_COUNT},(_,i)=>({x:(i+0.5)/LANE_COUNT, y:0.85, angle:0}));
+
+// 각 라인(0~6)이 시간에 따라 켜져있는지(연주 가능) 꺼져있는지 나타내는 토글 이벤트
+let activeEvents = Array.from({length:LANE_COUNT},()=>[]);
+// 기본값: L1~L4(D/F/J/K)는 항상 켜짐, L5~L7(S/L/A)은 기본적으로 꺼짐
+function defaultLineActive(lane){ return DEFAULT_ACTIVE_SET.includes(lane); }
+function getLineActive(lane,chartMs,evSrc){
+  const events=(evSrc||activeEvents)[lane];
+  let active=defaultLineActive(lane);
+  if(events&&events.length){
+    for(let i=0;i<events.length;i++){
+      if(evTimeMs(events[i])<=chartMs) active=events[i].active;
+      else break;
+    }
+  }
+  return active;
+}
+function placeActiveToggle(lane,mIdx,pos192){
+  const existIdx=activeEvents[lane].findIndex(e=>e.measureIdx===mIdx&&Math.abs(e.pos-pos192)<10);
+  if(existIdx!==-1){ activeEvents[lane].splice(existIdx,1); drawGrid(); return; }
+  const justBefore=evTimeMs({measureIdx:mIdx,pos:pos192})-1;
+  const curActive=getLineActive(lane,Math.max(0,justBefore));
+  activeEvents[lane].push({measureIdx:mIdx,pos:pos192,active:!curActive});
+  activeEvents[lane].sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  drawGrid();
+}
+
+// 곡 시작 시 사용할 키 개수(n)를 지정하면, L1~Ln을 화면 가운데에 균등 간격으로 자동 배치
+// (예전 4키 기본값 0.125/0.375/0.625/0.875도 이 공식의 n=4 케이스와 정확히 동일)
+// 흔히 쓰이는 리듬게임 키 개수별 관례적 키 구성 (KEY_MAP 인덱스 0~6 = S,D,F,SPACE,J,K,L 기준)
+// 4키=D F J K, 5키=D F SPACE J K, 6키=S D F J K L, 7키=S D F SPACE J K L
+const ACTIVE_KEY_SETS = {
+  3: [2,4,5],           // F J K
+  4: [1,2,4,5],         // D F J K
+  5: [1,2,3,4,5],       // D F SPACE J K
+  6: [0,1,2,4,5,6],     // S D F J K L
+  7: [0,1,2,3,4,5,6],   // S D F SPACE J K L
+};
+function applyInitialKeyLayout(n){
+  n=Math.max(3,Math.min(LANE_COUNT,Math.round(n)||4));
+  const indices=(ACTIVE_KEY_SETS[n]||Array.from({length:n},(_,i)=>i)).slice();
+  DEFAULT_ACTIVE_COUNT=n;
+  DEFAULT_ACTIVE_SET=indices;
+
+  // 1) 우선 7개 라인 전부를 "가상의 7키 전체 배치" 슬롯 위치로 되돌림 (비활성 라인들의 기본 위치)
+  for(let i=0;i<LANE_COUNT;i++){
+    DEFAULT_LINE[i].x=(i+0.5)/LANE_COUNT;
+    DEFAULT_LINE[i].y=0.85;
+    DEFAULT_LINE[i].angle=0;
+  }
+  // 2) 이번에 켜지는 라인들만, 원래 길이(간격)를 그대로 유지한 채 화면 가운데에 나란히 재배치
+  //    (길이를 줄이는 게 아니라 폭 = 라인들이 차지하는 전체 가로 영역을 가운데로 모으는 방식)
+  const spacingFrac=100/GEAR_W; // 항상 100px 간격 유지 (원래 4키 느낌과 동일)
+  indices.forEach((lineIdx,k)=>{
+    DEFAULT_LINE[lineIdx].x = 0.5 + (k-(n-1)/2)*spacingFrac;
+    DEFAULT_LINE[lineIdx].y = 0.85;
+    DEFAULT_LINE[lineIdx].angle = 0;
+  });
+
+  document.getElementById('init-key-count').value=n;
+  const hint=document.getElementById('init-key-hint');
+  if(hint) hint.textContent=`지금 설정: 시작 시 ${indices.map(i=>lineKeyLabel(i)).join(' / ')} (${n}키)가 가운데 정렬로 시작`;
+  drawGrid();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  키 설정 (라인별 키보드 키 리매핑)
+// ═══════════════════════════════════════════════════════════════
+let awaitingKeyRemapIndex=-1;
+let awaitingReplaceInfo=null; // {lineIdx, oldKey} — 기존에 배정된 특정 키를 바로 교체하는 중일 때
+function startKeyRemap(i){
+  awaitingKeyRemapIndex=(awaitingKeyRemapIndex===i)?-1:i; // 같은 버튼 다시 누르면 취소
+  awaitingReplaceInfo=null;
+  renderKeyMapUI();
+}
+function startKeyReplace(i,oldKey){
+  const already=awaitingReplaceInfo&&awaitingReplaceInfo.lineIdx===i&&awaitingReplaceInfo.oldKey===oldKey;
+  awaitingReplaceInfo=already?null:{lineIdx:i,oldKey};
+  awaitingKeyRemapIndex=-1;
+  renderKeyMapUI();
+}
+function removeKeyFromLine(i,key){
+  if(!KEY_MAP[i]||KEY_MAP[i].length<=1){ alert('라인당 최소 1개의 키는 있어야 해요.'); return; }
+  const idx=KEY_MAP[i].indexOf(key);
+  if(idx!==-1) KEY_MAP[i].splice(idx,1);
+  renderKeyMapUI();
+  refreshKeyLabelsUI();
+}
+function renderKeyMapUI(){
+  const el=document.getElementById('keymap-list');
+  if(!el)return;
+  el.innerHTML='';
+  for(let i=0;i<LANE_COUNT;i++){
+    const row=document.createElement('div');
+    row.style.cssText='display:flex;align-items:center;gap:4px;flex-wrap:wrap;margin-bottom:2px;';
+    const waitingAdd=(awaitingKeyRemapIndex===i);
+    const chips=(KEY_MAP[i]||[]).map(k=>{
+      const sharedWith=[];
+      KEY_MAP.forEach((keys,j)=>{ if(j!==i&&keys.includes(k)) sharedWith.push('L'+(j+1)); });
+      const sharedTag=sharedWith.length?`<span style="color:#666;font-size:8px;">(${sharedWith.join(',')}겸용)</span>`:'';
+      const keySafe=k.replace(/'/g,"\\'");
+      const isReplacing=(awaitingReplaceInfo&&awaitingReplaceInfo.lineIdx===i&&awaitingReplaceInfo.oldKey===k);
+      const label=isReplacing?'키를 누르세요…(ESC)':keyLabel(k);
+      return `
+      <span style="background:${isReplacing?'#ffd166':'#111'};border:1px solid ${isReplacing?'#ffd166':'#333'};border-radius:4px;padding:3px 6px;
+        font-size:10px;font-weight:700;color:${isReplacing?'#000':LANE_COLORS[i]};display:inline-flex;align-items:center;gap:4px;">
+        <span style="cursor:pointer;" onclick="startKeyReplace(${i},'${keySafe}')" title="클릭해서 이 키 바꾸기">${label}</span>${sharedTag}${KEY_MAP[i].length>1?`<span style="cursor:pointer;color:${isReplacing?'#000':'#666'};" onclick="removeKeyFromLine(${i},'${keySafe}')" title="이 키 제거">✕</span>`:''}
+      </span>`;
+    }).join('');
+    row.innerHTML=`
+      <span style="width:26px;flex:none;color:${LANE_COLORS[i]};font-weight:900;font-size:11px;">L${i+1}</span>
+      ${chips}
+      <button onclick="startKeyRemap(${i})" style="font-size:9px;padding:3px 7px;
+        ${waitingAdd?'background:#ffd166;color:#000;border-color:#ffd166;':''}">${waitingAdd?'키를 누르세요…(ESC)':'+ 키 추가'}</button>`;
+    el.appendChild(row);
+  }
+}
+// 라인 헤더 / Select Lane 버튼 등 화면에 보이는 키 라벨을 KEY_MAP 기준으로 갱신
+function refreshKeyLabelsUI(){
+  for(let i=0;i<LANE_COUNT;i++){
+    const label=lineKeyLabel(i);
+    const hdr=document.getElementById('lane-hdr-'+i);
+    if(hdr) hdr.innerHTML=`${label} &nbsp; L${i+1}`;
+    const sel=document.getElementById('lane-sel-'+i);
+    if(sel) sel.textContent=`${label} L${i+1}`;
+  }
+  const hint=document.getElementById('init-key-hint');
+  if(hint) hint.textContent=`지금 설정: 시작 시 ${DEFAULT_ACTIVE_SET.map(i=>lineKeyLabel(i)).join(' / ')} (${DEFAULT_ACTIVE_COUNT}키)가 가운데 정렬로 시작`;
+  renderKeyMapUI();
+}
 
 function selectLineLane(lane){
   selectedLineLane=lane;
@@ -899,7 +1363,7 @@ function placeLineKeyframe(lane,mIdx,pos192){
     return lineEvents[lane][existIdx];
   }
   const kf={measureIdx:mIdx,pos:pos192,
-    x:isNaN(x)?0:x, y:isNaN(y)?0:y, angle, easing:selectedEasing, duration:dur};
+    x:isNaN(x)?0:x, y:isNaN(y)?0:y, angle, easing:selectedEasing, duration:dur, moveType:selectedMoveType};
   if(selectedEasing==='custom') kf.curve=cloneCurve(workCurve);
   pushHistory();
   _lastPlaceWasNew=true;
@@ -993,9 +1457,10 @@ function renderKfList(){
     const div=document.createElement('div');
     div.className='kf-item'+(i===selectedKfIdx?' selected':'');
     const t=(evTimeMs(kf)/1000).toFixed(2)+'s';
+    const moveIcon=(kf.moveType==='absolute')?'📍':'↗';
     div.innerHTML=`
       <span class="kf-time">${t}</span>
-      <span class="kf-vals">x:${kf.x.toFixed(2)} y:${kf.y.toFixed(2)} ∠${kf.angle}° [${kf.easing}]</span>
+      <span class="kf-vals">${moveIcon} x:${kf.x.toFixed(2)} y:${kf.y.toFixed(2)} ∠${kf.angle}° [${kf.easing}]</span>
       <button class="kf-del" onclick="deleteKeyframe(${selectedLineLane},${i})">✕</button>`;
     div.onclick=(e)=>{if(e.target.classList.contains('kf-del'))return;selectKf(i);};
     list.appendChild(div);
@@ -1060,21 +1525,20 @@ function evalSpeedCurve(pts,t){
 function getLineState(lane,chartMs){
   const def = DEFAULT_LINE[lane];
   const events = lineEvents[lane];
-  
-  // 기본 시작 위치
-  let currentX = def.x;
-  let currentY = def.y;
-  let currentAngle = def.angle;
 
-  if(!events || events.length === 0) return { x: currentX, y: currentY, angle: currentAngle };
+  // baseX/Y/Angle = 지금까지 "완료된" 이벤트들이 모두 반영된 확정 위치(다음 이벤트의 출발점)
+  let baseX = def.x, baseY = def.y, baseAngle = def.angle;
+  // resultX/Y/Angle = chartMs 시점에 실제로 화면에 그릴 위치 (진행 중인 이벤트 포함)
+  let resultX = baseX, resultY = baseY, resultAngle = baseAngle;
 
-  // 모든 이벤트를 시간순으로 훑으면서 이동량을 누적 (만큼 이동하기)
+  if(!events || events.length === 0) return { x: resultX, y: resultY, angle: resultAngle };
+
   for(let i=0; i<events.length; i++){
     const ev = events[i];
     const startT = evTimeMs(ev);
 
     // 아직 시작할 시간이 안 된 이벤트면 계산 중단
-    if(chartMs < startT) break; 
+    if(chartMs < startT) break;
 
     // 진행률 (0.0 ~ 1.0) 계산
     let t = (chartMs - startT) / Math.max(1, ev.duration);
@@ -1083,13 +1547,25 @@ function getLineState(lane,chartMs){
     // 보간법 적용
     const et = applyEasing(t, ev.easing, ev);
 
-    // ev.x, ev.y, ev.angle을 절대 위치가 아니라 '더할 이동량'으로 사용
-    currentX += ev.x * et;
-    currentY += ev.y * et;
-    currentAngle += ev.angle * et;
+    if(ev.moveType === 'absolute'){
+      // '~로 이동': ev.x/y/angle을 절대 목표값으로 보고, 확정된 base에서 목표까지 보간
+      resultX = baseX + (ev.x - baseX) * et;
+      resultY = baseY + (ev.y - baseY) * et;
+      resultAngle = baseAngle + (ev.angle - baseAngle) * et;
+    } else {
+      // '~만큼 이동'(기본): ev.x/y/angle을 이동량(델타)으로 보고 base에 더함
+      resultX = baseX + ev.x * et;
+      resultY = baseY + ev.y * et;
+      resultAngle = baseAngle + ev.angle * et;
+    }
+
+    // 이 이벤트가 완전히 끝났다면(t=1), 다음 이벤트의 출발점(base)으로 확정
+    if(t >= 1){
+      baseX = resultX; baseY = resultY; baseAngle = resultAngle;
+    }
   }
 
-  return { x: currentX, y: currentY, angle: currentAngle };
+  return { x: resultX, y: resultY, angle: resultAngle };
 }
 
 function getPulseMagnitude(lane,chartMs){
@@ -1120,6 +1596,715 @@ function updateCoordDisplay(chartMs){
 }
 
 // ═══════════════════════════════════════════════════════════════
+//  카메라 (지금 보고 있는 화면 자체가 라인들을 바라보는 카메라라는 컨셉)
+//  — 라인과 동일하게 ~만큼 이동 / ~로 이동 + 이징(커스텀 EQ 커브 포함) 지원
+//  — 좌우/상하 반전은 별도의 순간 토글 트리거로 처리
+// ═══════════════════════════════════════════════════════════════
+let cameraEvents = [];       // 카메라 좌표/회전 키프레임 (라인 키프레임과 동일 구조)
+let camFlipXEvents = [];     // 좌우 반전 토글 이벤트 {measureIdx,pos,flipped}
+let camFlipYEvents = [];     // 상하 반전 토글 이벤트
+const DEFAULT_CAMERA = {x:0,y:0,angle:0};
+let selectedCamKfIdx = -1;
+let selectedCamEasing = 'linear';
+let selectedCamMoveType = 'relative';
+let camWorkCurve = DEFAULT_CURVE_TEMPLATE();
+
+function getCameraState(chartMs,evSrc){
+  const events = evSrc||cameraEvents;
+  let baseX=DEFAULT_CAMERA.x, baseY=DEFAULT_CAMERA.y, baseAngle=DEFAULT_CAMERA.angle;
+  let resultX=baseX, resultY=baseY, resultAngle=baseAngle;
+  if(!events||events.length===0) return {x:resultX,y:resultY,angle:resultAngle};
+  for(let i=0;i<events.length;i++){
+    const ev=events[i];
+    const startT=evTimeMs(ev);
+    if(chartMs<startT) break;
+    let t=(chartMs-startT)/Math.max(1,ev.duration);
+    if(t>1) t=1;
+    const et=applyEasing(t,ev.easing,ev);
+    let curX,curY,curAngle;
+    if(ev.moveType==='absolute'){
+      curX=baseX+(ev.x-baseX)*et; curY=baseY+(ev.y-baseY)*et; curAngle=baseAngle+(ev.angle-baseAngle)*et;
+    }else{
+      curX=baseX+ev.x*et; curY=baseY+ev.y*et; curAngle=baseAngle+ev.angle*et;
+    }
+    resultX=curX; resultY=curY; resultAngle=curAngle;
+    if(t>=1){ baseX=curX; baseY=curY; baseAngle=curAngle; }
+  }
+  return {x:resultX,y:resultY,angle:resultAngle};
+}
+
+function getCameraFlip(axis,chartMs,evSrc){
+  const events = evSrc || (axis==='x'?camFlipXEvents:camFlipYEvents);
+  let flipped=false;
+  if(events&&events.length){
+    for(let i=0;i<events.length;i++){
+      if(evTimeMs(events[i])<=chartMs) flipped=events[i].flipped;
+      else break;
+    }
+  }
+  return flipped;
+}
+
+function placeCameraFlipToggle(axis,mIdx,pos192){
+  const arr = axis==='x'?camFlipXEvents:camFlipYEvents;
+  const existIdx=arr.findIndex(e=>e.measureIdx===mIdx&&Math.abs(e.pos-pos192)<10);
+  if(existIdx!==-1){ arr.splice(existIdx,1); drawGrid(); return; }
+  const justBefore=evTimeMs({measureIdx:mIdx,pos:pos192})-1;
+  const curFlipped=getCameraFlip(axis,Math.max(0,justBefore),arr);
+  arr.push({measureIdx:mIdx,pos:pos192,flipped:!curFlipped});
+  arr.sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  drawGrid();
+}
+
+function placeCameraKeyframe(mIdx,pos192){
+  const x=parseFloat(document.getElementById('cam-kf-x').value);
+  const y=parseFloat(document.getElementById('cam-kf-y').value);
+  const angle=parseFloat(document.getElementById('cam-kf-angle').value)||0;
+  const dur=parseInt(document.getElementById('cam-kf-dur').value)||500;
+  const existIdx=cameraEvents.findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<10);
+  if(existIdx!==-1){
+    selectCamKf(existIdx);
+    return cameraEvents[existIdx];
+  }
+  const kf={measureIdx:mIdx,pos:pos192,
+    x:isNaN(x)?0:x, y:isNaN(y)?0:y, angle, easing:selectedCamEasing, duration:dur, moveType:selectedCamMoveType};
+  if(selectedCamEasing==='custom') kf.curve=cloneCurve(camWorkCurve);
+  pushHistory();
+  cameraEvents.push(kf);
+  cameraEvents.sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  playSfx('hit');
+  selectedCamKfIdx=cameraEvents.indexOf(kf);
+  updateCamEditBanner();
+  renderCamKfList();drawGrid();
+  return kf;
+}
+
+function getSelectedCamKf(){
+  if(selectedCamKfIdx<0) return null;
+  return cameraEvents[selectedCamKfIdx]||null;
+}
+function syncCamMoveTypeButtons(){
+  document.querySelectorAll('#cam-move-relative,#cam-move-absolute').forEach(b=>b.classList.remove('active'));
+  const mb=document.getElementById('cam-move-'+selectedCamMoveType); if(mb)mb.classList.add('active');
+}
+function updateCamMoveTypeLabels(){
+  const isAbs=selectedCamMoveType==='absolute';
+  document.getElementById('cam-kf-x-label').textContent=isAbs?'X 목표 위치':'X 이동량';
+  document.getElementById('cam-kf-y-label').textContent=isAbs?'Y 목표 위치':'Y 이동량';
+  document.getElementById('cam-kf-angle-label').textContent=isAbs?'각도 목표값°':'각도 변화°';
+}
+function selectCamMoveType(t){
+  selectedCamMoveType=t;
+  syncCamMoveTypeButtons();
+  updateCamMoveTypeLabels();
+  const kf=getSelectedCamKf();
+  if(kf){ pushHistory(); kf.moveType=t; renderCamKfList(); drawGrid(); }
+}
+function loadCamKfToInputs(kf){
+  document.getElementById('cam-kf-x').value=kf.x;
+  document.getElementById('cam-kf-y').value=kf.y;
+  document.getElementById('cam-kf-angle').value=kf.angle;
+  document.getElementById('cam-kf-dur').value=kf.duration;
+  document.getElementById('cam-kf-dur-val').innerText=kf.duration+'ms';
+  selectedCamMoveType=kf.moveType||'relative';
+  updateCamMoveTypeLabels();
+  selectedCamEasing=kf.easing||'linear';
+  document.querySelectorAll('.cam-easing-btn').forEach(b=>b.classList.remove('active'));
+  const eb=document.getElementById('cam-ease-'+selectedCamEasing); if(eb)eb.classList.add('active');
+  const mb=document.getElementById('cam-move-'+selectedCamMoveType); if(mb)mb.classList.add('active');
+  const isCustom=selectedCamEasing==='custom';
+  document.getElementById('cam-curve-editor-box').style.display=isCustom?'block':'none';
+  if(isCustom){ if(!kf.curve)kf.curve=cloneCurve(camWorkCurve); camWorkCurve=kf.curve; drawCamCurveEditor(); }
+}
+function updateCamEditBanner(){
+  const banner=document.getElementById('cam-kf-edit-banner');
+  const actions=document.getElementById('cam-kf-edit-actions');
+  const kf=getSelectedCamKf();
+  if(kf){
+    banner.textContent=`Editing Camera KF #${selectedCamKfIdx+1}`;
+    banner.style.color='#ffd700';
+    actions.style.display='flex';
+  }else{
+    banner.textContent='Add Camera Keyframe (NEW)';
+    banner.style.color='var(--accent)';
+    actions.style.display='none';
+  }
+}
+function selectCamKf(idx){
+  selectedCamKfIdx=idx;
+  const kf=getSelectedCamKf();
+  if(kf) loadCamKfToInputs(kf);
+  updateCamEditBanner();
+  renderCamKfList();drawGrid();
+}
+function deselectCamKf(){
+  selectedCamKfIdx=-1;
+  document.getElementById('cam-curve-editor-box').style.display=(selectedCamEasing==='custom')?'block':'none';
+  updateCamEditBanner();
+  renderCamKfList();drawGrid();
+}
+function deleteSelectedCamKf(){
+  const kf=getSelectedCamKf(); if(!kf)return;
+  pushHistory();
+  cameraEvents.splice(selectedCamKfIdx,1);
+  selectedCamKfIdx=-1;
+  updateCamEditBanner();renderCamKfList();drawGrid();
+}
+function commitCamInputsToKf(){
+  const kf=getSelectedCamKf(); if(!kf)return false;
+  kf.x=parseFloat(document.getElementById('cam-kf-x').value)||0;
+  kf.y=parseFloat(document.getElementById('cam-kf-y').value)||0;
+  kf.angle=parseFloat(document.getElementById('cam-kf-angle').value)||0;
+  kf.duration=parseInt(document.getElementById('cam-kf-dur').value)||0;
+  kf.easing=selectedCamEasing;
+  kf.moveType=selectedCamMoveType;
+  renderCamKfList();drawGrid();
+  return true;
+}
+function selectCamEasing(e){
+  selectedCamEasing=e;
+  document.querySelectorAll('.cam-easing-btn').forEach(b=>b.classList.remove('active'));
+  const eb=document.getElementById('cam-ease-'+e); if(eb)eb.classList.add('active');
+  document.getElementById('cam-curve-editor-box').style.display=(e==='custom')?'block':'none';
+  const kf=getSelectedCamKf();
+  if(kf){
+    pushHistory();
+    kf.easing=e;
+    if(e==='custom'&&!kf.curve) kf.curve=cloneCurve(camWorkCurve);
+    if(e==='custom') camWorkCurve=kf.curve;
+    renderCamKfList();drawGrid();
+  }
+  if(e==='custom') drawCamCurveEditor();
+}
+function deleteCamKeyframe(idx){
+  cameraEvents.splice(idx,1);
+  renderCamKfList();
+  drawGrid();
+}
+function clearAllCamKeyframes(){
+  cameraEvents=[];
+  renderCamKfList();
+  drawGrid();
+}
+function renderCamKfList(){
+  const list=document.getElementById('cam-kf-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(cameraEvents.length===0){
+    list.innerHTML='<div style="color:#333;font-size:10px;text-align:center;padding:10px;">No keyframes</div>';
+    return;
+  }
+  cameraEvents.forEach((kf,i)=>{
+    const div=document.createElement('div');
+    div.className='kf-item'+(i===selectedCamKfIdx?' selected':'');
+    const t=(evTimeMs(kf)/1000).toFixed(2)+'s';
+    const moveIcon=(kf.moveType==='absolute')?'📍':'↗';
+    div.innerHTML=`
+      <span class="kf-time">${t}</span>
+      <span class="kf-vals">${moveIcon} x:${kf.x.toFixed(2)} y:${kf.y.toFixed(2)} ∠${kf.angle}° [${kf.easing}]</span>
+      <button class="kf-del" onclick="deleteCamKeyframe(${i})">✕</button>`;
+    div.onclick=(e)=>{if(e.target.classList.contains('kf-del'))return;selectCamKf(i);};
+    list.appendChild(div);
+  });
+}
+function resetCamCurve(){
+  const kf=getSelectedCamKf();
+  if(kf&&kf.easing==='custom'){ pushHistory(); kf.curve=DEFAULT_CURVE_TEMPLATE(); camWorkCurve=kf.curve; }
+  else camWorkCurve=DEFAULT_CURVE_TEMPLATE();
+  drawCamCurveEditor();drawGrid();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  카메라 확대/축소 (줌) — 카메라 이동/회전과는 완전히 별개의 타임라인
+//  기본값 100%(현재 화면 그대로) · ~만큼/~로 + 이징(커스텀 EQ 포함) 동일 지원
+// ═══════════════════════════════════════════════════════════════
+const DEFAULT_ZOOM_PERCENT=100;
+let camZoomEvents=[];
+let selectedCamZoomKfIdx=-1;
+let selectedCamZoomEasing='linear';
+let selectedCamZoomMoveType='relative';
+let camZoomWorkCurve=DEFAULT_CURVE_TEMPLATE();
+
+function getCameraZoomPercent(chartMs,evSrc){
+  const events=evSrc||camZoomEvents;
+  let base=DEFAULT_ZOOM_PERCENT, result=base;
+  if(!events||events.length===0) return result;
+  for(let i=0;i<events.length;i++){
+    const ev=events[i];
+    const startT=evTimeMs(ev);
+    if(chartMs<startT) break;
+    let t=(chartMs-startT)/Math.max(1,ev.duration);
+    if(t>1) t=1;
+    const et=applyEasing(t,ev.easing,ev);
+    let cur = (ev.moveType==='absolute') ? base+(ev.value-base)*et : base+ev.value*et;
+    result=cur;
+    if(t>=1) base=cur;
+  }
+  return result;
+}
+// 실제 렌더링에서 쓰는 배율(1.0 = 100%)
+function getCameraZoom(chartMs,evSrc){ return getCameraZoomPercent(chartMs,evSrc)/100; }
+
+function placeCamZoomKeyframe(mIdx,pos192){
+  const val=parseFloat(document.getElementById('zoom-kf-value').value);
+  const dur=parseInt(document.getElementById('zoom-kf-dur').value)||500;
+  const existIdx=camZoomEvents.findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<10);
+  if(existIdx!==-1){ selectCamZoomKf(existIdx); return camZoomEvents[existIdx]; }
+  const kf={measureIdx:mIdx,pos:pos192,value:isNaN(val)?0:val,easing:selectedCamZoomEasing,duration:dur,moveType:selectedCamZoomMoveType};
+  if(selectedCamZoomEasing==='custom') kf.curve=cloneCurve(camZoomWorkCurve);
+  pushHistory();
+  camZoomEvents.push(kf);
+  camZoomEvents.sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  playSfx('hit');
+  selectedCamZoomKfIdx=camZoomEvents.indexOf(kf);
+  updateCamZoomEditBanner();
+  renderCamZoomKfList();drawGrid();
+  return kf;
+}
+function getSelectedCamZoomKf(){
+  if(selectedCamZoomKfIdx<0) return null;
+  return camZoomEvents[selectedCamZoomKfIdx]||null;
+}
+function syncZoomMoveTypeButtons(){
+  document.querySelectorAll('#zoom-move-relative,#zoom-move-absolute').forEach(b=>b.classList.remove('active'));
+  const mb=document.getElementById('zoom-move-'+selectedCamZoomMoveType); if(mb)mb.classList.add('active');
+}
+function updateZoomMoveTypeLabel(){
+  const isAbs=selectedCamZoomMoveType==='absolute';
+  document.getElementById('zoom-kf-value-label').textContent=isAbs?'목표 확대/축소 값 (%)':'확대/축소 변화량 (%p)';
+}
+function selectZoomMoveType(t){
+  selectedCamZoomMoveType=t;
+  syncZoomMoveTypeButtons();
+  updateZoomMoveTypeLabel();
+  const kf=getSelectedCamZoomKf();
+  if(kf){ pushHistory(); kf.moveType=t; renderCamZoomKfList(); drawGrid(); }
+}
+function loadCamZoomKfToInputs(kf){
+  document.getElementById('zoom-kf-value').value=kf.value;
+  document.getElementById('zoom-kf-dur').value=kf.duration;
+  document.getElementById('zoom-kf-dur-val').innerText=kf.duration+'ms';
+  selectedCamZoomMoveType=kf.moveType||'relative';
+  updateZoomMoveTypeLabel();
+  selectedCamZoomEasing=kf.easing||'linear';
+  document.querySelectorAll('.zoom-easing-btn').forEach(b=>b.classList.remove('active'));
+  const eb=document.getElementById('zoom-ease-'+selectedCamZoomEasing); if(eb)eb.classList.add('active');
+  const mb=document.getElementById('zoom-move-'+selectedCamZoomMoveType); if(mb)mb.classList.add('active');
+  const isCustom=selectedCamZoomEasing==='custom';
+  document.getElementById('zoom-curve-editor-box').style.display=isCustom?'block':'none';
+  if(isCustom){ if(!kf.curve)kf.curve=cloneCurve(camZoomWorkCurve); camZoomWorkCurve=kf.curve; drawZoomCurveEditor(); }
+}
+function updateCamZoomEditBanner(){
+  const banner=document.getElementById('zoom-kf-edit-banner');
+  const actions=document.getElementById('zoom-kf-edit-actions');
+  const kf=getSelectedCamZoomKf();
+  if(kf){
+    banner.textContent=`Editing Zoom KF #${selectedCamZoomKfIdx+1}`;
+    banner.style.color='#ffd700';
+    actions.style.display='flex';
+  }else{
+    banner.textContent='Add Zoom Keyframe (NEW)';
+    banner.style.color='var(--accent)';
+    actions.style.display='none';
+  }
+}
+function selectCamZoomKf(idx){
+  selectedCamZoomKfIdx=idx;
+  const kf=getSelectedCamZoomKf();
+  if(kf) loadCamZoomKfToInputs(kf);
+  updateCamZoomEditBanner();
+  renderCamZoomKfList();drawGrid();
+}
+function deselectCamZoomKf(){
+  selectedCamZoomKfIdx=-1;
+  document.getElementById('zoom-curve-editor-box').style.display=(selectedCamZoomEasing==='custom')?'block':'none';
+  updateCamZoomEditBanner();
+  renderCamZoomKfList();drawGrid();
+}
+function deleteSelectedCamZoomKf(){
+  const kf=getSelectedCamZoomKf(); if(!kf)return;
+  pushHistory();
+  camZoomEvents.splice(selectedCamZoomKfIdx,1);
+  selectedCamZoomKfIdx=-1;
+  updateCamZoomEditBanner();renderCamZoomKfList();drawGrid();
+}
+function commitZoomInputsToKf(){
+  const kf=getSelectedCamZoomKf(); if(!kf)return false;
+  kf.value=parseFloat(document.getElementById('zoom-kf-value').value)||0;
+  kf.duration=parseInt(document.getElementById('zoom-kf-dur').value)||0;
+  kf.easing=selectedCamZoomEasing;
+  kf.moveType=selectedCamZoomMoveType;
+  renderCamZoomKfList();drawGrid();
+  return true;
+}
+function selectZoomEasing(e){
+  selectedCamZoomEasing=e;
+  document.querySelectorAll('.zoom-easing-btn').forEach(b=>b.classList.remove('active'));
+  const eb=document.getElementById('zoom-ease-'+e); if(eb)eb.classList.add('active');
+  document.getElementById('zoom-curve-editor-box').style.display=(e==='custom')?'block':'none';
+  const kf=getSelectedCamZoomKf();
+  if(kf){
+    pushHistory();
+    kf.easing=e;
+    if(e==='custom'&&!kf.curve) kf.curve=cloneCurve(camZoomWorkCurve);
+    if(e==='custom') camZoomWorkCurve=kf.curve;
+    renderCamZoomKfList();drawGrid();
+  }
+  if(e==='custom') drawZoomCurveEditor();
+}
+function deleteCamZoomKeyframe(idx){
+  camZoomEvents.splice(idx,1);
+  renderCamZoomKfList();
+  drawGrid();
+}
+function clearAllCamZoomKeyframes(){
+  camZoomEvents=[];
+  renderCamZoomKfList();
+  drawGrid();
+}
+function renderCamZoomKfList(){
+  const list=document.getElementById('zoom-kf-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(camZoomEvents.length===0){
+    list.innerHTML='<div style="color:#333;font-size:10px;text-align:center;padding:10px;">No keyframes</div>';
+    return;
+  }
+  camZoomEvents.forEach((kf,i)=>{
+    const div=document.createElement('div');
+    div.className='kf-item'+(i===selectedCamZoomKfIdx?' selected':'');
+    const t=(evTimeMs(kf)/1000).toFixed(2)+'s';
+    const moveIcon=(kf.moveType==='absolute')?'📍':'↗';
+    div.innerHTML=`
+      <span class="kf-time">${t}</span>
+      <span class="kf-vals">${moveIcon} ${kf.value>0&&kf.moveType==='relative'?'+':''}${kf.value}% [${kf.easing}]</span>
+      <button class="kf-del" onclick="deleteCamZoomKeyframe(${i})">✕</button>`;
+    div.onclick=(e)=>{if(e.target.classList.contains('kf-del'))return;selectCamZoomKf(i);};
+    list.appendChild(div);
+  });
+}
+function resetZoomCurve(){
+  const kf=getSelectedCamZoomKf();
+  if(kf&&kf.easing==='custom'){ pushHistory(); kf.curve=DEFAULT_CURVE_TEMPLATE(); camZoomWorkCurve=kf.curve; }
+  else camZoomWorkCurve=DEFAULT_CURVE_TEMPLATE();
+  drawZoomCurveEditor();drawGrid();
+}
+
+// ═══════════════════════════════════════════════════════════════
+//  화면 이펙트 (EFFECT) — 카메라처럼 화면 전체에 씌워지는 트리거
+//  하나의 시점(트리거)에서 시작해 duration(ms) 동안 재생되고 자동으로 사라짐
+//  같은 시간에 서로 다른 타입을 여러 개 겹쳐 배치 가능 (예: 폭우+흔들림+플래시)
+// ═══════════════════════════════════════════════════════════════
+const EFFECT_TYPES = [
+  // ── 색/화면 필터 ──
+  {key:'grayscale',   label:'흑백',        cat:'filter',  icon:'◐', color:'#cfd2d6'},
+  {key:'invert',      label:'색상반전',    cat:'filter',  icon:'◑', color:'#ff66cc'},
+  {key:'sepia',       label:'세피아',      cat:'filter',  icon:'📜', color:'#c9a267'},
+  {key:'rainbow',     label:'무지개',      cat:'filter',  icon:'🌈', color:'#ff5ecb'},
+  {key:'highcontrast',label:'고대비',      cat:'filter',  icon:'◧', color:'#ffffff'},
+  {key:'blur',        label:'블러',        cat:'filter',  icon:'〰', color:'#88bbff'},
+  {key:'vignette',    label:'비네트',      cat:'filter',  icon:'◉', color:'#a066cc'},
+  {key:'flashwhite',  label:'화이트 플래시',cat:'filter', icon:'⚡', color:'#ffffff'},
+  {key:'flashblack',  label:'블랙아웃',    cat:'filter',  icon:'⬛', color:'#666666'},
+  // ── 왜곡 / 글리치 ──
+  {key:'glitch',      label:'글리치',      cat:'glitch',  icon:'▚', color:'#ff2d78'},
+  {key:'chromatic',   label:'색수차',      cat:'glitch',  icon:'ↀ', color:'#00e5ff'},
+  {key:'pixel8',      label:'8비트',       cat:'glitch',  icon:'▦', color:'#00ff88'},
+  {key:'scanline',    label:'스캔라인',    cat:'glitch',  icon:'☰', color:'#66ff99'},
+  {key:'noise',       label:'노이즈',      cat:'glitch',  icon:'▓', color:'#aaaaaa'},
+  {key:'shake',       label:'화면흔들림',  cat:'glitch',  icon:'⇋', color:'#ffaa00'},
+  // ── 날씨 / 파티클 ──
+  {key:'snow',        label:'눈',          cat:'weather', icon:'❄', color:'#dff3ff'},
+  {key:'rain',        label:'비',          cat:'weather', icon:'🌧', color:'#77aaff'},
+  {key:'heavyrain',   label:'폭우',        cat:'weather', icon:'⛈', color:'#3d6fd1'},
+  {key:'sakura',      label:'벚꽃',        cat:'weather', icon:'🌸', color:'#ffb3d9'},
+  {key:'fog',         label:'안개',        cat:'weather', icon:'🌫', color:'#bbbbbb'},
+  {key:'confetti',    label:'색종이',      cat:'weather', icon:'🎊', color:'#ffcc00'},
+  {key:'embers',      label:'불티',        cat:'weather', icon:'🔥', color:'#ff6622'},
+  {key:'snowstorm',   label:'눈보라',      cat:'weather', icon:'🌨', color:'#eaf6ff'},
+];
+function fxDef(key){ return EFFECT_TYPES.find(t=>t.key===key)||EFFECT_TYPES[0]; }
+
+let effectEvents = [];         // {measureIdx,pos,type,duration,intensity}
+let selectedEffectIdx = -1;
+let selectedEffectType = 'glitch';
+let selectedFxAttack = 'instant'; // 새로 배치할 때 기본값: 트리거하자마자 바로 100%로 시작
+let selectedFxRelease = 'fade';   // 새로 배치할 때 기본값: 끝날 땐 스르륵 페이드아웃
+const FX_MAX_OVERLAP = 3;      // 한 순간에 동시 재생 가능한 이펙트 최대 개수
+const FX_SLOT_X = [818,850,882]; // FX 컬럼(800~900) 안에 그려지는 3개의 얇은 트리거 라인 x좌표
+
+// 겹치는 트리거들을 최대 3개의 "라인"에 자동으로 배분 (구간 스케줄링과 동일한 방식)
+function computeFxSlots(){
+  const slotEnd=[0,0,0];
+  const map=new Map();
+  const sorted=[...effectEvents].sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  sorted.forEach(kf=>{
+    const st=evTimeMs(kf), en=st+Math.max(0,kf.duration||0);
+    let idx=slotEnd.findIndex(endT=>endT<=st);
+    if(idx===-1) idx=slotEnd.indexOf(Math.min(...slotEnd)); // 안전장치(원칙적으론 3개 제한 덕에 항상 자리가 있음)
+    slotEnd[idx]=en;
+    map.set(kf,idx);
+  });
+  return map;
+}
+// FX 컬럼 안에서 클릭한 좌표(x)와 시간이 이미 있는 트리거의 라인/구간과 겹치는지 검사
+function findFxHitAt(x,mIdx,pos192){
+  if(x<800||!effectEvents.length) return null;
+  const slotMap=computeFxSlots();
+  const clickMs=evTimeMs({measureIdx:mIdx,pos:pos192});
+  let bestSlot=0,bestDist=Infinity;
+  FX_SLOT_X.forEach((sx,i)=>{ const d=Math.abs(x-sx); if(d<bestDist){bestDist=d;bestSlot=i;} });
+  if(bestDist>24) return null;
+  const tolMs=90;
+  let found=null;
+  effectEvents.forEach(kf=>{
+    if(slotMap.get(kf)!==bestSlot) return;
+    const st=evTimeMs(kf), en=st+Math.max(0,kf.duration||0);
+    if(clickMs>=st-tolMs && clickMs<=en+tolMs) found=kf;
+  });
+  return found;
+}
+
+// [startMs,endMs) 구간에서, excludeKf를 제외한 나머지 이펙트들이 동시에 겹치는 최대 개수를 구함
+function maxOtherOverlapInRange(startMs,endMs,excludeKf){
+  const evs=effectEvents
+    .filter(k=>k!==excludeKf)
+    .map(k=>{const st=evTimeMs(k);return{st,en:st+Math.max(0,k.duration||0)};})
+    .filter(e=>e.en>startMs && e.st<Math.max(endMs,startMs+1));
+  if(!evs.length) return 0;
+  const points=new Set([startMs]);
+  evs.forEach(e=>{ points.add(Math.max(e.st,startMs)); });
+  let max=0;
+  points.forEach(p=>{
+    let c=0;
+    evs.forEach(e=>{ if(e.st<=p && e.en>p) c++; });
+    if(c>max) max=c;
+  });
+  return max;
+}
+// startMs 시점부터 재생을 시작할 때, excludeKf를 제외한 나머지가 이미 FX_MAX_OVERLAP개 이상 겹쳐있는 순간이 온다면
+// 그 직전 시각을 반환 (더 이상 늘릴 수 없는 한계선). 없으면 Infinity.
+function fxOverlapCapEnd(startMs,excludeKf){
+  const evs=effectEvents
+    .filter(k=>k!==excludeKf)
+    .map(k=>{const st=evTimeMs(k);return{st,en:st+Math.max(0,k.duration||0)};});
+  const activeAtStart=evs.filter(e=>e.st<=startMs && e.en>startMs).length;
+  if(activeAtStart>=FX_MAX_OVERLAP) return startMs;
+  const bounds=evs.map(e=>e.st).filter(t=>t>startMs).sort((a,b)=>a-b);
+  for(const t of bounds){
+    const c=evs.filter(e=>e.st<=t && e.en>t).length;
+    if(c>=FX_MAX_OVERLAP) return t;
+  }
+  return Infinity;
+}
+let fxWarnTimer=null;
+function flashFxWarning(msg){
+  const el=document.getElementById('fx-kf-warn');
+  if(!el)return;
+  el.textContent=msg;
+  el.style.display='block';
+  if(fxWarnTimer) clearTimeout(fxWarnTimer);
+  fxWarnTimer=setTimeout(()=>{ el.style.display='none'; },1600);
+}
+
+function placeEffectKeyframe(mIdx,pos192){
+  const type=selectedEffectType;
+  const dur=parseInt(document.getElementById('fx-kf-dur').value)||800;
+  const intensity=parseInt(document.getElementById('fx-kf-intensity').value);
+  const existIdx=effectEvents.findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<10&&k.type===type);
+  if(existIdx!==-1){ selectFxKf(existIdx); return effectEvents[existIdx]; }
+  const start=evTimeMs({measureIdx:mIdx,pos:pos192});
+  const otherMax=maxOtherOverlapInRange(start,start+dur,null);
+  if(otherMax>=FX_MAX_OVERLAP){
+    flashFxWarning(`⚠ 이 구간엔 이미 이펙트 ${FX_MAX_OVERLAP}개가 겹쳐 있어요`);
+    return null;
+  }
+  const kf={measureIdx:mIdx,pos:pos192,type,duration:dur,intensity:isNaN(intensity)?60:intensity,
+    attack:selectedFxAttack,release:selectedFxRelease};
+  pushHistory();
+  effectEvents.push(kf);
+  effectEvents.sort((a,b)=>evTimeMs(a)-evTimeMs(b));
+  playSfx('hit');
+  selectedEffectIdx=effectEvents.indexOf(kf);
+  updateFxEditBanner();
+  renderFxKfList();drawGrid();
+  return kf;
+}
+function getSelectedFxKf(){
+  if(selectedEffectIdx<0) return null;
+  return effectEvents[selectedEffectIdx]||null;
+}
+function syncEffectTypeButtons(){
+  document.querySelectorAll('.fx-type-btn').forEach(b=>{
+    b.classList.toggle('active', b.dataset.type===selectedEffectType);
+  });
+}
+function syncFxEnvButtons(){
+  document.querySelectorAll('.fx-env-btn').forEach(b=>{
+    const cur=b.dataset.field==='attack'?selectedFxAttack:selectedFxRelease;
+    b.classList.toggle('active', b.dataset.val===cur);
+  });
+}
+function setFxEnvOption(field,val){
+  if(field==='attack') selectedFxAttack=val; else selectedFxRelease=val;
+  syncFxEnvButtons();
+  const kf=getSelectedFxKf();
+  if(kf){ pushHistory(); kf[field]=val; renderFxKfList(); drawGrid(); }
+}
+function selectEffectType(type){
+  selectedEffectType=type;
+  syncEffectTypeButtons();
+  const kf=getSelectedFxKf();
+  if(kf){ pushHistory(); kf.type=type; renderFxKfList(); drawGrid(); }
+}
+function loadFxKfToInputs(kf){
+  selectedEffectType=kf.type;
+  syncEffectTypeButtons();
+  selectedFxAttack=kf.attack||'fade';
+  selectedFxRelease=kf.release||'fade';
+  syncFxEnvButtons();
+  document.getElementById('fx-kf-intensity').value=kf.intensity??60;
+  document.getElementById('fx-kf-intensity-val').innerText=(kf.intensity??60)+'%';
+  document.getElementById('fx-kf-dur').value=kf.duration;
+  document.getElementById('fx-kf-dur-val').innerText=kf.duration+'ms';
+}
+function updateFxEditBanner(){
+  const banner=document.getElementById('fx-kf-edit-banner');
+  const actions=document.getElementById('fx-kf-edit-actions');
+  const kf=getSelectedFxKf();
+  if(kf){
+    banner.textContent=`Editing Effect #${selectedEffectIdx+1}`;
+    banner.style.color='#ffd700';
+    actions.style.display='flex';
+    loadFxKfToInputs(kf);
+  }else{
+    banner.textContent='Add Effect Trigger (NEW)';
+    banner.style.color='#ff5ecb';
+    actions.style.display='none';
+    // 새로 추가할 때 쓸 기본 시작/종료 방식으로 복귀(마지막으로 편집하던 트리거 값에 안 묶이도록)
+    selectedFxAttack='instant';selectedFxRelease='fade';
+    syncFxEnvButtons();
+  }
+}
+function selectFxKf(idx){
+  selectedEffectIdx=idx;
+  const kf=getSelectedFxKf();
+  if(kf) loadFxKfToInputs(kf);
+  updateFxEditBanner();
+  renderFxKfList();drawGrid();
+}
+function deselectFxKf(){
+  selectedEffectIdx=-1;
+  updateFxEditBanner();
+  renderFxKfList();drawGrid();
+}
+function deleteSelectedFxKf(){
+  const kf=getSelectedFxKf(); if(!kf)return;
+  pushHistory();
+  effectEvents.splice(selectedEffectIdx,1);
+  selectedEffectIdx=-1;
+  updateFxEditBanner();renderFxKfList();drawGrid();
+}
+function deleteFxKeyframe(idx){
+  pushHistory();
+  effectEvents.splice(idx,1);
+  if(selectedEffectIdx===idx) selectedEffectIdx=-1;
+  updateFxEditBanner();
+  renderFxKfList();
+  drawGrid();
+}
+function clearAllFxKeyframes(){
+  if(effectEvents.length&&!confirm('모든 이펙트 트리거를 삭제할까요?'))return;
+  pushHistory();
+  effectEvents=[];
+  selectedEffectIdx=-1;
+  updateFxEditBanner();
+  renderFxKfList();
+  drawGrid();
+}
+function commitFxInputsToKf(){
+  const kf=getSelectedFxKf(); if(!kf)return false;
+  kf.intensity=parseInt(document.getElementById('fx-kf-intensity').value)||60;
+  let dur=parseInt(document.getElementById('fx-kf-dur').value)||0;
+  const start=evTimeMs(kf);
+  const cap=fxOverlapCapEnd(start,kf);
+  if(cap!==Infinity && start+dur>cap){
+    dur=Math.max(0,Math.round(cap-start));
+    document.getElementById('fx-kf-dur').value=dur;
+    document.getElementById('fx-kf-dur-val').innerText=dur+'ms';
+    flashFxWarning(`⚠ 이펙트 ${FX_MAX_OVERLAP}개 제한으로 길이가 제한돼요`);
+  }
+  kf.duration=dur;
+  document.getElementById('fx-kf-intensity-val').innerText=kf.intensity+'%';
+  renderFxKfList();drawGrid();
+  return true;
+}
+function renderFxKfList(){
+  const list=document.getElementById('fx-kf-list');
+  if(!list)return;
+  list.innerHTML='';
+  if(effectEvents.length===0){
+    list.innerHTML='<div style="color:#333;font-size:10px;text-align:center;padding:10px;">No effects</div>';
+    return;
+  }
+  effectEvents.forEach((kf,i)=>{
+    const def=fxDef(kf.type);
+    const div=document.createElement('div');
+    div.className='kf-item'+(i===selectedEffectIdx?' selected':'');
+    const t=(evTimeMs(kf)/1000).toFixed(2)+'s';
+    const envTag=(kf.attack==='instant'?'⚡':'🌊')+(kf.release==='instant'?'⚡':'🌊');
+    div.innerHTML=`
+      <span class="kf-time">${t}</span>
+      <span class="kf-vals">${def.icon} ${def.label} · ${kf.intensity}% · ${kf.duration}ms · ${envTag}</span>
+      <button class="kf-del" onclick="deleteFxKeyframe(${i})">✕</button>`;
+    div.onclick=(e)=>{if(e.target.classList.contains('kf-del'))return;selectFxKf(i);};
+    list.appendChild(div);
+  });
+}
+function buildFxTypeGrid(){
+  const cats={filter:'fx-type-grid-filter',glitch:'fx-type-grid-glitch',weather:'fx-type-grid-weather'};
+  Object.values(cats).forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML='';});
+  EFFECT_TYPES.forEach(def=>{
+    const holder=document.getElementById(cats[def.cat]);
+    if(!holder)return;
+    const btn=document.createElement('button');
+    btn.className='fx-type-btn'+(def.key===selectedEffectType?' active':'');
+    btn.dataset.type=def.key;
+    btn.style.setProperty('--fx-c',def.color);
+    btn.innerHTML=`<span class="fx-ic">${def.icon}</span><span>${def.label}</span>`;
+    btn.onclick=()=>selectEffectType(def.key);
+    holder.appendChild(btn);
+  });
+}
+
+// 지금 이 시각(chartMs)에 재생 중인 이펙트들을 반환. 각 항목에 진입/퇴장 페이드(env, 0~1)와
+// 시작 이후 경과 비율(progress, 0~1)을 함께 담아준다.
+function getActiveEffects(chartMs,events){
+  const src=events||effectEvents;
+  if(!src||!src.length) return [];
+  const out=[];
+  for(let i=0;i<src.length;i++){
+    const ev=src[i];
+    const st=evTimeMs(ev);
+    const dur=Math.max(1,ev.duration||1);
+    const en=st+dur;
+    if(chartMs>=st&&chartMs<=en){
+      const t=chartMs-st;
+      const fadeMs=Math.min(200,dur/2);
+      const attack=ev.attack||'fade';   // 'fade' = 서서히 시작, 'instant' = 바로 100%로 시작
+      const release=ev.release||'fade'; // 'fade' = 서서히 종료, 'instant' = 뚝 끊기듯 종료
+      let env=1;
+      if(attack!=='instant' && t<fadeMs) env=Math.min(env,t/fadeMs);
+      if(release!=='instant' && (dur-t)<fadeMs) env=Math.min(env,(dur-t)/fadeMs);
+      env=Math.max(0,Math.min(1,env));
+      out.push({type:ev.type,def:fxDef(ev.type),intensity:(ev.intensity??60)/100,env,progress:t/dur,durMs:dur,tMs:t});
+    }
+  }
+  return out;
+}
+
+
+// ═══════════════════════════════════════════════════════════════
 //  GRID DRAW
 // ═══════════════════════════════════════════════════════════════
 function drawGrid(){
@@ -1132,22 +2317,34 @@ function drawGrid(){
   const startMI=Math.max(0,Math.floor(scrollY/measureHeight));
   const endMI=Math.min(measures.length-1,Math.ceil((scrollY+gridCanvas.height)/measureHeight));
 
+  // 카메라 전용 컬럼(700~800): 노트/라인 영역과 완전히 분리된 자리 — 배경을 살짝 다르게 칠해서 구분
+  gridCtx.fillStyle='rgba(255,209,102,0.035)';
+  gridCtx.fillRect(700,0,100,gridCanvas.height);
+  gridCtx.strokeStyle='rgba(255,209,102,0.4)';gridCtx.lineWidth=2;
+  gridCtx.beginPath();gridCtx.moveTo(700,0);gridCtx.lineTo(700,gridCanvas.height);gridCtx.stroke();
+
+  // 이펙트 전용 컬럼(800~900): 화면 전체 이펙트 트리거 자리 — 핑크색으로 구분
+  gridCtx.fillStyle='rgba(255,94,203,0.035)';
+  gridCtx.fillRect(800,0,100,gridCanvas.height);
+  gridCtx.strokeStyle='rgba(255,94,203,0.4)';gridCtx.lineWidth=2;
+  gridCtx.beginPath();gridCtx.moveTo(800,0);gridCtx.lineTo(800,gridCanvas.height);gridCtx.stroke();
+
   for(let i=startMI;i<=endMI;i++){
     const drawY=i*measureHeight-scrollY;
     for(let j=0;j<split;j++){
       const ly=drawY+j*cellH;
       gridCtx.strokeStyle=j===0?'#555':(j%(split/4)===0?'#333':'#1a1a1a');
       gridCtx.lineWidth=j===0?1.5:1;
-      gridCtx.beginPath();gridCtx.moveTo(0,ly);gridCtx.lineTo(400,ly);gridCtx.stroke();
+      gridCtx.beginPath();gridCtx.moveTo(0,ly);gridCtx.lineTo(CANVAS_W,ly);gridCtx.stroke();
     }
     gridCtx.fillStyle='#333';gridCtx.font='11px monospace';
     gridCtx.fillText(i+1,3,drawY+14);
-    for(let k=1;k<4;k++){
+    for(let k=1;k<LANE_COUNT;k++){
       gridCtx.strokeStyle='#222';gridCtx.lineWidth=1;
       gridCtx.beginPath();gridCtx.moveTo(k*100,drawY);gridCtx.lineTo(k*100,drawY+measureHeight);gridCtx.stroke();
     }
     // 노트존 / lineEvent존 구분선 (각 레인 오른쪽 24px 지점)
-    for(let k=0;k<4;k++){
+    for(let k=0;k<LANE_COUNT;k++){
       const divX=k*100+76;
       gridCtx.strokeStyle='rgba(80,80,80,0.35)';gridCtx.lineWidth=1;
       gridCtx.setLineDash([2,4]);
@@ -1183,10 +2380,10 @@ function drawGrid(){
     const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
     if(ev.len>0){
       gridCtx.fillStyle='rgba(208,132,255,0.15)';
-      gridCtx.fillRect(0,y,400,(ev.len/BASE_RES)*measureHeight);
+      gridCtx.fillRect(0,y,CANVAS_W,(ev.len/BASE_RES)*measureHeight);
     }
     gridCtx.strokeStyle='#d084ff';gridCtx.lineWidth=2;
-    gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(400,y);gridCtx.stroke();
+    gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(CANVAS_W,y);gridCtx.stroke();
     gridCtx.fillStyle='#d084ff';gridCtx.font='bold 11px Arial';
     gridCtx.fillText('💬 '+ev.text,28,y-4);
   });
@@ -1195,7 +2392,7 @@ function drawGrid(){
     if(ev.measureIdx<startMI||ev.measureIdx>endMI)return;
     const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
     gridCtx.strokeStyle='#ffd700';gridCtx.lineWidth=2;
-    gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(400,y);gridCtx.stroke();
+    gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(CANVAS_W,y);gridCtx.stroke();
     gridCtx.fillStyle='#ffd700';gridCtx.font='bold 11px Arial';
     gridCtx.fillText('⚡ x'+ev.mult,8,y-4);
   });
@@ -1225,28 +2422,37 @@ function drawGrid(){
         gridCtx.beginPath();gridCtx.moveTo(evZoneX,y+bandH);gridCtx.lineTo(evZoneX+evZoneW,y+bandH);gridCtx.stroke();
         gridCtx.setLineDash([]);
       }
-      // 트리거 라인: 이벤트 존 폭만큼
+      const isAbs=kf.moveType==='absolute';
+      // 트리거 라인: 상대이동=점선, 절대이동(~로 이동)=실선으로 구분
       gridCtx.strokeStyle=isSel?'#fff':LANE_COLORS[lane];gridCtx.lineWidth=isSel?3:(dim?1.5:2.5);
-      gridCtx.setLineDash([3,2]);
+      if(!isAbs) gridCtx.setLineDash([3,2]);
       gridCtx.beginPath();gridCtx.moveTo(evZoneX,y);gridCtx.lineTo(evZoneX+evZoneW,y);gridCtx.stroke();
       gridCtx.setLineDash([]);
-      // 다이아몬드 마커: 이벤트 존 중앙
+      // 마커: 상대이동(~만큼)=다이아몬드, 절대이동(~로 이동)=원+타겟점(핀 느낌)으로 구분
       const cx=evCX;
       gridCtx.fillStyle=isSel?'#fff':LANE_COLORS[lane];
-      gridCtx.beginPath();
-      gridCtx.moveTo(cx,y-5);gridCtx.lineTo(cx+5,y);
-      gridCtx.lineTo(cx,y+5);gridCtx.lineTo(cx-5,y);
-      gridCtx.closePath();gridCtx.fill();
+      if(isAbs){
+        gridCtx.beginPath();gridCtx.arc(cx,y,5,0,Math.PI*2);gridCtx.fill();
+        gridCtx.fillStyle=isSel?LANE_COLORS[lane]:'#000';
+        gridCtx.beginPath();gridCtx.arc(cx,y,2,0,Math.PI*2);gridCtx.fill();
+        gridCtx.strokeStyle=isSel?'#fff':LANE_COLORS[lane];gridCtx.lineWidth=1;
+        gridCtx.beginPath();gridCtx.arc(cx,y,7.5,0,Math.PI*2);gridCtx.stroke();
+      }else{
+        gridCtx.beginPath();
+        gridCtx.moveTo(cx,y-5);gridCtx.lineTo(cx+5,y);
+        gridCtx.lineTo(cx,y+5);gridCtx.lineTo(cx-5,y);
+        gridCtx.closePath();gridCtx.fill();
+      }
       if(kf.angle!==0){
         gridCtx.save();gridCtx.translate(cx,y);gridCtx.rotate(kf.angle*Math.PI/180);
         gridCtx.strokeStyle='#fff';gridCtx.lineWidth=1.5;
         gridCtx.beginPath();gridCtx.moveTo(-8,0);gridCtx.lineTo(8,0);gridCtx.stroke();
         gridCtx.restore();
       }
-      // 좌표 텍스트: 이벤트 존 왼쪽 바깥에 표시 (노트 위로 올라가지 않게 우측 정렬)
+      // 좌표 텍스트: 이벤트 존 왼쪽 바깥에 표시 (노트 위로 올라가지 않게 우측 정렬) — 앞에 이동방식 기호 표기
       gridCtx.fillStyle=dim?'#666':LANE_COLORS[lane];
       gridCtx.font='8px monospace';gridCtx.textAlign='right';
-      gridCtx.fillText(`${kf.x.toFixed(2)},${kf.y.toFixed(2)}`,evZoneX-2,y-2);
+      gridCtx.fillText(`${isAbs?'→':'+'}${kf.x.toFixed(2)},${kf.y.toFixed(2)}`,evZoneX-2,y-2);
       gridCtx.textAlign='start';
       gridCtx.globalAlpha=1;
     });
@@ -1273,6 +2479,159 @@ function drawGrid(){
     });
   });
 
+  // 라인 ON/OFF(등장/퇴장) 마커 — 노트존 왼쪽에 작은 스위치 아이콘으로 표시
+  activeEvents.forEach((events,lane)=>{
+    const laneX0=lane*100;
+    const cx=laneX0+12;
+    events.forEach(ae=>{
+      const mIdx=evTimeMs(ae)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      gridCtx.strokeStyle=ae.active?'#00ff88':'#ff4444';gridCtx.lineWidth=2;
+      gridCtx.beginPath();gridCtx.moveTo(laneX0,y);gridCtx.lineTo(laneX0+90,y);gridCtx.stroke();
+      gridCtx.fillStyle=ae.active?'#00ff88':'#ff4444';
+      gridCtx.beginPath();gridCtx.arc(cx,y,6,0,Math.PI*2);gridCtx.fill();
+      gridCtx.fillStyle='#000';gridCtx.font='bold 9px monospace';gridCtx.textAlign='center';
+      gridCtx.fillText(ae.active?'ON':'OFF',cx,y+3);
+      gridCtx.textAlign='start';
+    });
+  });
+
+  // 카메라 키프레임 마커 — 그리드 중앙 스트립에 골드색으로 표시 (라인 마커와 구분)
+  {
+    const CAM_COLOR='#ffd166', camCX=740; // 700~800 카메라 전용 컬럼 안에 위치 (노트/라인 영역과 절대 안 겹침)
+    cameraEvents.forEach(kf=>{
+      const mIdx=evTimeMs(kf)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      const isSel=(cameraEvents[selectedCamKfIdx]===kf);
+      const isAbs=kf.moveType==='absolute';
+      if(kf.duration>0){
+        const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+        const bandH=(kf.duration/mpm)*measureHeight;
+        gridCtx.fillStyle=CAM_COLOR;gridCtx.globalAlpha=0.25;
+        gridCtx.fillRect(camCX-14,y,28,bandH);
+        gridCtx.globalAlpha=1;
+        gridCtx.strokeStyle=CAM_COLOR;gridCtx.lineWidth=1.5;
+        gridCtx.setLineDash([2,2]);
+        gridCtx.beginPath();gridCtx.moveTo(camCX-14,y+bandH);gridCtx.lineTo(camCX+14,y+bandH);gridCtx.stroke();
+        gridCtx.setLineDash([]);
+      }
+      gridCtx.strokeStyle=isSel?'#fff':CAM_COLOR;gridCtx.lineWidth=isSel?3:2.5;
+      if(!isAbs) gridCtx.setLineDash([3,2]);
+      gridCtx.beginPath();gridCtx.moveTo(camCX-14,y);gridCtx.lineTo(camCX+14,y);gridCtx.stroke();
+      gridCtx.setLineDash([]);
+      gridCtx.fillStyle=isSel?'#fff':CAM_COLOR;
+      if(isAbs){
+        gridCtx.beginPath();gridCtx.arc(camCX,y,5,0,Math.PI*2);gridCtx.fill();
+        gridCtx.fillStyle=isSel?CAM_COLOR:'#000';
+        gridCtx.beginPath();gridCtx.arc(camCX,y,2,0,Math.PI*2);gridCtx.fill();
+        gridCtx.strokeStyle=isSel?'#fff':CAM_COLOR;gridCtx.lineWidth=1;
+        gridCtx.beginPath();gridCtx.arc(camCX,y,7.5,0,Math.PI*2);gridCtx.stroke();
+      }else{
+        gridCtx.fillRect(camCX-6,y-6,12,12); // 정사각형 = 카메라 상대이동(~만큼)
+      }
+      gridCtx.fillStyle=CAM_COLOR;gridCtx.font='8px monospace';gridCtx.textAlign='right';
+      gridCtx.fillText(`${isAbs?'→':'+'}CAM ${kf.x.toFixed(2)},${kf.y.toFixed(2)}`,camCX-16,y-2);
+      gridCtx.textAlign='start';
+    });
+
+    // 반전 트리거 마커
+    camFlipXEvents.forEach(fe=>{
+      const mIdx=evTimeMs(fe)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      gridCtx.fillStyle=fe.flipped?'#00ff88':'#333';
+      gridCtx.beginPath();gridCtx.arc(camCX-25,y,6,0,Math.PI*2);gridCtx.fill();
+      gridCtx.strokeStyle='#000';gridCtx.lineWidth=1;gridCtx.stroke();
+      gridCtx.fillStyle='#000';gridCtx.font='bold 8px monospace';gridCtx.textAlign='center';
+      gridCtx.fillText('↔',camCX-25,y+3);
+      gridCtx.textAlign='start';
+    });
+    camFlipYEvents.forEach(fe=>{
+      const mIdx=evTimeMs(fe)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      gridCtx.fillStyle=fe.flipped?'#00e5ff':'#333';
+      gridCtx.beginPath();gridCtx.arc(camCX+25,y,6,0,Math.PI*2);gridCtx.fill();
+      gridCtx.strokeStyle='#000';gridCtx.lineWidth=1;gridCtx.stroke();
+      gridCtx.fillStyle='#000';gridCtx.font='bold 8px monospace';gridCtx.textAlign='center';
+      gridCtx.fillText('↕',camCX+25,y+3);
+      gridCtx.textAlign='start';
+    });
+
+    // 줌(확대/축소) 키프레임 마커 — 초록색, 카메라 이동 마커와 구분되는 위치/모양
+    const ZOOM_COLOR='#00ff88', zoomCX=camCX+47;
+    camZoomEvents.forEach(kf=>{
+      const mIdx=evTimeMs(kf)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      const isSel=(camZoomEvents[selectedCamZoomKfIdx]===kf);
+      const isAbs=kf.moveType==='absolute';
+      if(kf.duration>0){
+        const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+        const bandH=(kf.duration/mpm)*measureHeight;
+        gridCtx.fillStyle=ZOOM_COLOR;gridCtx.globalAlpha=0.22;
+        gridCtx.fillRect(zoomCX-9,y,18,bandH);
+        gridCtx.globalAlpha=1;
+      }
+      gridCtx.fillStyle=isSel?'#fff':ZOOM_COLOR;
+      if(isAbs){
+        gridCtx.beginPath();gridCtx.arc(zoomCX,y,5,0,Math.PI*2);gridCtx.fill();
+      }else{
+        gridCtx.fillRect(zoomCX-5,y-5,10,10);
+      }
+      gridCtx.strokeStyle='#000';gridCtx.lineWidth=1;gridCtx.stroke();
+      gridCtx.fillStyle=ZOOM_COLOR;gridCtx.font='8px monospace';gridCtx.textAlign='center';
+      gridCtx.fillText((isAbs?'→':(kf.value>=0?'+':''))+kf.value+'%',zoomCX,y-9);
+      gridCtx.textAlign='start';
+    });
+  }
+
+  // 이펙트 트리거 마커 — 800~900 컬럼 안에 얇은 라인 3개로 나눠서, 겹치는 트리거도 한눈에 구분되게
+  {
+    const slotMap=computeFxSlots();
+    const slotW=28; // 라인 하나가 차지하는 폭
+    effectEvents.forEach(kf=>{
+      const mIdx=evTimeMs(kf)/((60000/bpm)*(4/beatDenom)*beatNum);
+      const drawMI=Math.floor(mIdx);
+      if(drawMI<startMI-1||drawMI>endMI+1)return;
+      const y=mIdx*measureHeight-scrollY;
+      const def=EFFECT_TYPES.find(t=>t.key===kf.type)||EFFECT_TYPES[0];
+      const isSel=(effectEvents[selectedEffectIdx]===kf);
+      const slotCX=FX_SLOT_X[slotMap.get(kf)??1];
+      if(kf.duration>0){
+        const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
+        const bandH=(kf.duration/mpm)*measureHeight;
+        gridCtx.fillStyle=def.color;gridCtx.globalAlpha=isSel?0.32:0.18;
+        gridCtx.fillRect(slotCX-slotW/2,y,slotW,bandH);
+        gridCtx.globalAlpha=1;
+        gridCtx.strokeStyle=def.color;gridCtx.lineWidth=1;gridCtx.setLineDash([2,2]);
+        gridCtx.beginPath();gridCtx.moveTo(slotCX-slotW/2,y+bandH);gridCtx.lineTo(slotCX+slotW/2,y+bandH);gridCtx.stroke();
+        gridCtx.setLineDash([]);
+      }
+      gridCtx.strokeStyle=isSel?'#fff':def.color;gridCtx.lineWidth=isSel?3:2;
+      gridCtx.beginPath();gridCtx.moveTo(slotCX-slotW/2,y);gridCtx.lineTo(slotCX+slotW/2,y);gridCtx.stroke();
+      gridCtx.fillStyle=isSel?'#fff':def.color;
+      gridCtx.beginPath();gridCtx.arc(slotCX,y,3.5,0,Math.PI*2);gridCtx.fill();
+      gridCtx.font='7px monospace';gridCtx.textAlign='center';
+      gridCtx.fillText(def.icon,slotCX,y-4);
+      gridCtx.textAlign='start';
+    });
+    // 3개 라인 위치를 항상 살짝 표시해서 "여기 클릭하면 그 트리거를 고칠 수 있다"는 걸 시각적으로 안내
+    gridCtx.save();
+    gridCtx.strokeStyle='rgba(255,94,203,0.12)';gridCtx.lineWidth=1;
+    FX_SLOT_X.forEach(sx=>{
+      gridCtx.beginPath();gridCtx.moveTo(sx,0);gridCtx.lineTo(sx,gridCanvas.height);gridCtx.stroke();
+    });
+    gridCtx.restore();
+  }
+
   if(selection.length>0){
     selection.forEach(s=>{
       const el=enumerateModeElements().find(e=>e.ref===s.ref);
@@ -1283,7 +2642,7 @@ function drawGrid(){
       gridCtx.setLineDash([3,2]);
       let w=44,h=16;
       if(el.type==='speed'||el.type==='msg'){
-        gridCtx.strokeRect(2,y-7,396,14);
+        gridCtx.strokeRect(2,y-7,696,14);
       }else{
         gridCtx.strokeRect(el.cx-w/2,y-h/2,w,h);
       }
@@ -1313,7 +2672,7 @@ function drawGrid(){
 function resizeEditor(){
   document.getElementById('canvas-layer').style.height=(measures.length*measureHeight)+'px';
   gridCanvas.height=window.innerHeight+measureHeight;
-  gridCanvas.width=400;
+  gridCanvas.width=CANVAS_W;
 }
 function addMeasures(n){
   const s=measures.length;
@@ -1341,6 +2700,12 @@ function snapshot(){
     msgEvents: msgEvents.map(e=>({...e})),
     lineEvents: lineEvents.map(arr=>arr.map(e=>({...e}))),
     pulseEvents: pulseEvents.map(arr=>arr.map(e=>({...e}))),
+    activeEvents: activeEvents.map(arr=>arr.map(e=>({...e}))),
+    cameraEvents: cameraEvents.map(e=>({...e})),
+    camFlipXEvents: camFlipXEvents.map(e=>({...e})),
+    camFlipYEvents: camFlipYEvents.map(e=>({...e})),
+    camZoomEvents: camZoomEvents.map(e=>({...e})),
+    effectEvents: effectEvents.map(e=>({...e})),
   });
 }
 function pushHistory(){
@@ -1355,8 +2720,15 @@ function restoreSnapshot(snap){
   msgEvents=d.msgEvents;
   lineEvents=d.lineEvents;
   pulseEvents=d.pulseEvents;
+  activeEvents=d.activeEvents||Array.from({length:LANE_COUNT},()=>[]);
+  cameraEvents=d.cameraEvents||[];
+  camFlipXEvents=d.camFlipXEvents||[];
+  camFlipYEvents=d.camFlipYEvents||[];
+  camZoomEvents=d.camZoomEvents||[];
+  effectEvents=d.effectEvents||[];
+  selectedEffectIdx=-1;
   clearSelection();
-  resizeEditor();renderKfList();drawGrid();
+  resizeEditor();renderKfList();renderCamKfList();renderCamZoomKfList();updateFxEditBanner();renderFxKfList();drawGrid();
 }
 function doUndo(){
   if(!undoStack.length)return;
@@ -1412,6 +2784,31 @@ function enumerateModeElements(){
     pulseEvents.forEach((arr,lane)=>arr.forEach(pe=>{
       out.push({type:'pulse', ref:pe, lane, cx:lane*100+18, y:measurePosToY(pe.measureIdx,pe.pos)});
     }));
+  } else if(editMode==='ACTIVE'){
+    activeEvents.forEach((arr,lane)=>arr.forEach(ae=>{
+      out.push({type:'active', ref:ae, lane, cx:lane*100+12, y:measurePosToY(ae.measureIdx,ae.pos)});
+    }));
+  } else if(editMode==='CAMERA'){
+    cameraEvents.forEach(kf=>{
+      out.push({type:'camera', ref:kf, cx:740, y:measurePosToY(kf.measureIdx,kf.pos)});
+    });
+  } else if(editMode==='FLIPX'){
+    camFlipXEvents.forEach(fe=>{
+      out.push({type:'flipx', ref:fe, cx:715, y:measurePosToY(fe.measureIdx,fe.pos)});
+    });
+  } else if(editMode==='FLIPY'){
+    camFlipYEvents.forEach(fe=>{
+      out.push({type:'flipy', ref:fe, cx:765, y:measurePosToY(fe.measureIdx,fe.pos)});
+    });
+  } else if(editMode==='CAMZOOM'){
+    camZoomEvents.forEach(kf=>{
+      out.push({type:'camzoom', ref:kf, cx:787, y:measurePosToY(kf.measureIdx,kf.pos)});
+    });
+  } else if(editMode==='EFFECT'){
+    const slotMap=computeFxSlots();
+    effectEvents.forEach(kf=>{
+      out.push({type:'effect', ref:kf, cx:FX_SLOT_X[slotMap.get(kf)??1], y:measurePosToY(kf.measureIdx,kf.pos)});
+    });
   }
   return out;
 }
@@ -1434,7 +2831,7 @@ gridCanvas.addEventListener('mousedown',e=>{
   const rect=gridCanvas.getBoundingClientRect();
   const absY=(e.clientY-rect.top)+editorContainer.scrollTop;
   const x=e.clientX-rect.left;
-  const lane=Math.min(3,Math.max(0,Math.floor(x/LANE_W)));
+  const lane=Math.min(LANE_COUNT-1,Math.max(0,Math.floor(x/LANE_W)));
   const mIdx=Math.floor(absY/measureHeight);
 
   if(selection.length>0 && !e.shiftKey && hitSelected(x,absY)){
@@ -1474,6 +2871,9 @@ gridCanvas.addEventListener('mousedown',e=>{
   const pos192=Math.round(snapIdx*(BASE_RES/split));
   if(pos192>=BASE_RES)return;
 
+  // 카메라 전용 컬럼(700~800)은 카메라 관련 모드 전용 — 다른 모드에서 실수로 클릭해도 아무 일도 안 일어나게 함
+  if(x>=700 && !['CAMERA','FLIPX','FLIPY','CAMZOOM','EFFECT'].includes(editMode)) return;
+
   if(editMode==='LINE'){
     const kf=placeLineKeyframe(lane,mIdx,pos192);
     if(kf){ lineDragKf=kf; lineDragStartY=absY; }
@@ -1481,6 +2881,34 @@ gridCanvas.addEventListener('mousedown',e=>{
   }
   if(editMode==='PULSE'){ pushHistory(); placePulse(lane,mIdx,pos192,'beat'); return; }
   if(editMode==='STOP'){ pushHistory(); placePulse(lane,mIdx,pos192,'stop'); return; }
+  if(editMode==='ACTIVE'){ pushHistory(); placeActiveToggle(lane,mIdx,pos192); return; }
+  if(editMode==='CAMERA'){
+    // 카메라는 라인 하나가 아니라 화면 전체이므로 컬럼(x)은 무시하고 시간만 사용
+    const kf=placeCameraKeyframe(mIdx,pos192);
+    if(kf){ lineDragKf=kf; lineDragStartY=absY; }
+    return;
+  }
+  if(editMode==='FLIPX'){ pushHistory(); placeCameraFlipToggle('x',mIdx,pos192); return; }
+  if(editMode==='FLIPY'){ pushHistory(); placeCameraFlipToggle('y',mIdx,pos192); return; }
+  if(editMode==='CAMZOOM'){
+    // 줌도 카메라 전체에 적용되므로 컬럼(x)은 무시하고 시간만 사용
+    const kf=placeCamZoomKeyframe(mIdx,pos192);
+    if(kf){ lineDragKf=kf; lineDragStartY=absY; }
+    return;
+  }
+  if(editMode==='EFFECT'){
+    // 이미 있는 트리거의 라인/구간을 클릭했으면 새로 만들지 않고 그 트리거를 선택해서 수정
+    const hit=findFxHitAt(x,mIdx,pos192);
+    if(hit){
+      selectFxKf(effectEvents.indexOf(hit));
+      lineDragKf=hit; lineDragStartY=absY;
+      return;
+    }
+    // 이펙트도 화면 전체에 적용되므로 컬럼(x)은 무시하고 시간만 사용해 새로 배치
+    const kf=placeEffectKeyframe(mIdx,pos192);
+    if(kf){ lineDragKf=kf; lineDragStartY=absY; }
+    return;
+  }
 
   if(editMode==='SPEED'){
     pushHistory();
@@ -1535,8 +2963,8 @@ window.addEventListener('mousemove',e=>{
     const curMP=yToMeasurePos(curAbsY);
     const dMeasure=curMP.mIdx-startMP.mIdx;
     const dPos=curMP.pos192-startMP.pos192;
-    const startLane=Math.min(3,Math.max(0,Math.floor(moveStart.x/LANE_W)));
-    const curLane=Math.min(3,Math.max(0,Math.floor(curX/LANE_W)));
+    const startLane=Math.min(LANE_COUNT-1,Math.max(0,Math.floor(moveStart.x/LANE_W)));
+    const curLane=Math.min(LANE_COUNT-1,Math.max(0,Math.floor(curX/LANE_W)));
     const dLane=curLane-startLane;
 
     moveOrigin.forEach(o=>{
@@ -1546,25 +2974,40 @@ window.addEventListener('mousemove',e=>{
       ref.measureIdx=Math.floor(totalPos/BASE_RES);
       ref.pos=Math.round(totalPos%BASE_RES);
       if(o.type==='note'){
-        ref.lane=Math.min(3,Math.max(0,o.lane+dLane));
-      } else if(o.type==='line'||o.type==='pulse'){
-        ref._newLane=Math.min(3,Math.max(0,o.lane+dLane));
+        ref.lane=Math.min(LANE_COUNT-1,Math.max(0,o.lane+dLane));
+      } else if(o.type==='line'||o.type==='pulse'||o.type==='active'){
+        ref._newLane=Math.min(LANE_COUNT-1,Math.max(0,o.lane+dLane));
       }
     });
     drawGrid();
     return;
   }
 
-  // 라인 키프레임 Duration 드래그 (롱노트처럼)
+  // 라인/카메라 키프레임 Duration 드래그 (롱노트처럼)
   if(lineDragKf){
     const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
     const distPx=Math.max(0,curAbsY-lineDragStartY);
-    const durMs=Math.round((distPx/measureHeight)*mpm);
+    let durMs=Math.round((distPx/measureHeight)*mpm);
+    if(editMode==='EFFECT'){
+      const start=evTimeMs(lineDragKf);
+      const cap=fxOverlapCapEnd(start,lineDragKf);
+      if(cap!==Infinity && start+durMs>cap){
+        durMs=Math.max(0,Math.round(cap-start));
+        flashFxWarning(`⚠ 이펙트 ${FX_MAX_OVERLAP}개 제한으로 길이가 제한돼요`);
+      }
+    }
     if(durMs>40){
       lineDragKf.duration=durMs;
-      document.getElementById('kf-dur').value=durMs;
-      document.getElementById('kf-dur-val').innerText=durMs+'ms';
-      renderKfList();
+      const durInputId = editMode==='CAMERA'?'cam-kf-dur' : editMode==='CAMZOOM'?'zoom-kf-dur' : editMode==='EFFECT'?'fx-kf-dur' : 'kf-dur';
+      const durLabelId = editMode==='CAMERA'?'cam-kf-dur-val' : editMode==='CAMZOOM'?'zoom-kf-dur-val' : editMode==='EFFECT'?'fx-kf-dur-val' : 'kf-dur-val';
+      const durInput=document.getElementById(durInputId);
+      const durLabel=document.getElementById(durLabelId);
+      if(durInput) durInput.value=durMs;
+      if(durLabel) durLabel.innerText=durMs+'ms';
+      if(editMode==='CAMERA') renderCamKfList();
+      else if(editMode==='CAMZOOM') renderCamZoomKfList();
+      else if(editMode==='EFFECT') renderFxKfList();
+      else renderKfList();
     }
     drawGrid();
     return;
@@ -1592,11 +3035,13 @@ window.addEventListener('mouseup',()=>{
     isMovingSel=false;
     relocateLaneItems(lineEvents);
     relocateLaneItems(pulseEvents);
+    relocateLaneItems(activeEvents);
     moveStart=moveOrigin=null;
     speedEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
     msgEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
     lineEvents.forEach(arr=>arr.sort((a,b)=>evTimeMs(a)-evTimeMs(b)));
     pulseEvents.forEach(arr=>arr.sort((a,b)=>evTimeMs(a)-evTimeMs(b)));
+    activeEvents.forEach(arr=>arr.sort((a,b)=>evTimeMs(a)-evTimeMs(b)));
     renderKfList();drawGrid();
     return;
   }
@@ -1605,7 +3050,7 @@ window.addEventListener('mouseup',()=>{
 });
 
 function relocateLaneItems(arrays){
-  for(let lane=0;lane<4;lane++){
+  for(let lane=0;lane<arrays.length;lane++){
     for(let i=arrays[lane].length-1;i>=0;i--){
       const it=arrays[lane][i];
       if(it._newLane!==undefined){
@@ -1621,11 +3066,12 @@ gridCanvas.addEventListener('contextmenu',e=>{
   const rect=gridCanvas.getBoundingClientRect();
   const absY=(e.clientY-rect.top)+editorContainer.scrollTop;
   const x=e.clientX-rect.left;
-  const lane=Math.min(3,Math.max(0,Math.floor(x/LANE_W)));
+  const lane=Math.min(LANE_COUNT-1,Math.max(0,Math.floor(x/LANE_W)));
   const mIdx=Math.floor(absY/measureHeight);
   if(mIdx>=measures.length)return;
   const split=parseInt(splitInput.value)||16;
   const pos192=Math.round(Math.round(((absY%measureHeight)/measureHeight)*split)*(BASE_RES/split));
+  if(x>=700 && !['CAMERA','FLIPX','FLIPY','CAMZOOM','EFFECT'].includes(editMode)) return;
 
   if(editMode==='LINE'){
     const i=lineEvents[lane].findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<12);
@@ -1634,6 +3080,35 @@ gridCanvas.addEventListener('contextmenu',e=>{
   else if(editMode==='PULSE'||editMode==='STOP'){
     const i=pulseEvents[lane].findIndex(p=>p.measureIdx===mIdx&&Math.abs(p.pos-pos192)<12);
     if(i!==-1){pushHistory();pulseEvents[lane].splice(i,1);}
+  }
+  else if(editMode==='ACTIVE'){
+    const i=activeEvents[lane].findIndex(a=>a.measureIdx===mIdx&&Math.abs(a.pos-pos192)<12);
+    if(i!==-1){pushHistory();activeEvents[lane].splice(i,1);}
+  }
+  else if(editMode==='CAMERA'){
+    const i=cameraEvents.findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<12);
+    if(i!==-1){pushHistory();cameraEvents.splice(i,1);renderCamKfList();}
+  }
+  else if(editMode==='FLIPX'){
+    const i=camFlipXEvents.findIndex(a=>a.measureIdx===mIdx&&Math.abs(a.pos-pos192)<12);
+    if(i!==-1){pushHistory();camFlipXEvents.splice(i,1);}
+  }
+  else if(editMode==='FLIPY'){
+    const i=camFlipYEvents.findIndex(a=>a.measureIdx===mIdx&&Math.abs(a.pos-pos192)<12);
+    if(i!==-1){pushHistory();camFlipYEvents.splice(i,1);}
+  }
+  else if(editMode==='CAMZOOM'){
+    const i=camZoomEvents.findIndex(k=>k.measureIdx===mIdx&&Math.abs(k.pos-pos192)<12);
+    if(i!==-1){pushHistory();camZoomEvents.splice(i,1);renderCamZoomKfList();}
+  }
+  else if(editMode==='EFFECT'){
+    const hit=findFxHitAt(x,mIdx,pos192);
+    if(hit){
+      const i=effectEvents.indexOf(hit);
+      pushHistory();effectEvents.splice(i,1);
+      if(selectedEffectIdx===i)selectedEffectIdx=-1;
+      updateFxEditBanner();renderFxKfList();
+    }
   }
   else if(editMode==='SPEED'){const i=speedEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);if(i!==-1){pushHistory();speedEvents.splice(i,1);}}
   else if(editMode==='MSG'){const i=msgEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);if(i!==-1){pushHistory();msgEvents.splice(i,1);}}
@@ -1668,6 +3143,11 @@ function parseChartData(data){
   if(data.offset!=null)offset=data.offset;else offset=0;
   if(data.beat){beatNum=data.beat;document.getElementById('beat-num').value=beatNum;}
   if(data.beatDenom){beatDenom=data.beatDenom;document.getElementById('beat-denom').value=beatDenom;}
+  applyInitialKeyLayout(data.initKeyCount||DEFAULT_ACTIVE_COUNT||4);
+  if(data.keyMap&&Array.isArray(data.keyMap)&&data.keyMap.length===LANE_COUNT){
+    KEY_MAP=normalizeKeyMapData(data.keyMap)||KEY_MAP;
+  }
+  refreshKeyLabelsUI();
 
   const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
 
@@ -1687,12 +3167,27 @@ function parseChartData(data){
     }return ev;
   }):[];
 
-  lineEvents=data.lineEvents||[[],[],[],[]];
-  pulseEvents=data.pulseEvents||[[],[],[],[]];
+  // 구버전(4레인) 채보와의 호환을 위해 LANE_COUNT(7) 길이로 패딩
+  const padToLaneCount=(arr)=>{
+    const a=(arr||[]).map(e=>e); while(a.length<LANE_COUNT) a.push([]); return a.slice(0,LANE_COUNT);
+  };
+  lineEvents=padToLaneCount(data.lineEvents);
+  pulseEvents=padToLaneCount(data.pulseEvents);
+  activeEvents=padToLaneCount(data.activeEvents);
+  cameraEvents=data.cameraEvents?data.cameraEvents.map(e=>({...e})):[];
+  camFlipXEvents=data.camFlipXEvents?data.camFlipXEvents.map(e=>({...e})):[];
+  camFlipYEvents=data.camFlipYEvents?data.camFlipYEvents.map(e=>({...e})):[];
+  camZoomEvents=data.camZoomEvents?data.camZoomEvents.map(e=>({...e})):[];
+  effectEvents=data.effectEvents?data.effectEvents.map(e=>({...e})):[];
+  selectedEffectIdx=-1;
   renderKfList();
+  renderCamKfList();
+  renderCamZoomKfList();
+  updateFxEditBanner();
+  renderFxKfList();
 
   measures=[];
-  if(data.measures){
+  if(data.measures&&data.measures.length>0){
     const maxI=data.measures[data.measures.length-1].index;
     for(let i=0;i<=maxI+5;i++) measures.push({index:i,notes:[]});
     data.measures.forEach(m=>{
@@ -1703,6 +3198,10 @@ function parseChartData(data){
         }));
       }
     });
+  }
+  // 노트가 하나도 없는 채보(예: 카메라 이동만 있는 채보)라도 에디터가 빈 화면이 되지 않도록 최소 마디 확보
+  if(measures.length<40){
+    for(let i=measures.length;i<40;i++) measures.push({index:i,notes:[]});
   }
 }
 
@@ -1718,8 +3217,10 @@ document.getElementById('btn-export').addEventListener('click',()=>{
   }));
   const data={
     title:'Custom Chart',bpm,offset,beat:beatNum,beatDenom,
+    initKeyCount:DEFAULT_ACTIVE_COUNT,keyMap:KEY_MAP,
     speedEvents:fse,msgEvents:fme,
-    lineEvents,pulseEvents,
+    lineEvents,pulseEvents,activeEvents,
+    cameraEvents,camFlipXEvents,camFlipYEvents,camZoomEvents,effectEvents,
     measures:measures.filter(m=>m.notes.length>0).map(m=>({...m,split:BASE_RES}))
   };
   const a=document.createElement('a');
@@ -1758,6 +3259,42 @@ let _kfInputHistoryGuard=false;
   el.addEventListener('focus',()=>{ if(getSelectedKf()){pushHistory();_kfInputHistoryGuard=true;} });
   el.addEventListener('blur',()=>{ _kfInputHistoryGuard=false; });
   el.addEventListener('input',()=>{ if(getSelectedKf()) commitInputsToKf(); });
+});
+
+document.getElementById('cam-kf-dur').addEventListener('input',e=>{
+  const v = Math.max(0, parseInt(e.target.value) || 0);
+  e.target.value = v;
+  document.getElementById('cam-kf-dur-val').innerText = v + 'ms';
+});
+['cam-kf-x','cam-kf-y','cam-kf-angle','cam-kf-dur'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('focus',()=>{ if(getSelectedCamKf()){pushHistory();} });
+  el.addEventListener('input',()=>{ if(getSelectedCamKf()) commitCamInputsToKf(); });
+});
+
+document.getElementById('zoom-kf-dur').addEventListener('input',e=>{
+  const v = Math.max(0, parseInt(e.target.value) || 0);
+  e.target.value = v;
+  document.getElementById('zoom-kf-dur-val').innerText = v + 'ms';
+});
+['zoom-kf-value','zoom-kf-dur'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('focus',()=>{ if(getSelectedCamZoomKf()){pushHistory();} });
+  el.addEventListener('input',()=>{ if(getSelectedCamZoomKf()) commitZoomInputsToKf(); });
+});
+
+document.getElementById('fx-kf-dur').addEventListener('input',e=>{
+  const v = Math.max(0, parseInt(e.target.value) || 0);
+  e.target.value = v;
+  document.getElementById('fx-kf-dur-val').innerText = v + 'ms';
+});
+document.getElementById('fx-kf-intensity').addEventListener('input',e=>{
+  document.getElementById('fx-kf-intensity-val').innerText = e.target.value + '%';
+});
+['fx-kf-dur','fx-kf-intensity'].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener('focus',()=>{ if(getSelectedFxKf()){pushHistory();} });
+  el.addEventListener('input',()=>{ if(getSelectedFxKf()) commitFxInputsToKf(); });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -1888,6 +3425,238 @@ if(curveCanvas){
   });
 }
 
+// ── 카메라 전용 커스텀 속도 곡선(EQ) 에디터 — 라인용과 완전히 동일한 방식, 별도 캔버스 ──
+const camCurveCanvas=document.getElementById('cam-curve-canvas');
+const camCurveCtx=camCurveCanvas?camCurveCanvas.getContext('2d'):null;
+let camCurveDragIdx=-1;
+function camCurveToCanvas(p){
+  const w=camCurveCanvas.width-CC_PAD*2, h=camCurveCanvas.height-CC_PAD*2;
+  return {cx:CC_PAD+p.x*w, cy:CC_PAD+(1-p.y)*h};
+}
+function camCanvasToCurve(cx,cy){
+  const w=camCurveCanvas.width-CC_PAD*2, h=camCurveCanvas.height-CC_PAD*2;
+  return {x:clamp01((cx-CC_PAD)/w), y:clamp01(1-(cy-CC_PAD)/h)};
+}
+function drawCamCurveEditor(){
+  if(!camCurveCanvas)return;
+  const W=camCurveCanvas.width,H=camCurveCanvas.height;
+  camCurveCtx.clearRect(0,0,W,H);
+  camCurveCtx.fillStyle='#0a0a0a';camCurveCtx.fillRect(0,0,W,H);
+  camCurveCtx.strokeStyle='#1c1c1c';camCurveCtx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const gx=CC_PAD+(W-CC_PAD*2)*i/4, gy=CC_PAD+(H-CC_PAD*2)*i/4;
+    camCurveCtx.beginPath();camCurveCtx.moveTo(gx,CC_PAD);camCurveCtx.lineTo(gx,H-CC_PAD);camCurveCtx.stroke();
+    camCurveCtx.beginPath();camCurveCtx.moveTo(CC_PAD,gy);camCurveCtx.lineTo(W-CC_PAD,gy);camCurveCtx.stroke();
+  }
+  camCurveCtx.strokeStyle='#2a3a2a';camCurveCtx.setLineDash([4,4]);
+  const mid=camCurveToCanvas({x:0,y:0.5}), midR=camCurveToCanvas({x:1,y:0.5});
+  camCurveCtx.beginPath();camCurveCtx.moveTo(mid.cx,mid.cy);camCurveCtx.lineTo(midR.cx,midR.cy);camCurveCtx.stroke();
+  camCurveCtx.setLineDash([]);
+  camCurveCtx.fillStyle='#333';camCurveCtx.font='8px monospace';camCurveCtx.textAlign='right';
+  camCurveCtx.fillText('FAST',CC_PAD-1,CC_PAD+6);
+  camCurveCtx.fillText('SLOW',CC_PAD-1,H-CC_PAD+2);
+  camCurveCtx.textAlign='left';
+  const pts=camWorkCurve;
+  camCurveCtx.fillStyle='rgba(255,209,102,0.08)';
+  camCurveCtx.beginPath();
+  const bot=camCurveToCanvas({x:0,y:0});
+  camCurveCtx.moveTo(bot.cx,bot.cy);
+  for(let i=0;i<=60;i++){
+    const t=i/60; const y=evalCurve(pts,t); const c=camCurveToCanvas({x:t,y});
+    camCurveCtx.lineTo(c.cx,c.cy);
+  }
+  const botR=camCurveToCanvas({x:1,y:0});
+  camCurveCtx.lineTo(botR.cx,botR.cy);
+  camCurveCtx.closePath();camCurveCtx.fill();
+  camCurveCtx.strokeStyle='#ffd166';camCurveCtx.lineWidth=2;camCurveCtx.beginPath();
+  for(let i=0;i<=60;i++){
+    const t=i/60; const y=evalCurve(pts,t); const c=camCurveToCanvas({x:t,y});
+    if(i===0)camCurveCtx.moveTo(c.cx,c.cy);else camCurveCtx.lineTo(c.cx,c.cy);
+  }
+  camCurveCtx.stroke();
+  const sorted=[...pts].sort((p,q)=>p.x-q.x);
+  sorted.forEach(p=>{
+    const c=camCurveToCanvas(p);
+    camCurveCtx.fillStyle='#fff';camCurveCtx.strokeStyle='#ffd166';camCurveCtx.lineWidth=2;
+    camCurveCtx.beginPath();camCurveCtx.arc(c.cx,c.cy,4,0,Math.PI*2);camCurveCtx.fill();camCurveCtx.stroke();
+  });
+}
+function camCurveHitTest(cx,cy){
+  for(let i=0;i<camWorkCurve.length;i++){
+    const c=camCurveToCanvas(camWorkCurve[i]);
+    if(Math.hypot(c.cx-cx,c.cy-cy)<9) return i;
+  }
+  return -1;
+}
+function ensureCamCurveTarget(){
+  const kf=getSelectedCamKf();
+  if(kf&&kf.easing==='custom'){ if(!kf.curve)kf.curve=cloneCurve(camWorkCurve); camWorkCurve=kf.curve; }
+}
+if(camCurveCanvas){
+  camCurveCanvas.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    const r=camCurveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(camCurveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(camCurveCanvas.height/r.height);
+    ensureCamCurveTarget();
+    if(e.button===2)return;
+    pushHistory();
+    let idx=camCurveHitTest(cx,cy);
+    if(idx===-1){
+      const np=camCanvasToCurve(cx,cy);
+      camWorkCurve.push(np);
+      camWorkCurve.sort((a,b)=>a.x-b.x);
+      idx=camWorkCurve.indexOf(np);
+    }
+    camCurveDragIdx=idx;
+    drawCamCurveEditor();drawGrid();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(camCurveDragIdx===-1)return;
+    const r=camCurveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(camCurveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(camCurveCanvas.height/r.height);
+    const np=camCanvasToCurve(cx,cy);
+    const p=camWorkCurve[camCurveDragIdx];
+    const isFirst=camCurveDragIdx===0, isLast=camCurveDragIdx===camWorkCurve.length-1;
+    if(isFirst) np.x=0; else if(isLast) np.x=1;
+    p.x=np.x; p.y=np.y;
+    camWorkCurve.sort((a,b)=>a.x-b.x);
+    camCurveDragIdx=camWorkCurve.indexOf(p);
+    drawCamCurveEditor();drawGrid();
+  });
+  window.addEventListener('mouseup',()=>{ camCurveDragIdx=-1; });
+  camCurveCanvas.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    const r=camCurveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(camCurveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(camCurveCanvas.height/r.height);
+    ensureCamCurveTarget();
+    const idx=camCurveHitTest(cx,cy);
+    if(idx>0&&idx<camWorkCurve.length-1){
+      pushHistory();
+      camWorkCurve.splice(idx,1);
+      drawCamCurveEditor();drawGrid();
+    }
+  });
+}
+
+// ── 줌(확대/축소) 전용 커스텀 속도 곡선(EQ) 에디터 — 카메라용과 동일 구조, 별도 캔버스 ──
+const zoomCurveCanvas=document.getElementById('zoom-curve-canvas');
+const zoomCurveCtx=zoomCurveCanvas?zoomCurveCanvas.getContext('2d'):null;
+let zoomCurveDragIdx=-1;
+function zoomCurveToCanvas(p){
+  const w=zoomCurveCanvas.width-CC_PAD*2, h=zoomCurveCanvas.height-CC_PAD*2;
+  return {cx:CC_PAD+p.x*w, cy:CC_PAD+(1-p.y)*h};
+}
+function zoomCanvasToCurve(cx,cy){
+  const w=zoomCurveCanvas.width-CC_PAD*2, h=zoomCurveCanvas.height-CC_PAD*2;
+  return {x:clamp01((cx-CC_PAD)/w), y:clamp01(1-(cy-CC_PAD)/h)};
+}
+function drawZoomCurveEditor(){
+  if(!zoomCurveCanvas)return;
+  const W=zoomCurveCanvas.width,H=zoomCurveCanvas.height;
+  zoomCurveCtx.clearRect(0,0,W,H);
+  zoomCurveCtx.fillStyle='#0a0a0a';zoomCurveCtx.fillRect(0,0,W,H);
+  zoomCurveCtx.strokeStyle='#1c1c1c';zoomCurveCtx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const gx=CC_PAD+(W-CC_PAD*2)*i/4, gy=CC_PAD+(H-CC_PAD*2)*i/4;
+    zoomCurveCtx.beginPath();zoomCurveCtx.moveTo(gx,CC_PAD);zoomCurveCtx.lineTo(gx,H-CC_PAD);zoomCurveCtx.stroke();
+    zoomCurveCtx.beginPath();zoomCurveCtx.moveTo(CC_PAD,gy);zoomCurveCtx.lineTo(W-CC_PAD,gy);zoomCurveCtx.stroke();
+  }
+  zoomCurveCtx.strokeStyle='#2a3a2a';zoomCurveCtx.setLineDash([4,4]);
+  const mid=zoomCurveToCanvas({x:0,y:0.5}), midR=zoomCurveToCanvas({x:1,y:0.5});
+  zoomCurveCtx.beginPath();zoomCurveCtx.moveTo(mid.cx,mid.cy);zoomCurveCtx.lineTo(midR.cx,midR.cy);zoomCurveCtx.stroke();
+  zoomCurveCtx.setLineDash([]);
+  zoomCurveCtx.fillStyle='#333';zoomCurveCtx.font='8px monospace';zoomCurveCtx.textAlign='right';
+  zoomCurveCtx.fillText('FAST',CC_PAD-1,CC_PAD+6);
+  zoomCurveCtx.fillText('SLOW',CC_PAD-1,H-CC_PAD+2);
+  zoomCurveCtx.textAlign='left';
+  const pts=camZoomWorkCurve;
+  zoomCurveCtx.fillStyle='rgba(0,255,136,0.08)';
+  zoomCurveCtx.beginPath();
+  const bot=zoomCurveToCanvas({x:0,y:0});
+  zoomCurveCtx.moveTo(bot.cx,bot.cy);
+  for(let i=0;i<=60;i++){
+    const t=i/60; const y=evalCurve(pts,t); const c=zoomCurveToCanvas({x:t,y});
+    zoomCurveCtx.lineTo(c.cx,c.cy);
+  }
+  const botR=zoomCurveToCanvas({x:1,y:0});
+  zoomCurveCtx.lineTo(botR.cx,botR.cy);
+  zoomCurveCtx.closePath();zoomCurveCtx.fill();
+  zoomCurveCtx.strokeStyle='#00ff88';zoomCurveCtx.lineWidth=2;zoomCurveCtx.beginPath();
+  for(let i=0;i<=60;i++){
+    const t=i/60; const y=evalCurve(pts,t); const c=zoomCurveToCanvas({x:t,y});
+    if(i===0)zoomCurveCtx.moveTo(c.cx,c.cy);else zoomCurveCtx.lineTo(c.cx,c.cy);
+  }
+  zoomCurveCtx.stroke();
+  const sorted=[...pts].sort((p,q)=>p.x-q.x);
+  sorted.forEach(p=>{
+    const c=zoomCurveToCanvas(p);
+    zoomCurveCtx.fillStyle='#fff';zoomCurveCtx.strokeStyle='#00ff88';zoomCurveCtx.lineWidth=2;
+    zoomCurveCtx.beginPath();zoomCurveCtx.arc(c.cx,c.cy,4,0,Math.PI*2);zoomCurveCtx.fill();zoomCurveCtx.stroke();
+  });
+}
+function zoomCurveHitTest(cx,cy){
+  for(let i=0;i<camZoomWorkCurve.length;i++){
+    const c=zoomCurveToCanvas(camZoomWorkCurve[i]);
+    if(Math.hypot(c.cx-cx,c.cy-cy)<9) return i;
+  }
+  return -1;
+}
+function ensureZoomCurveTarget(){
+  const kf=getSelectedCamZoomKf();
+  if(kf&&kf.easing==='custom'){ if(!kf.curve)kf.curve=cloneCurve(camZoomWorkCurve); camZoomWorkCurve=kf.curve; }
+}
+if(zoomCurveCanvas){
+  zoomCurveCanvas.addEventListener('mousedown',e=>{
+    e.preventDefault();
+    const r=zoomCurveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(zoomCurveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(zoomCurveCanvas.height/r.height);
+    ensureZoomCurveTarget();
+    if(e.button===2)return;
+    pushHistory();
+    let idx=zoomCurveHitTest(cx,cy);
+    if(idx===-1){
+      const np=zoomCanvasToCurve(cx,cy);
+      camZoomWorkCurve.push(np);
+      camZoomWorkCurve.sort((a,b)=>a.x-b.x);
+      idx=camZoomWorkCurve.indexOf(np);
+    }
+    zoomCurveDragIdx=idx;
+    drawZoomCurveEditor();drawGrid();
+  });
+  window.addEventListener('mousemove',e=>{
+    if(zoomCurveDragIdx===-1)return;
+    const r=zoomCurveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(zoomCurveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(zoomCurveCanvas.height/r.height);
+    const np=zoomCanvasToCurve(cx,cy);
+    const p=camZoomWorkCurve[zoomCurveDragIdx];
+    const isFirst=zoomCurveDragIdx===0, isLast=zoomCurveDragIdx===camZoomWorkCurve.length-1;
+    if(isFirst) np.x=0; else if(isLast) np.x=1;
+    p.x=np.x; p.y=np.y;
+    camZoomWorkCurve.sort((a,b)=>a.x-b.x);
+    zoomCurveDragIdx=camZoomWorkCurve.indexOf(p);
+    drawZoomCurveEditor();drawGrid();
+  });
+  window.addEventListener('mouseup',()=>{ zoomCurveDragIdx=-1; });
+  zoomCurveCanvas.addEventListener('contextmenu',e=>{
+    e.preventDefault();
+    const r=zoomCurveCanvas.getBoundingClientRect();
+    const cx=(e.clientX-r.left)*(zoomCurveCanvas.width/r.width);
+    const cy=(e.clientY-r.top)*(zoomCurveCanvas.height/r.height);
+    ensureZoomCurveTarget();
+    const idx=zoomCurveHitTest(cx,cy);
+    if(idx>0&&idx<camZoomWorkCurve.length-1){
+      pushHistory();
+      camZoomWorkCurve.splice(idx,1);
+      drawZoomCurveEditor();drawGrid();
+    }
+  });
+}
+
 document.getElementById('pulse-intensity').addEventListener('input',e=>{document.getElementById('pulse-int-val').innerText=e.target.value;});
 document.getElementById('pulse-decay').addEventListener('input',e=>{document.getElementById('pulse-dec-val').innerText=e.target.value+'ms';});
 
@@ -1935,7 +3704,8 @@ function editLoop(){
 let isGameTesting=false,gameFinished=false,isAutoMode=false;
 resizeGameCanvas();
 let gameNotes=[],activeNotes=[],particles=[],recentHits=[],judgments=[];
-let activeKeys=[false,false,false,false];
+let activeKeys=new Array(LANE_COUNT).fill(false);
+let heldKeyTokens=new Set(); // 지금 눌려있는 "물리 키" 토큰들 — 겸용키(한 키가 여러 라인 후보) OS 키반복 방지용
 let combo=0,maxCombo=0,totalHits=0,totalRateSum=0,totalOffsetDiff=0,score=0;
 let gameAnimId,baseNoteSpeed=5.0,scorePerHit=0;
 let lastNoteEndTime=0,totalMaxHits=0;
@@ -1945,7 +3715,564 @@ let isPaused=false;
 let speedMap=[];
 
 let lineStates=[...DEFAULT_LINE.map(l=>({...l}))];
-let linePulsePhase=[0,0,0,0];
+let linePulsePhase=new Array(LANE_COUNT).fill(0);
+let camState={x:0,y:0,angle:0}; // 지금 프레임의 카메라 이동/회전 상태
+let camFlipX=false, camFlipY=false; // 지금 프레임의 좌우/상하 반전 상태
+let camZoom=1; // 지금 프레임의 카메라 확대/축소 배율 (1 = 100%)
+
+// ═══════════════════════════════════════════════════════════════
+//  화면 이펙트 런타임 엔진 — 필터(CSS) / 왜곡(캔버스 조작) / 날씨(파티클)
+// ═══════════════════════════════════════════════════════════════
+let activeEffectsNow=[];          // 지금 프레임에 재생 중인 이펙트 목록 (env/progress 포함)
+let fxShakeOffset={x:0,y:0};      // 화면 흔들림 이펙트가 카메라 트랜스폼에 더할 오프셋(px)
+let fxLastTime=null;              // 파티클 dt 계산용
+const weatherParticles={snow:[],rain:[],heavyrain:[],sakura:[],fog:[],confetti:[],embers:[],snowstorm:[],splash:[]};
+let fxLightningAlpha=0;           // 폭우 이펙트의 번개 플래시
+
+// 시간에 따라 부드럽게 흔들리는 바람 세기(-1~1). 파티클마다 seed를 다르게 주면
+// 같은 바람이라도 입자별로 살짝 다른 위상으로 흩날려서 자연스러워짐
+function fxWind(ct,seed){
+  return Math.sin(ct*0.00035+seed)*0.65 + Math.sin(ct*0.0009+seed*1.7)*0.35;
+}
+
+// 픽셀화(8비트)용 오프스크린 캔버스
+const fxPixelCanvas=document.createElement('canvas');
+const fxPixelCtx=fxPixelCanvas.getContext('2d');
+fxPixelCtx.imageSmoothingEnabled=false;
+// 글리치/색수차용 스냅샷 캔버스
+const fxSnapCanvas=document.createElement('canvas');
+const fxSnapCtx=fxSnapCanvas.getContext('2d');
+// 글리치/색수차 색상 틴트용 임시 캔버스
+const fxTintCanvas=document.createElement('canvas');
+const fxTintCtx=fxTintCanvas.getContext('2d');
+
+function resetFxRuntime(){
+  activeEffectsNow=[];
+  fxShakeOffset={x:0,y:0};
+  fxLastTime=null;
+  fxLightningAlpha=0;
+  Object.keys(weatherParticles).forEach(k=>weatherParticles[k].length=0);
+  if(gameCanvas) gameCanvas.style.filter='';
+}
+
+// 매 프레임 카메라 계산 시점에서 호출 — 지금 활성 이펙트 목록 + 흔들림 오프셋을 계산
+function updateFxRuntime(currentTime){
+  activeEffectsNow=getActiveEffects(currentTime, window.runtimeEffectEvents);
+  let sx=0, sy=0;
+  activeEffectsNow.forEach(fx=>{
+    if(fx.type==='shake'){
+      const amp=10*fx.intensity*fx.env;
+      sx+=(Math.random()*2-1)*amp;
+      sy+=(Math.random()*2-1)*amp;
+    }
+    if(fx.type==='heavyrain'){
+      const amp=3*fx.intensity*fx.env;
+      sx+=(Math.random()*2-1)*amp;
+      sy+=(Math.random()*2-1)*amp*0.6;
+    }
+    if(fx.type==='snowstorm'){
+      const amp=2.2*fx.intensity*fx.env;
+      sx+=(Math.random()*2-1)*amp;
+      sy+=(Math.random()*2-1)*amp*0.5;
+    }
+  });
+  fxShakeOffset={x:sx,y:sy};
+}
+
+// ── 파티클 헬퍼 ──
+function spawnIfNeeded(arr,targetCount,factory){
+  while(arr.length<targetCount) arr.push(factory());
+}
+function rnd(a,b){ return a+Math.random()*(b-a); }
+
+function updateWeatherParticles(dt,gw,gh,ct){
+  activeEffectsNow.forEach(fx=>{
+    const I=fx.intensity*fx.env;
+    if(fx.type==='snow'){
+      const arr=weatherParticles.snow;
+      spawnIfNeeded(arr,Math.round(140*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),depth:rnd(0.35,1.5),
+        sway:rnd(0,Math.PI*2),swaySpd:rnd(0.5,1.6),seed:rnd(0,200),
+        rot:rnd(0,Math.PI*2),rotSpd:rnd(-1,1)
+      }));
+      arr.forEach(p=>{
+        p.sway+=dt*0.001*p.swaySpd;
+        const wind=fxWind(ct,p.seed)*34;
+        p.x+=(Math.sin(p.sway)*0.5*p.depth + wind*p.depth*0.02)*dt*0.06;
+        p.y+=(18+p.depth*42)*dt*0.001*Math.max(0.15,I);
+        p.rot+=p.rotSpd*dt*0.001;
+        if(p.y>gh+10){p.y=-10;p.x=rnd(0,gw);}
+        if(p.x<-12)p.x=gw+12; else if(p.x>gw+12)p.x=-12;
+      });
+    } else if(fx.type==='snowstorm'){
+      const arr=weatherParticles.snowstorm;
+      spawnIfNeeded(arr,Math.round(240*fx.intensity),()=>({
+        x:rnd(-40,gw+40),y:rnd(-40,gh+40),len:rnd(10,26),thick:rnd(1,2.4),
+        seed:rnd(0,200)
+      }));
+      const windBase=150+90*Math.sin(ct*0.00055);
+      arr.forEach(p=>{
+        const gust=fxWind(ct,p.seed)*90;
+        const vx=-(windBase+gust)*Math.max(0.35,I);
+        const vy=(windBase*0.32+gust*0.25)*Math.max(0.35,I);
+        p.x+=vx*dt*0.001;
+        p.y+=vy*dt*0.001;
+        if(p.x<-50){p.x=gw+50;p.y=rnd(-40,gh+40);}
+        if(p.y>gh+50){p.y=-50;p.x=rnd(-50,gw+50);}
+        if(p.y<-50){p.y=gh+50;}
+      });
+    } else if(fx.type==='rain'){
+      const arr=weatherParticles.rain;
+      spawnIfNeeded(arr,Math.round(150*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),depth:rnd(0.4,1.4),seed:rnd(0,200)
+      }));
+      arr.forEach(p=>{
+        const wind=fxWind(ct,p.seed)*60;
+        const vy=(650+p.depth*420)*Math.max(0.2,I);
+        p.y+=vy*dt*0.001;
+        p.x+=(wind*p.depth*0.35 - vy*0.03)*dt*0.001;
+        if(p.y>gh-2){
+          spawnSplash(weatherParticles.splash,p.x,gh-1,p.depth);
+          p.y=-rnd(0,gh*0.3);p.x=rnd(0,gw);
+        }
+        if(p.x<-20)p.x=gw+20; else if(p.x>gw+20)p.x=-20;
+      });
+    } else if(fx.type==='heavyrain'){
+      const arr=weatherParticles.heavyrain;
+      spawnIfNeeded(arr,Math.round(280*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),depth:rnd(0.4,1.4),seed:rnd(0,200)
+      }));
+      arr.forEach(p=>{
+        const wind=fxWind(ct,p.seed)*110;
+        const vy=(1050+p.depth*500)*Math.max(0.2,I);
+        p.y+=vy*dt*0.001;
+        p.x+=(wind*p.depth*0.5 - vy*0.045)*dt*0.001;
+        if(p.y>gh-2){
+          spawnSplash(weatherParticles.splash,p.x,gh-1,p.depth*1.3);
+          p.y=-rnd(0,gh*0.3);p.x=rnd(0,gw);
+        }
+        if(p.x<-30)p.x=gw+30; else if(p.x>gw+30)p.x=-30;
+      });
+      // 번개
+      fxLightningAlpha=Math.max(0,fxLightningAlpha-dt*0.0025);
+      if(Math.random()<0.008*I) fxLightningAlpha=rnd(0.35,0.7);
+    } else if(fx.type==='sakura'){
+      const arr=weatherParticles.sakura;
+      spawnIfNeeded(arr,Math.round(55*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),r:rnd(3,7),sway:rnd(0,Math.PI*2),
+        swaySpd:rnd(0.4,1.0),rot:rnd(0,Math.PI*2),rotSpd:rnd(-1.5,1.5),
+        depth:rnd(0.5,1.3),seed:rnd(0,200)
+      }));
+      arr.forEach(p=>{
+        p.sway+=dt*0.001*p.swaySpd;
+        const wind=fxWind(ct,p.seed)*26;
+        p.x+=(Math.sin(p.sway)*0.6+wind*0.02)*p.depth*dt*0.06;
+        p.y+=(16+p.depth*24)*dt*0.001*Math.max(0.15,I);
+        p.rot+=p.rotSpd*dt*0.001;
+        if(p.y>gh+10){p.y=-10;p.x=rnd(0,gw);}
+        if(p.x<-12)p.x=gw+12; else if(p.x>gw+12)p.x=-12;
+      });
+    } else if(fx.type==='confetti'){
+      const arr=weatherParticles.confetti;
+      const cols=['#ff5ecb','#ffd700','#00e5ff','#00ff88','#ff8800'];
+      spawnIfNeeded(arr,Math.round(90*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(-gh,0),w:rnd(4,8),h:rnd(6,12),vy:rnd(60,140),
+        sway:rnd(0,Math.PI*2),swaySpd:rnd(1,2.4),rot:rnd(0,Math.PI*2),rotSpd:rnd(-4,4),
+        color:cols[(Math.random()*cols.length)|0]
+      }));
+      arr.forEach(p=>{
+        p.sway+=dt*0.001*p.swaySpd;
+        p.x+=Math.sin(p.sway)*1.1;
+        p.y+=p.vy*dt*0.001*Math.max(0.2,I);
+        p.rot+=p.rotSpd*dt*0.001;
+        if(p.y>gh+10){p.y=-10;p.x=rnd(0,gw);}
+      });
+    } else if(fx.type==='embers'){
+      const arr=weatherParticles.embers;
+      spawnIfNeeded(arr,Math.round(85*fx.intensity),()=>({
+        x:rnd(0,gw),y:rnd(gh*0.55,gh+20),r:rnd(1.4,3.2),
+        vx:rnd(-8,8),sway:rnd(0,Math.PI*2),swaySpd:rnd(0.8,2.1),
+        age:0,maxLife:rnd(1.1,2.1),trail:[],flicker:rnd(0,10)
+      }));
+      arr.forEach(p=>{
+        p.age+=dt*0.001;
+        const t=Math.min(1,p.age/p.maxLife);
+        p.sway+=dt*0.001*p.swaySpd*(1+t*1.5);
+        const jitter=t*10;
+        p.x+=(Math.sin(p.sway)*(0.6+jitter*0.05)+p.vx*0.015)*dt*0.06;
+        p.y-=(55+t*70)*dt*0.001*Math.max(0.25,I);
+        p.trail.push({x:p.x,y:p.y});
+        if(p.trail.length>7)p.trail.shift();
+        p.life=1-t;
+        if(p.life<=0||p.y<gh*0.05){
+          p.age=0;p.y=gh+rnd(0,20);p.x=rnd(0,gw);p.trail.length=0;
+        }
+      });
+    } else if(fx.type==='fog'){
+      spawnIfNeeded(weatherParticles.fog,7,()=>({
+        x:rnd(0,gw),y:rnd(gh*0.32,gh*1.05),r:rnd(gw*0.2,gw*0.4),
+        driftX:rnd(16,32)*(Math.random()<0.5?-1:1),
+        phase:rnd(0,Math.PI*2),phaseSpd:rnd(0.15,0.42),bob:rnd(6,16)
+      }));
+      weatherParticles.fog.forEach(p=>{
+        p.phase+=dt*0.001*p.phaseSpd;
+        p.x+=p.driftX*dt*0.001*Math.max(0.3,I);
+        p.y+=Math.sin(p.phase)*p.bob*dt*0.001;
+        if(p.driftX>0 && p.x-p.r>gw) p.x=-p.r;
+        if(p.driftX<0 && p.x+p.r<0) p.x=gw+p.r;
+      });
+    }
+  });
+  // 화면 밖으로 완전히 나간 물방울 튀김은 정리
+  weatherParticles.splash=weatherParticles.splash.filter(s=>s.life>0);
+  weatherParticles.splash.forEach(s=>{ s.life-=dt*0.0028; s.r+=dt*0.045*s.depth; });
+}
+function spawnSplash(arr,x,y,depth){
+  if(arr.length>140)return;
+  arr.push({x,y,r:1,depth:depth||1,life:1});
+}
+
+function drawWeatherParticles(ctx,gw,gh,ct){
+  const activeTypes=new Set(activeEffectsNow.filter(f=>weatherParticles[f.type]).map(f=>f.type));
+  const envOf=(type)=>{ const f=activeEffectsNow.find(f=>f.type===type); return f?f.env*f.intensity:0; };
+
+  if(activeTypes.has('fog')){
+    const env=envOf('fog');
+    ctx.save();ctx.globalCompositeOperation='screen';
+    weatherParticles.fog.forEach(p=>{
+      const pulse=0.8+0.2*Math.sin(p.phase*1.6);
+      ctx.globalAlpha=0.28*env*pulse;
+      const ox=Math.cos(p.phase)*10, oy=Math.sin(p.phase*0.7)*6;
+      const g=ctx.createRadialGradient(p.x+ox,p.y+oy,0,p.x+ox,p.y+oy,p.r);
+      g.addColorStop(0,'rgba(215,222,235,0.9)');g.addColorStop(0.6,'rgba(200,208,225,0.35)');g.addColorStop(1,'rgba(200,208,225,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x+ox,p.y+oy,p.r,0,Math.PI*2);ctx.fill();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('snow')){
+    const env=envOf('snow');
+    ctx.save();
+    weatherParticles.snow.forEach(p=>{
+      const r=1+p.depth*2.1;
+      ctx.globalAlpha=(0.45+p.depth*0.4)*env;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*1.8);
+      g.addColorStop(0,'rgba(255,255,255,0.95)');g.addColorStop(0.5,'rgba(255,255,255,0.55)');g.addColorStop(1,'rgba(255,255,255,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,r*1.8,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=(0.7+p.depth*0.3)*env;
+      ctx.fillStyle='#fff';
+      ctx.beginPath();ctx.arc(p.x,p.y,r*0.55,0,Math.PI*2);ctx.fill();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('snowstorm')){
+    const env=envOf('snowstorm');
+    ctx.save();ctx.lineCap='round';ctx.globalCompositeOperation='screen';
+    weatherParticles.snowstorm.forEach(p=>{
+      ctx.globalAlpha=0.55*env;
+      ctx.strokeStyle='rgba(235,245,255,0.9)';
+      ctx.lineWidth=p.thick;
+      ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(p.x+p.len,p.y-p.len*0.32);ctx.stroke();
+    });
+    ctx.restore();
+    // 화이트아웃 — 강한 눈보라일수록 시야가 뿌옇게
+    ctx.save();
+    const a=0.22*env;
+    const wo=ctx.createLinearGradient(0,0,gw,gh*0.15);
+    wo.addColorStop(0,`rgba(235,245,255,${a*1.4})`);
+    wo.addColorStop(0.5,`rgba(235,245,255,${a*0.5})`);
+    wo.addColorStop(1,`rgba(235,245,255,${a*1.3})`);
+    ctx.fillStyle=wo;ctx.fillRect(0,0,gw,gh);
+    // 차가운 비네트
+    const vg=ctx.createRadialGradient(gw/2,gh/2,gh*0.3,gw/2,gh/2,gh*0.85);
+    vg.addColorStop(0,'rgba(180,210,255,0)');
+    vg.addColorStop(1,`rgba(150,190,255,${0.35*env})`);
+    ctx.fillStyle=vg;ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+  if(activeTypes.has('sakura')){
+    const env=envOf('sakura');
+    ctx.save();ctx.globalAlpha=0.9*env;
+    weatherParticles.sakura.forEach(p=>{
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      const g=ctx.createRadialGradient(0,0,0,0,0,p.r*1.3);
+      g.addColorStop(0,'#ffd6ea');g.addColorStop(1,'#ff9ecf');
+      ctx.fillStyle=g;
+      ctx.beginPath();ctx.ellipse(0,0,p.r,p.r*0.58,0,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('rain')){
+    const env=envOf('rain');
+    ctx.save();ctx.lineCap='round';
+    weatherParticles.rain.forEach(p=>{
+      const len=14+p.depth*16;
+      const wind=fxWind(ct,p.seed)*10*p.depth;
+      const g=ctx.createLinearGradient(p.x,p.y-len,p.x,p.y);
+      g.addColorStop(0,'rgba(160,200,255,0)');
+      g.addColorStop(1,`rgba(180,210,255,${0.55*env*(0.5+p.depth*0.5)})`);
+      ctx.strokeStyle=g;ctx.lineWidth=0.9+p.depth*0.9;
+      ctx.beginPath();ctx.moveTo(p.x,p.y-len);ctx.lineTo(p.x-wind,p.y);ctx.stroke();
+    });
+    drawSplashes(ctx,weatherParticles.splash,env,'rgba(190,220,255,');
+    ctx.restore();
+  }
+  if(activeTypes.has('heavyrain')){
+    const env=envOf('heavyrain');
+    if(fxLightningAlpha>0.01){
+      ctx.save();ctx.fillStyle='#eaf2ff';ctx.globalAlpha=fxLightningAlpha*0.5;
+      ctx.fillRect(0,0,gw,gh);ctx.restore();
+    }
+    ctx.save();ctx.lineCap='round';
+    weatherParticles.heavyrain.forEach(p=>{
+      const len=22+p.depth*24;
+      const wind=fxWind(ct,p.seed)*20*p.depth;
+      const g=ctx.createLinearGradient(p.x,p.y-len,p.x,p.y);
+      g.addColorStop(0,'rgba(190,215,255,0)');
+      g.addColorStop(1,`rgba(200,225,255,${0.75*env*(0.5+p.depth*0.5)})`);
+      ctx.strokeStyle=g;ctx.lineWidth=1.4+p.depth*1.3;
+      ctx.beginPath();ctx.moveTo(p.x,p.y-len);ctx.lineTo(p.x-wind,p.y);ctx.stroke();
+    });
+    drawSplashes(ctx,weatherParticles.splash,env,'rgba(200,225,255,');
+    ctx.restore();
+  }
+  if(activeTypes.has('confetti')){
+    const env=envOf('confetti');
+    ctx.save();ctx.globalAlpha=0.95*env;
+    weatherParticles.confetti.forEach(p=>{
+      ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);
+      ctx.fillStyle=p.color;ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    ctx.restore();
+  }
+  if(activeTypes.has('embers')){
+    const env=envOf('embers');
+    ctx.save();ctx.globalCompositeOperation='screen';
+    weatherParticles.embers.forEach(p=>{
+      const a=Math.max(0,p.life)*env;
+      const flick=0.75+0.25*Math.sin((performance.now()*0.02)+p.flicker);
+      p.trail.forEach((t,i)=>{
+        const ta=a*(i/Math.max(1,p.trail.length))*0.3;
+        if(ta<=0.01)return;
+        ctx.globalAlpha=ta;
+        const g=ctx.createRadialGradient(t.x,t.y,0,t.x,t.y,p.r*1.5);
+        g.addColorStop(0,'#ff9a44');g.addColorStop(1,'rgba(255,70,20,0)');
+        ctx.fillStyle=g;ctx.beginPath();ctx.arc(t.x,t.y,p.r*1.5,0,Math.PI*2);ctx.fill();
+      });
+      ctx.globalAlpha=a*flick*0.95;
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.r*3.4);
+      g.addColorStop(0,'#fff4c8');g.addColorStop(0.28,'#ffcf6b');g.addColorStop(0.62,'#ff7a29');g.addColorStop(1,'rgba(255,50,10,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.r*3.4,0,Math.PI*2);ctx.fill();
+      ctx.globalAlpha=a*flick;
+      ctx.fillStyle='#fff8e6';
+      ctx.beginPath();ctx.arc(p.x,p.y,p.r*0.5,0,Math.PI*2);ctx.fill();
+    });
+    ctx.restore();
+  }
+}
+function drawSplashes(ctx,arr,env,rgbaPrefix){
+  arr.forEach(s=>{
+    if(s.life<=0)return;
+    ctx.save();
+    ctx.globalAlpha=Math.max(0,s.life)*0.6*env;
+    ctx.strokeStyle=rgbaPrefix+'0.8)';
+    ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(s.x,s.y,s.r*1.6,s.r*0.5,0,Math.PI,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  });
+}
+
+// 색조 틴트된 이미지를 만들어 지정 offset 만큼 이동시켜 그려주는 헬퍼 (색수차/글리치용)
+function drawTintedShift(ctx,srcCanvas,gw,gh,dx,dy,color,alpha,composite){
+  fxTintCanvas.width=gw; fxTintCanvas.height=gh;
+  fxTintCtx.clearRect(0,0,gw,gh);
+  fxTintCtx.drawImage(srcCanvas,0,0,gw,gh);
+  fxTintCtx.globalCompositeOperation='source-atop';
+  fxTintCtx.fillStyle=color;
+  fxTintCtx.fillRect(0,0,gw,gh);
+  fxTintCtx.globalCompositeOperation='source-over';
+  ctx.save();
+  ctx.globalCompositeOperation=composite||'screen';
+  ctx.globalAlpha=alpha;
+  ctx.drawImage(fxTintCanvas,dx,dy,gw,gh);
+  ctx.restore();
+}
+
+function applyChromaShift(ctx,gw,gh,strengthPx,alpha){
+  fxSnapCanvas.width=gw; fxSnapCanvas.height=gh;
+  fxSnapCtx.clearRect(0,0,gw,gh);
+  fxSnapCtx.drawImage(ctx.canvas,0,0,gw,gh);
+  drawTintedShift(ctx,fxSnapCanvas,gw,gh,-strengthPx,0,'#ff2255',alpha,'screen');
+  drawTintedShift(ctx,fxSnapCanvas,gw,gh, strengthPx,0,'#22e0ff',alpha,'screen');
+}
+
+function applyGlitchDistort(ctx,gw,gh,intensity,env){
+  if(intensity*env<=0.01)return;
+  fxSnapCanvas.width=gw; fxSnapCanvas.height=gh;
+  fxSnapCtx.clearRect(0,0,gw,gh);
+  fxSnapCtx.drawImage(ctx.canvas,0,0,gw,gh);
+  ctx.save();ctx.globalCompositeOperation='copy';
+  ctx.drawImage(fxSnapCanvas,0,0,gw,gh);
+  ctx.restore();
+  const bands=Math.round(3+intensity*10);
+  ctx.save();
+  for(let i=0;i<bands;i++){
+    if(Math.random()>0.55*Math.max(0.2,intensity))continue;
+    const bandH=rnd(4,gh*0.05*Math.max(0.3,intensity));
+    const y=rnd(0,gh-bandH);
+    const shift=rnd(-1,1)*40*intensity*env;
+    ctx.drawImage(fxSnapCanvas,0,y,gw,bandH, shift,y,gw,bandH);
+  }
+  ctx.restore();
+  applyChromaShift(ctx,gw,gh,4*intensity*env,0.35*env);
+}
+
+function applyPixelate(ctx,gw,gh,intensity,env){
+  const blockAmt=Math.max(0.02,intensity*env);
+  const pw=Math.max(4,Math.round(gw*(1-blockAmt*0.94)/8));
+  const ph=Math.max(3,Math.round(gh*(1-blockAmt*0.94)/8));
+  fxPixelCanvas.width=pw; fxPixelCanvas.height=ph;
+  fxPixelCtx.imageSmoothingEnabled=false;
+  fxPixelCtx.drawImage(ctx.canvas,0,0,gw,gh,0,0,pw,ph);
+  ctx.save();
+  ctx.imageSmoothingEnabled=false;
+  ctx.globalCompositeOperation='copy';
+  ctx.drawImage(fxPixelCanvas,0,0,pw,ph,0,0,gw,gh);
+  ctx.restore();
+  ctx.imageSmoothingEnabled=true;
+}
+
+// 카메라 트랜스폼이 끝난 뒤(화면 고정 좌표계)에 호출 — 왜곡·오버레이·날씨·필터를 모두 적용
+function renderScreenEffects(ctx,gw,gh,ct){
+  const now=performance.now();
+  let dt=fxLastTime==null?16:(now-fxLastTime);
+  if(dt<0||dt>200)dt=16;
+  fxLastTime=now;
+
+  if(!activeEffectsNow.length){
+    if(gameCanvas.style.filter) gameCanvas.style.filter='';
+    return;
+  }
+
+  updateWeatherParticles(dt,gw,gh,ct);
+
+  // ── 픽셀화 / 글리치 (캔버스 픽셀 조작, 다른 오버레이보다 먼저 적용) ──
+  activeEffectsNow.forEach(fx=>{
+    if(fx.type==='pixel8') applyPixelate(ctx,gw,gh,fx.intensity,fx.env);
+  });
+  activeEffectsNow.forEach(fx=>{
+    if(fx.type==='glitch') applyGlitchDistort(ctx,gw,gh,fx.intensity,fx.env);
+    else if(fx.type==='chromatic') applyChromaShift(ctx,gw,gh,6*fx.intensity*fx.env,0.45*fx.env);
+  });
+
+  // ── 날씨 파티클 ──
+  drawWeatherParticles(ctx,gw,gh,ct);
+
+  // ── 스캔라인 (CRT, 위아래로 흐르는 롤링 밴드 + 미세 색수차 + 깜빡임) ──
+  const scan=activeEffectsNow.find(f=>f.type==='scanline');
+  if(scan){
+    const I=scan.intensity*scan.env;
+    ctx.save();
+    const gap=Math.max(2,Math.round(5-I*2));
+    const roll=(ct*0.045*Math.max(0.35,I))%gap;
+    const flicker=0.85+0.15*Math.sin(ct*0.03)+(Math.random()-0.5)*0.08;
+    ctx.globalCompositeOperation='multiply';
+    ctx.globalAlpha=Math.min(1,0.32*I*flicker);
+    ctx.fillStyle='#111';
+    for(let y=-gap;y<gh+gap;y+=gap) ctx.fillRect(0,y+roll,gw,Math.max(1,gap*0.4));
+    ctx.globalCompositeOperation='screen';
+    ctx.globalAlpha=0.09*I;
+    ctx.fillStyle='#ff3355';
+    for(let y=-gap*2;y<gh+gap*2;y+=gap*2) ctx.fillRect(0,y+roll-1,gw,1);
+    ctx.fillStyle='#33e0ff';
+    for(let y=-gap*2;y<gh+gap*2;y+=gap*2) ctx.fillRect(0,y+roll+1,gw,1);
+    // 위에서 아래로 천천히 흘러가는 밝은 롤링 밴드 — 옛날 CRT 특유의 화면 흔들림
+    const barY=((ct*0.075*Math.max(0.4,I))%(gh+160))-80;
+    const bar=ctx.createLinearGradient(0,barY-50,0,barY+50);
+    bar.addColorStop(0,'rgba(255,255,255,0)');
+    bar.addColorStop(0.5,`rgba(255,255,255,${0.14*I})`);
+    bar.addColorStop(1,'rgba(255,255,255,0)');
+    ctx.fillStyle=bar;ctx.fillRect(0,barY-50,gw,100);
+    ctx.restore();
+  }
+  // ── 노이즈 / 지지직 (가로 줄무늬 정전기 + 블록 튐 + 밝기 플리커) ──
+  const noise=activeEffectsNow.find(f=>f.type==='noise');
+  if(noise){
+    const I=noise.intensity*noise.env;
+    ctx.save();
+    // 밝기 전체 플리커 (지지직 거리는 화면 느낌)
+    if(Math.random()<0.15*I){
+      ctx.globalCompositeOperation='screen';
+      ctx.globalAlpha=0.12*I;
+      ctx.fillStyle='#fff';
+      ctx.fillRect(0,0,gw,gh);
+    }
+    // 정전기 도트 (가로로 살짝 늘어난 형태로 더 "노이즈"스럽게)
+    ctx.globalCompositeOperation='screen';
+    const dotN=Math.round(500*I);
+    for(let i=0;i<dotN;i++){
+      ctx.globalAlpha=Math.random()*0.55*I;
+      ctx.fillStyle=Math.random()<0.5?'#fff':'#8899aa';
+      ctx.fillRect(Math.random()*gw,Math.random()*gh,rnd(1,3),1);
+    }
+    // 가끔 한두 줄 블록이 옆으로 튀는 지지직 라인
+    const glitchLines=Math.round(2*I);
+    for(let i=0;i<glitchLines;i++){
+      if(Math.random()>0.5)continue;
+      const y=Math.random()*gh, h=rnd(2,8), shift=rnd(-14,14)*I;
+      ctx.globalAlpha=0.35*I;
+      ctx.drawImage(ctx.canvas,0,y,gw,h,shift,y,gw,h);
+    }
+    ctx.restore();
+  }
+  // ── 비네트 ──
+  const vig=activeEffectsNow.find(f=>f.type==='vignette');
+  if(vig){
+    ctx.save();
+    const g=ctx.createRadialGradient(gw/2,gh/2,gh*0.35,gw/2,gh/2,gh*0.85);
+    g.addColorStop(0,'rgba(0,0,0,0)');
+    g.addColorStop(1,`rgba(10,0,20,${0.75*vig.intensity*vig.env})`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+  // ── 화이트 플래시 (초반에 확 밝았다가 감쇠) ──
+  const fw=activeEffectsNow.find(f=>f.type==='flashwhite');
+  if(fw){
+    const decay=Math.max(0,1-fw.progress);
+    ctx.save();ctx.globalCompositeOperation='lighter';
+    ctx.fillStyle='#ffffff';ctx.globalAlpha=decay*fw.intensity;
+    ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+  // ── 블랙아웃 ──
+  const fb=activeEffectsNow.find(f=>f.type==='flashblack');
+  if(fb){
+    const decay=Math.max(0,1-fb.progress);
+    ctx.save();ctx.fillStyle='#000000';ctx.globalAlpha=decay*fb.intensity*0.95;
+    ctx.fillRect(0,0,gw,gh);
+    ctx.restore();
+  }
+
+  // ── CSS filter 계열 (흑백/반전/세피아/무지개/고대비/블러) — 캔버스 전체에 합성 ──
+  const parts=[];
+  const gs=activeEffectsNow.find(f=>f.type==='grayscale');
+  if(gs) parts.push(`grayscale(${Math.round(gs.intensity*gs.env*100)}%)`);
+  const inv=activeEffectsNow.find(f=>f.type==='invert');
+  if(inv) parts.push(`invert(${Math.round(inv.intensity*inv.env*100)}%)`);
+  const sep=activeEffectsNow.find(f=>f.type==='sepia');
+  if(sep) parts.push(`sepia(${Math.round(sep.intensity*sep.env*100)}%)`);
+  const hc=activeEffectsNow.find(f=>f.type==='highcontrast');
+  if(hc) parts.push(`contrast(${Math.round(100+hc.intensity*hc.env*150)}%) saturate(${Math.round(100+hc.intensity*hc.env*80)}%)`);
+  const bl=activeEffectsNow.find(f=>f.type==='blur');
+  if(bl) parts.push(`blur(${(bl.intensity*bl.env*8).toFixed(1)}px)`);
+  const rb=activeEffectsNow.find(f=>f.type==='rainbow');
+  if(rb){
+    const hue=(ct*0.25*rb.intensity)%360;
+    parts.push(`hue-rotate(${hue.toFixed(0)}deg) saturate(${Math.round(100+rb.intensity*rb.env*120)}%)`);
+  }
+  gameCanvas.style.filter=parts.length?parts.join(' '):'';
+}
 
 function buildSpeedMap(events){
   speedMap=[];
@@ -2002,6 +4329,12 @@ function startTestMode(auto){
 
   window.runtimeLineEvents=lineEvents.map(evArr=>evArr.map(kf=>({...kf})));
   window.runtimePulseEvents=pulseEvents.map(evArr=>evArr.map(pe=>({...pe})));
+  window.runtimeActiveEvents=activeEvents.map(evArr=>evArr.map(ae=>({...ae})));
+  window.runtimeCameraEvents=cameraEvents.map(kf=>({...kf}));
+  window.runtimeCamFlipXEvents=camFlipXEvents.map(e=>({...e}));
+  window.runtimeCamFlipYEvents=camFlipYEvents.map(e=>({...e}));
+  window.runtimeCamZoomEvents=camZoomEvents.map(e=>({...e}));
+  window.runtimeEffectEvents=effectEvents.map(e=>({...e}));
 
   seekBar.max=Math.max(audio.duration||0,(lastNoteEndTime/1000)+10);
   seekBar.value=0;isPaused=false;pauseBtn.innerText='⏸ PAUSE';
@@ -2016,10 +4349,12 @@ function startTestMode(auto){
   if(!songParam)document.getElementById('sidebar').style.display='none';
 
   activeNotes=[];particles=[];recentHits=[];judgments=[];
-  activeKeys=[false,false,false,false];
+  activeKeys=new Array(LANE_COUNT).fill(false);heldKeyTokens.clear();
   combo=0;maxCombo=0;totalHits=0;totalRateSum=0;totalOffsetDiff=0;score=0;
   lineStates=DEFAULT_LINE.map(l=>({...l}));
-  linePulsePhase=[0,0,0,0];
+  linePulsePhase=new Array(LANE_COUNT).fill(0);
+  camState={x:0,y:0,angle:0};camFlipX=false;camFlipY=false;camZoom=1;
+  resetFxRuntime();
   updateGameHUD();
 
   isGameTesting=true;gameFinished=false;
@@ -2033,6 +4368,7 @@ function stopTestMode(){
   isGameTesting=false;audio.pause();audio.currentTime=0;
   cancelAnimationFrame(gameAnimId);
   if(forceFinishTimer)clearTimeout(forceFinishTimer);
+  resetFxRuntime();
   if(songParam)window.location.href='index.html';
   else{gameView.style.display='none';document.getElementById('sidebar').style.display='flex';}
 }
@@ -2108,6 +4444,11 @@ function gameLoop(){
     lineStates=window.runtimeLineEvents.map((evArr,lane)=>getLineState(lane,currentTime));
     linePulsePhase=window.runtimePulseEvents.map((evArr,lane)=>getPulseMagnitude(lane,currentTime));
   }
+  camState=getCameraState(currentTime, window.runtimeCameraEvents);
+  camFlipX=getCameraFlip('x', currentTime, window.runtimeCamFlipXEvents);
+  camFlipY=getCameraFlip('y', currentTime, window.runtimeCamFlipYEvents);
+  camZoom=getCameraZoom(currentTime, window.runtimeCamZoomEvents);
+  updateFxRuntime(currentTime);
 
   let pending=gameNotes.filter(n=>!n.finished&&n.time-2000<currentTime&&!activeNotes.includes(n));
   activeNotes=activeNotes.concat(pending);
@@ -2170,17 +4511,33 @@ function drawGameScreen(ct){
   bgGrad.addColorStop(0,'#080610');bgGrad.addColorStop(1,'#020204');
   gameCtx.fillStyle=bgGrad;gameCtx.fillRect(0,0,GW,GH);
 
-  const cvy=getVisualPos(ct);const gs=0.1*baseNoteSpeed;
-  const laneHalf=44;
+  // ── 카메라 트랜스폼: 지금 화면에 보이는 건 "라인들을 바라보는 카메라"의 화면이라는 컨셉 ──
+  // 카메라의 이동/회전/좌우·상하 반전이 라인·노트·이펙트 전체에 적용됨 (HUD 등 고정 UI는 이 밖에서 그림)
+  gameCtx.save();
+  gameCtx.translate(GW/2 + camState.x*GW + fxShakeOffset.x, GH/2 + camState.y*GH + fxShakeOffset.y);
+  gameCtx.rotate(camState.angle*Math.PI/180);
+  gameCtx.scale((camFlipX?-1:1)*camZoom, (camFlipY?-1:1)*camZoom);
+  gameCtx.translate(-GW/2, -GH/2);
 
-// ── Render each lane: just the judgment line + notes ──
-  for(let lane=0;lane<4;lane++){
+  const cvy=getVisualPos(ct);const gs=0.1*baseNoteSpeed;
+  const laneHalf=44; // 폭은 항상 고정 — 간격은 GEAR_W(전체 폭) 쪽에서 확보
+
+// ── Render each lane: 켜진 라인만 판정선+노트 렌더링, 꺼진 라인은 완전히 숨김 ──
+  const activeLaneList=[]; // HUD 표시용: 지금 켜져있는 키들
+  for(let lane=0;lane<LANE_COUNT;lane++){
+    const active=getLineActive(lane,ct,window.runtimeActiveEvents);
     const st=lineStates[lane];
     const pulse=linePulsePhase[lane]||0;
     const px = GEAR_X + st.x * GEAR_W;
     const py = st.y * GH;
     const ang=(st.angle*Math.PI)/180;
     const col=LANE_COLORS[lane];
+
+    if(!active){
+      // 꺼져있는(퇴장한) 라인 — 완전히 안 보이게 (렌더링 자체를 생략)
+      continue;
+    }
+    activeLaneList.push(lineKeyLabel(lane));
 
     gameCtx.save();
     gameCtx.translate(px,py);
@@ -2270,7 +4627,21 @@ function drawGameScreen(ct){
     gameCtx.shadowColor='transparent';
   }
 
-  drawParticles();drawGameFX();drawHitErrorBar();
+  drawParticles();drawGameFX();
+  gameCtx.restore(); // ── 카메라 트랜스폼 종료 (이 아래는 화면에 고정된 UI) ──
+
+  renderScreenEffects(gameCtx,GW,GH,ct);
+
+  drawHitErrorBar();
+
+  // 지금 몇 개의 키가 켜져있는지 상단에 작게 표시 (SIXTAGATE처럼 키 개수가 바뀌는 걸 체감하기 쉽게)
+  gameCtx.save();
+  gameCtx.font='bold 13px monospace';gameCtx.textAlign='center';
+  gameCtx.fillStyle='rgba(255,255,255,0.55)';
+  gameCtx.fillText(activeLaneList.length+' KEYS: '+activeLaneList.join(' '),GW/2,26);
+  gameCtx.textAlign='start';
+  gameCtx.restore();
+
   // 프레임 종료 후 변환 행렬 초기화 (다음 프레임에 누적되지 않도록)
   gameCtx.setTransform(1,0,0,1,0,0);
   gameCtx.globalAlpha=1;
@@ -2295,15 +4666,21 @@ function roundRect(ctx,x,y,w,h,r){
 }
 
 // ─── HIT CHECK ───
-function checkHit(lane){
+function checkHit(laneOrLanes){
   let ct=0;
   if(gameState==='PLAYING'&&audio.currentTime>0) ct=audio.currentTime*1000;
   else ct=(Date.now()-startTimestamp)-START_DELAY;
 
+  // 겸용키 지원: 한 키에 여러 라인이 후보로 걸려있을 수 있으므로, 그 중 지금 켜져있는 라인들만 추림
+  const candidateLanes=(Array.isArray(laneOrLanes)?laneOrLanes:[laneOrLanes])
+    .filter(l=>getLineActive(l,ct,window.runtimeActiveEvents));
+  if(!candidateLanes.length)return;
+
   const HIT_WINDOW=150;
-  const cands=activeNotes.filter(n=>n.lane===lane&&!n.hit&&!n.finished&&Math.abs(ct-n.time)<=HIT_WINDOW);
+  const cands=activeNotes.filter(n=>candidateLanes.includes(n.lane)&&!n.hit&&!n.finished&&Math.abs(ct-n.time)<=HIT_WINDOW);
   if(!cands.length)return;
   const n=cands.reduce((p,c)=>Math.abs(ct-c.time)<Math.abs(ct-p.time)?c:p);
+  const lane=n.lane; // 후보들 중 실제로 맞은 노트가 속한 라인
   const diff=Math.abs(ct-n.time);
 
   n.hit=true;n.holding=true;if(n.len===0)n.finished=true;
@@ -2326,9 +4703,11 @@ function checkHit(lane){
   recentHits.push({diff:ct-n.time,color:clr,life:500,maxLife:500});
 }
 
-function checkRelease(lane){
-  const n=activeNotes.find(n=>n.lane===lane&&n.hit&&!n.finished&&n.len>0);
+function checkRelease(laneOrLanes){
+  const candidateLanes=Array.isArray(laneOrLanes)?laneOrLanes:[laneOrLanes];
+  const n=activeNotes.find(n=>candidateLanes.includes(n.lane)&&n.hit&&!n.finished&&n.len>0);
   if(!n)return;
+  const lane=n.lane;
   let ct=0;
   if(gameState==='PLAYING'&&audio.currentTime>0) ct=audio.currentTime*1000;
   else ct=(Date.now()-startTimestamp)-START_DELAY;
@@ -2433,12 +4812,19 @@ seekBar.addEventListener('input',e=>{
   });
   activeNotes=gameNotes.filter(n=>!n.finished&&n.time-2000<msTime);
   speedMap.forEach(ev=>{ev.warned=ev.time<msTime;});
-  particles=[];judgments=[];activeKeys=[false,false,false,false];
+  particles=[];judgments=[];activeKeys=new Array(LANE_COUNT).fill(false);heldKeyTokens.clear();
   guideMsgEl.className='';guideMsgEl.innerText='';
   const mm=Math.floor(time/60).toString().padStart(2,'0');
   const ss=Math.floor(time%60).toString().padStart(2,'0');
   timeDisplay.innerText=`${mm}:${ss}`;
-  if(isPaused)drawGameScreen(msTime);
+  if(isPaused){
+    camState=getCameraState(msTime, window.runtimeCameraEvents);
+    camFlipX=getCameraFlip('x', msTime, window.runtimeCamFlipXEvents);
+    camFlipY=getCameraFlip('y', msTime, window.runtimeCamFlipYEvents);
+    camZoom=getCameraZoom(msTime, window.runtimeCamZoomEvents);
+    updateFxRuntime(msTime);
+    drawGameScreen(msTime);
+  }
 });
 function togglePauseTest(){
   if(gameFinished)return;
@@ -2449,10 +4835,12 @@ function togglePauseTest(){
 function rewindTest(){
   audio.currentTime=0;
   gameNotes.forEach(n=>{n.finished=false;n.hit=false;n.holding=false;n.audioPlayed=false;});
-  activeNotes=[];particles=[];judgments=[];activeKeys=[false,false,false,false];
+  activeNotes=[];particles=[];judgments=[];activeKeys=new Array(LANE_COUNT).fill(false);heldKeyTokens.clear();
   combo=0;score=0;updateGameHUD();
   lineStates=DEFAULT_LINE.map(l=>({...l}));
-  linePulsePhase=[0,0,0,0];
+  linePulsePhase=new Array(LANE_COUNT).fill(0);
+  camState={x:0,y:0,angle:0};camFlipX=false;camFlipY=false;camZoom=1;
+  resetFxRuntime();
   if(isPaused){drawGameScreen(0);seekBar.value=0;timeDisplay.innerText='00:00';}
 }
 rateSlider.addEventListener('input',e=>{
@@ -2463,6 +4851,7 @@ rateSlider.addEventListener('input',e=>{
 // ─── RESULT ───
 function showResult(){
   try{
+    resetFxRuntime();
     const rate=totalHits>0?totalRateSum/totalHits:0;
     let rank='F';
     if(rate>=95)rank='S';else if(rate>=90)rank='A';else if(rate>=80)rank='B';else if(rate>=70)rank='C';
@@ -2502,8 +4891,90 @@ function showResult(){
 function closeResult(){stopTestMode();if(songParam)window.location.href='index.html';}
 
 // ─── KEYBOARD ───
-const KEY_MAP=['d','f','j','k'];
+// 라인별로 "여러 개의 키"를 바인딩할 수 있음 (예: 가운데 라인에 D와 L을 공용으로) → 각 라인이 배열
+let KEY_MAP=[['s'],['d'],['f'],['space'],['j'],['k'],['l']];
+// 자주 쓰는 키 배치 프리셋
+const KEY_PRESETS={
+  key7: [['s'],['d'],['f'],['space'],['j'],['k'],['l']], // 7키: S D F SPACE J K L (한 라인당 키 1개)
+  // 8키 공용 배치: LShift / A S D / L ; ' / RShift — 가운데 쪽 키(D, L)는 라인4 하나만 처리하는 공용키
+  key8shared: [['shiftleft'],['a'],['s'],['d','l'],[';'],["'"],['shiftright']],
+  // F/J 겸용 배치: 스페이스 없이 S D F J K L 6개 물리키로 7라인 처리 — 가운데(라인4)는 F,J 둘 다로 침
+  keyFJshared: [['s'],['d'],['f'],['f','j'],['j'],['k'],['l']],
+};
+function keyLabel(tok){
+  if(tok==='space') return 'SPACE';
+  if(tok==='shiftleft') return 'L-SHIFT';
+  if(tok==='shiftright') return 'R-SHIFT';
+  return tok.toUpperCase();
+}
+function lineKeyLabel(lane){ return (KEY_MAP[lane]||[]).map(keyLabel).join('/'); }
+// 구버전(문자열 1개짜리) keyMap 데이터와 신버전(라인당 여러 키 배열)을 모두 지원
+function normalizeKeyMapData(km){
+  if(!Array.isArray(km)) return null;
+  return km.map(entry=>Array.isArray(entry)?entry.slice():[entry]);
+}
+function applyKeyPreset(name){
+  const preset=KEY_PRESETS[name];
+  if(!preset)return;
+  KEY_MAP=preset.map(arr=>arr.slice());
+  // 프리셋을 바꾸면 그 프리셋의 모든 라인이 기본적으로 켜진 상태가 되도록 초기화
+  // (이전 프리셋 기준으로 남아있던 "활성 라인 인덱스"가 새 프리셋에서는 엉뚱한 키를 꺼버리는 문제 방지)
+  DEFAULT_ACTIVE_COUNT=LANE_COUNT;
+  DEFAULT_ACTIVE_SET=Array.from({length:LANE_COUNT},(_,i)=>i);
+  const hint=document.getElementById('init-key-hint');
+  if(hint) hint.textContent=`지금 설정: 이 프리셋의 ${LANE_COUNT}개 라인이 전부 기본으로 켜진 상태로 시작 (필요하면 위 "초기 키 개수"로 다시 줄일 수 있음)`;
+  const initInput=document.getElementById('init-key-count');
+  if(initInput) initInput.value=LANE_COUNT;
+  awaitingKeyRemapIndex=-1;
+  awaitingReplaceInfo=null;
+  renderKeyMapUI();
+  refreshKeyLabelsUI();
+}
+// 키보드 이벤트를 KEY_MAP과 비교 가능한 토큰으로 정규화
+// (스페이스바는 e.key가 ' ', 좌/우 Shift는 e.key가 둘 다 'Shift'라서 e.code로 구분 필요)
+function normalizeKeyEvent(e){
+  if(e.code==='Space'||e.key===' ') return 'space';
+  if(e.code==='ShiftLeft') return 'shiftleft';
+  if(e.code==='ShiftRight') return 'shiftright';
+  return e.key.toLowerCase();
+}
 window.addEventListener('keydown',e=>{
+  // 기존에 배정된 특정 키를 바로 교체하는 중이면 다음 입력으로 그 키를 대체
+  if(awaitingReplaceInfo){
+    e.preventDefault();
+    const {lineIdx,oldKey}=awaitingReplaceInfo;
+    if(e.key==='Escape'){ awaitingReplaceInfo=null; renderKeyMapUI(); return; } // ESC = 취소
+    const tok=normalizeKeyEvent(e);
+    if(tok===oldKey){ awaitingReplaceInfo=null; renderKeyMapUI(); return; } // 같은 키면 그냥 취소
+    const dupLine=KEY_MAP.findIndex((keys,idx)=>idx!==lineIdx&&keys.includes(tok));
+    if(dupLine!==-1){
+      const ok=confirm(`이 키는 이미 L${dupLine+1}에서도 쓰고 있어요. 그래도 L${lineIdx+1}에 겸용키로 바꿀까요?\n(같은 키를 누르면 두 라인 중 판정 가능한 노트가 있는 쪽이 맞습니다)`);
+      if(!ok){ awaitingReplaceInfo=null; renderKeyMapUI(); return; }
+    }
+    const idx=KEY_MAP[lineIdx].indexOf(oldKey);
+    if(idx!==-1) KEY_MAP[lineIdx][idx]=tok;
+    awaitingReplaceInfo=null;
+    renderKeyMapUI();
+    refreshKeyLabelsUI();
+    return;
+  }
+  // 키 설정(리매핑) 대기 중이면 다음 입력을 그 라인에 "추가"
+  if(awaitingKeyRemapIndex>=0){
+    e.preventDefault();
+    if(e.key==='Escape'){ awaitingKeyRemapIndex=-1; renderKeyMapUI(); return; } // ESC = 취소
+    const tok=normalizeKeyEvent(e);
+    const dupLine=KEY_MAP.findIndex(keys=>keys.includes(tok));
+    if(dupLine!==-1){
+      const ok=confirm(`이 키는 이미 L${dupLine+1}에서도 쓰고 있어요. 그래도 L${awaitingKeyRemapIndex+1}의 겸용키로 추가할까요?\n(같은 키를 누르면 두 라인 중 판정 가능한 노트가 있는 쪽이 맞습니다)`);
+      if(!ok){ awaitingKeyRemapIndex=-1; renderKeyMapUI(); return; }
+    }
+    KEY_MAP[awaitingKeyRemapIndex].push(tok);
+    awaitingKeyRemapIndex=-1;
+    renderKeyMapUI();
+    refreshKeyLabelsUI();
+    return;
+  }
+
   // Undo/Redo — 입력창 포커스 중이 아닐 때 (게임 테스트 중 제외)
   if((e.ctrlKey||e.metaKey) && !isGameTesting && e.target.tagName!=='INPUT'){
     const k=e.key.toLowerCase();
@@ -2520,20 +4991,33 @@ window.addEventListener('keydown',e=>{
 
   if(e.code==='Space'){
     e.preventDefault();
-    if(isGameTesting)togglePauseTest();
-    else if(!songParam)toggleEditPlay();
+    // 스페이스가 라인 히트키로 쓰일 수 있으므로, 테스트/플레이 중에는 일시정지 단축키로 사용하지 않음
+    // (일시정지는 화면의 PAUSE 버튼 사용)
+    if(!isGameTesting&&!songParam) toggleEditPlay();
   }
   if(e.code==='Enter'&&!isGameTesting&&!songParam){
     startTestMode(document.getElementById('chk-auto').checked);
   }
   if(e.code==='Escape'&&isGameTesting&&!songParam)stopTestMode();
 
-  const li=KEY_MAP.indexOf(e.key.toLowerCase());
+  const tok=normalizeKeyEvent(e);
+  const candidateLanes=[];
+  KEY_MAP.forEach((keys,idx)=>{ if(keys.includes(tok)) candidateLanes.push(idx); });
+  if(isGameTesting&&candidateLanes.length){
+    // 브라우저 기본 동작(예: 파이어폭스의 "'" 빠른 찾기 등) 때문에 포커스가 다른 곳으로 새서
+    // keyup을 못 받는 문제를 막기 위해, 인식된 게임 키는 기본 동작을 항상 막음
+    e.preventDefault();
+  }
   if(isGameTesting&&!gameFinished&&!isAutoMode&&!isPaused){
-    if(li!==-1&&!activeKeys[li]){activeKeys[li]=true;checkHit(li);}
+    if(candidateLanes.length&&!heldKeyTokens.has(tok)){
+      heldKeyTokens.add(tok);
+      candidateLanes.forEach(l=>activeKeys[l]=true);
+      checkHit(candidateLanes); // 후보 라인들 중 지금 판정 가능한 노트가 있는 라인 하나를 골라서 침
+    }
   }
 
-  if(isEditPlaying&&isRecording&&li!==-1){
+  if(isEditPlaying&&isRecording&&candidateLanes.length){
+    const li=candidateLanes[0]; // 겸용키인 경우 채보 기록은 첫 번째 후보 라인에
     const chartMs=audio.currentTime*1000-offset;
     const mpm=(60/bpm)*(4/beatDenom)*beatNum*1000;
     const total=chartMs/mpm;let mi=Math.floor(total);
@@ -2548,11 +5032,34 @@ window.addEventListener('keydown',e=>{
   }
 });
 window.addEventListener('keyup',e=>{
+  const tok=normalizeKeyEvent(e);
+  heldKeyTokens.delete(tok);
   if(isGameTesting&&!gameFinished&&!isAutoMode&&!isPaused){
-    const li=KEY_MAP.indexOf(e.key.toLowerCase());
-    if(li!==-1){activeKeys[li]=false;checkRelease(li);}
+    const candidateLanes=[];
+    KEY_MAP.forEach((keys,idx)=>{ if(keys.includes(tok)) candidateLanes.push(idx); });
+    if(candidateLanes.length){
+      candidateLanes.forEach(l=>activeKeys[l]=false);
+      checkRelease(candidateLanes);
+    }
   }
 });
+
+// 브라우저가 포커스를 잃거나(다른 창/찾기창 등으로 포커스 이동) 탭이 백그라운드로 가면
+// keyup을 못 받아서 "눌린 상태(빔 효과)"가 영구히 남는 경우가 있어 안전하게 전부 떼줌
+function releaseAllHeldKeys(){
+  if(!heldKeyTokens.size && !activeKeys.some(v=>v))return;
+  heldKeyTokens.forEach(tok=>{
+    const candidateLanes=[];
+    KEY_MAP.forEach((keys,idx)=>{ if(keys.includes(tok)) candidateLanes.push(idx); });
+    if(candidateLanes.length && isGameTesting && !gameFinished && !isAutoMode && !isPaused){
+      checkRelease(candidateLanes);
+    }
+  });
+  heldKeyTokens.clear();
+  activeKeys=new Array(LANE_COUNT).fill(false);
+}
+window.addEventListener('blur',releaseAllHeldKeys);
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) releaseAllHeldKeys(); });
 
 // ─── URL PARAM GAME START ───
 if(songParam&&diffParam){
@@ -2602,8 +5109,13 @@ window.addEventListener('mouseup',()=>isDraggingPopup=false);
 //  INITIAL RENDER
 // ═══════════════════════════════════════════════════════════════
 resizeEditor();
+applyInitialKeyLayout(DEFAULT_ACTIVE_COUNT);
 drawGrid();
 renderKfList();
+refreshKeyLabelsUI();
+buildFxTypeGrid();
+renderFxKfList();
+syncFxEnvButtons();
 </script>
 </body>
 </html>

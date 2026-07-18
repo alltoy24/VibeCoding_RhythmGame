@@ -6,9 +6,9 @@
     "pack": "Core1",
     "previewStart": 12,
     "charts": [
-      { "name": "Normal", "level": 4, "file": "normal_4.json" },
-      { "name": "Hard", "level": 8, "file": "hard_8.json" },
-      { "name": "Troll", "level": 11, "file": "troll_11.json" }
+      { "name": "Normal", "level": 4, "file": "normal_4.json", "stats": { "stamina": 2, "speed": 20, "pattern": 8, "rhythm": 8, "readability": 2 } },
+      { "name": "Hard", "level": 8, "file": "hard_8.json", "stats": { "stamina": 3, "speed": 20, "pattern": 13, "rhythm": 15, "readability": 5 } },
+      { "name": "Troll", "level": 11, "file": "troll_11.json", "stats": { "stamina": 10, "speed": 20, "pattern": 32, "rhythm": 24, "readability": 8 } }
     ]
   },
   {
@@ -18,9 +18,9 @@
     "pack": "Core1",
     "previewStart": 40,
     "charts": [
-      { "name": "Normal", "level": 1, "file": "normal_1.json" },
-      { "name": "Hard", "level": 6, "file": "hard_6.json" },
-      { "name": "Troll", "level": "12+", "file": "troll_13.json" }
+      { "name": "Normal", "level": 1, "file": "normal_1.json", "stats": { "stamina": 1, "speed": 10, "pattern": 0, "rhythm": 1, "readability": 0 }},
+      { "name": "Hard", "level": 6, "file": "hard_6.json", "stats": { "stamina": 6, "speed": 10, "pattern": 5, "rhythm": 10, "readability": 3 } },
+      { "name": "Troll", "level": "12+", "file": "troll_13.json", "stats": { "stamina": 23, "speed": 25, "pattern": 26, "rhythm": 27, "readability": 5 } }
     ]
   },
   {
@@ -30,8 +30,8 @@
     "pack": "Core1",
     "previewStart": 25,
     "charts": [
-      { "name": "Normal", "level": 5, "file": "normal_5.json" },
-      { "name": "Troll", "level": 16, "file": "troll_16.json" }
+      { "name": "Normal", "level": 5, "file": "normal_5.json", "stats": { "stamina": 12, "speed": 10, "pattern": 8, "rhythm": 16, "readability": 2 } },
+      { "name": "Troll", "level": 16, "file": "troll_16.json", "stats": { "stamina": 40, "speed": 45, "pattern": 51, "rhythm": 30, "readability": 16 } }
     ]
   },
   {
@@ -41,8 +41,8 @@
     "pack": "Core1",
     "previewStart": 58,
     "charts": [
-      { "name": "Hard", "level": "13+", "file": "hard_14.json" },
-      { "name": "Troll", "level": "16+", "file": "troll_17.json" }
+      { "name": "Hard", "level": "13+", "file": "hard_14.json", "stats": { "stamina": 29, "speed": 30, "pattern": 44, "rhythm": 20, "readability": 8 } },
+      { "name": "Troll", "level": "16+", "file": "troll_17.json", "stats": { "stamina": 64, "speed": 40, "pattern": 72, "rhythm": 23, "readability": 59 } }
     ]
   },
   {
@@ -52,7 +52,7 @@
     "pack": "Core1",
     "previewStart": 43,
     "charts": [
-      { "name": "Troll", "level": "14+", "file": "troll_15.json"}
+      { "name": "Troll", "level": "14+", "file": "troll_15.json", "stats": { "stamina": 50, "speed": 56, "pattern": 30, "rhythm": 35, "readability": 68 } }
     ]
   },
   {
@@ -62,7 +62,7 @@
     "pack": "Core1",
     "previewStart": 10,
     "charts": [
-      { "name": "Troll", "level": "17+", "file": "troll_18.json" }
+      { "name": "Troll", "level": "17+", "file": "troll_18.json", "stats": { "stamina": 80, "speed": 72, "pattern": 46, "rhythm": 88, "readability": 85 } }
     ]
   },
   {
@@ -72,7 +72,7 @@
     "pack": "Core1",
     "previewStart": 53,
     "charts": [
-      { "name": "Hard", "level": 6, "file": "hard_6.json" }
+      { "name": "Hard", "level": 6, "file": "hard_6.json", "stats": { "stamina": 8, "speed": 16, "pattern": 9, "rhythm": 18, "readability": 4 } }
     ]
   },
   {
@@ -82,7 +82,7 @@
     "pack": "Reference1",
     "previewStart": 46.5,
     "charts": [
-      { "name": "Troll", "level": 15, "file": "troll_15.json" }
+      { "name": "Troll", "level": 15, "file": "troll_15.json", "stats": { "stamina": 58, "speed": 58, "pattern": 34, "rhythm": 27, "readability": 11 } }
     ]
   },
   {
@@ -92,8 +92,8 @@
     "pack": "Reference1",
     "previewStart": 85,
     "charts": [
-      { "name": "Hard", "level": 10, "file": "hard_10.json" },
-      { "name": "Troll", "level": "19+", "file": "troll_19.json" }
+      { "name": "Normal", "level": 10, "file": "normal_10.json", "stats": { "stamina": 34, "speed": 56, "pattern": 21, "rhythm": 34, "readability": 19 } },
+      { "name": "Troll", "level": "19+", "file": "troll_19.json", "stats": { "stamina": 98, "speed": 109, "pattern": 62, "rhythm": 49, "readability": 51 } }
     ]
   },
   {
@@ -103,8 +103,8 @@
     "pack": "Community1",
     "previewStart": 18,
     "charts": [
-      { "name": "Hard", "level": 5, "file": "hard_5.json" },
-      { "name": "Extra", "level": 9, "file": "extra_9.json", "customColor": "#00ff88" }
+      { "name": "Hard", "level": 5, "file": "hard_5.json", "stats": { "stamina": 2, "speed": 7, "pattern": 8, "rhythm": 12, "readability": 2 } },
+      { "name": "Extra", "level": 9, "file": "extra_9.json", "customColor": "#00ff88", "stats": { "stamina": 12, "speed": 21, "pattern": 62, "rhythm": 39, "readability": 45 } }
     ]
   },
   {
@@ -114,7 +114,17 @@
     "pack": "Core2",
     "previewStart": 0,
     "charts": [
-      { "name": "Normal", "level": 3, "file": "normal_3.json" }
+      { "name": "Normal", "level": 3, "file": "normal_3.json", "stats": { "stamina": 2, "speed": 6, "pattern": 2, "rhythm": 3, "readability": 45 } }
+    ]
+  },
+  {
+    "folder": "GetDat",
+    "title": "Get Dat",
+    "artist": "Righten",
+    "pack": "Core2",
+    "previewStart": 50,
+    "charts": [
+      { "name": "Troll", "level": "19", "file": "troll_19.json", "stats": { "stamina": 40, "speed": 88, "pattern": 56, "rhythm": 27, "readability": 145 } }
     ]
   }
 ]

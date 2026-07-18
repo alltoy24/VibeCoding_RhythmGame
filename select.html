@@ -17,6 +17,11 @@
             --diff-yellow: #ffc832;
             --diff-red:    #ff4455;
             --diff-purple: #c060ff;
+            /* 배경 밝기에 따라 JS가 갱신하는 적응형 텍스트 색상 (기본값 = 어두운 배경 기준) */
+            --adapt-fg: #333;
+            --adapt-fg2: #222;
+            --adapt-chip-bg: rgba(255,255,255,0.04);
+            --adapt-chip-border: #1e1e2e;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -70,11 +75,24 @@
         .topbar-right { display: flex; gap: 10px; align-items: center; }
         .btn-icon { width: 38px; height: 38px; border-radius: 50%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: #888; font-size: 16px; cursor: pointer; display: flex; justify-content: center; align-items: center; transition: all 0.2s; backdrop-filter: blur(4px); }
         .btn-icon:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,242,255,0.08); box-shadow: 0 0 10px rgba(0,242,255,0.3); }
+        .btn-icon.view-toggle-active { border-color: var(--accent); color: var(--accent); background: rgba(0,242,255,0.1); box-shadow: 0 0 10px rgba(0,242,255,0.3); }
         .btn-create { text-decoration: none; color: #000; font-family: 'Orbitron'; font-size: 11px; font-weight: 700; background: var(--accent); padding: 8px 18px; border-radius: 20px; transition: 0.2s; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; box-shadow: 0 0 12px rgba(0,242,255,0.25); }
         .btn-create:hover { box-shadow: 0 0 22px rgba(0,242,255,0.5); filter: brightness(1.08); }
 
+        /* ── 정렬 컨트롤 ── */
+        .sort-control { display: flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 20px; padding: 3px 4px 3px 12px; }
+        .sort-select-mini {
+            background: transparent; border: none; color: #ccc;
+            font-family: 'Orbitron'; font-size: 9.5px; font-weight: 700;
+            letter-spacing: 0.5px; outline: none; cursor: pointer; padding: 5px 2px;
+        }
+        .sort-select-mini option { background: #0a0a16; color: #ddd; }
+        .sort-dir-btn { width: 26px; height: 26px; font-size: 12px; border-radius: 50%; }
+
         /* ══ MAIN ══ */
         .main { flex: 1; display: flex; position: relative; z-index: 10; overflow: hidden; min-height: 0; }
+        .main.grid-mode .list-panel, .main.grid-mode .detail-panel, .main.grid-mode .ranking-sidebar { display: none !important; }
+        .main.grid-mode .grid-panel { display: flex; }
 
         /* ── 리스트 패널 ── */
         .list-panel {
@@ -92,6 +110,33 @@
         .list-panel::after  { bottom: 0; background: linear-gradient(to top, rgba(4,4,16,0.9), transparent); }
         .list-inner { flex: 1; overflow: hidden; position: relative; }
         .list-wrap { position: absolute; width: 100%; transition: transform 0.38s cubic-bezier(0.22, 0.8, 0.22, 1); will-change: transform; }
+
+        /* ── 그리드(전체보기) 패널 ── */
+        .grid-panel { display: none; flex: 1; flex-direction: column; min-width: 0; overflow: hidden; padding: 18px 26px 10px; }
+        .grid-panel-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 14px; flex-shrink: 0; }
+        .grid-panel-title { font-family: 'Orbitron'; font-size: 14px; font-weight: 700; letter-spacing: 2px; color: #fff; }
+        .grid-panel-sub { font-family: 'Orbitron'; font-size: 9.5px; letter-spacing: 1px; color: #556; }
+        .grid-scroll { flex: 1; overflow-y: auto; padding-right: 4px; }
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 14px; padding-bottom: 20px; }
+        .grid-card {
+            position: relative; border-radius: 12px; overflow: hidden; cursor: pointer;
+            background: rgba(255,255,255,0.025); border: 1px solid rgba(255,255,255,0.07);
+            transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+        }
+        .grid-card:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: 0 6px 22px rgba(0,0,0,0.4), 0 0 14px rgba(0,242,255,0.2); }
+        .grid-card.active { border-color: var(--cur-diff); box-shadow: 0 0 0 2px var(--cur-diff), 0 6px 20px rgba(0,0,0,0.4); }
+        .grid-cover {
+            width: 100%; aspect-ratio: 1 / 1; position: relative;
+            background: linear-gradient(135deg, #0d0d1e 0%, #131328 100%);
+            background-size: cover; background-position: center;
+            display: flex; align-items: center; justify-content: center; font-size: 26px; color: #333;
+        }
+        .grid-cover .warn-badge { top: 6px; right: 6px; }
+        .grid-info { padding: 8px 10px 10px; }
+        .grid-song-title { font-size: 12px; font-weight: 700; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .grid-song-artist { font-size: 9.5px; color: #667; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .grid-diff-row { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 7px; }
+        .grid-diff-pill { font-family: 'Orbitron'; font-size: 8px; font-weight: 800; padding: 2px 5px; border-radius: 4px; color: #000; letter-spacing: 0.3px; }
 
         .song-item {
             width: 100%; height: 68px;
@@ -118,7 +163,7 @@
             background: linear-gradient(135deg, #0d0d1e 0%, #131328 100%);
             border: 1px solid rgba(255,255,255,0.06);
             display: flex; align-items: center; justify-content: center;
-            font-size: 18px; overflow: hidden;
+            font-size: 18px; overflow: visible; position: relative;
             transition: border-color 0.25s, box-shadow 0.25s;
             margin: 0 10px;
             background-size: cover; background-position: center;
@@ -134,6 +179,20 @@
         .idot.normal { background: var(--diff-blue); }
         .idot.hard   { background: var(--diff-red); }
         .idot.troll  { background: #8217ee; }
+
+        /* ── 곡 경고 뱃지 (특이 기믹이 있는 곡을 한눈에 알아볼 수 있게) ── */
+        .warn-badge {
+            position: absolute; top: -5px; right: -5px; z-index: 3;
+            width: 17px; height: 17px; border-radius: 50%;
+            background: linear-gradient(135deg, #ffc832, #ff9500);
+            color: #1a1200; font-size: 10px; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 7px rgba(255,180,40,0.7), 0 1px 3px rgba(0,0,0,0.5);
+            border: 1.5px solid rgba(10,8,4,0.5);
+            cursor: default; animation: warnPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes warnPulse { 0%,100%{ transform:scale(1); } 50%{ transform:scale(1.12); } }
+        .warn-tip .gimmick-tip-title { color: #ffb020; }
 
         /* ── 디테일 패널 ── */
         .detail-panel {
@@ -176,6 +235,12 @@
         .big-cover::after { content: ""; position: absolute; top: 0; left: 0; right: 0; height: 50%; background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, transparent 100%); border-radius: 10px 10px 0 0; pointer-events: none; }
 
         .song-meta { flex: 1; display: flex; flex-direction: column; gap: 6px; padding-top: 4px; min-width: 0; }
+        .meta-title-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+        .meta-title-block { min-width: 0; }
+        .meta-quick-stats { display: flex; gap: 22px; flex-shrink: 0; padding-top: 3px; }
+        .meta-quick-stat { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+        .meta-quick-stat-label { font-family: 'Orbitron'; font-size: 8px; letter-spacing: 2px; color: #4a5268; }
+        .meta-quick-stat-value { font-family: 'Orbitron'; font-size: 16px; font-weight: 700; color: #e8e8f0; text-shadow: 0 0 12px rgba(0,242,255,0.2); }
         .meta-title { font-size: 20px; font-weight: 700; line-height: 1.2; color: #fff; transition: opacity 0.2s, transform 0.2s; }
         .meta-title.fade { opacity: 0; transform: translateX(8px); }
         .meta-artist { font-size: 12px; color: #555; font-style: italic; transition: opacity 0.2s, transform 0.2s; }
@@ -222,7 +287,7 @@
         /* ══ DIFF ══ */
         .diff-area { display: flex; flex-direction: column; gap: 9px; flex-shrink: 0; }
         .diff-indicator-row { display: flex; align-items: center; gap: 6px; }
-        .diff-ind-label { font-family: 'Orbitron'; font-size: 8px; letter-spacing: 3px; color: #2a2a3a; flex-shrink: 0; }
+        .diff-ind-label { font-family: 'Orbitron'; font-size: 8px; letter-spacing: 3px; color: var(--adapt-fg2); flex-shrink: 0; transition: color 0.3s; }
         .diff-indicators { display: flex; gap: 5px; align-items: center; }
         .diff-ind-chip { height: 4px; width: 26px; border-radius: 2px; background: rgba(255,255,255,0.08); transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1); cursor: pointer; position: relative; }
         .diff-ind-chip::after { content: attr(data-label); position: absolute; top: -15px; left: 50%; transform: translateX(-50%); font-family: 'Orbitron'; font-size: 7px; letter-spacing: 1px; color: transparent; white-space: nowrap; transition: color 0.3s; }
@@ -242,11 +307,77 @@
         .diff-card-right { display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; padding: 9px 10px; flex-shrink: 0; }
         .diff-card-badge { font-size: 16px; line-height: 1; }
         .diff-card-score { font-family: 'Orbitron'; font-size: 9px; color: #333; }
+
+        /* ══ GIMMICK ICONS ══ */
+        .gimmick-row { display: flex; align-items: center; gap: 8px; min-height: 30px; padding: 0 2px; margin-top: 6px; }
+
+        /* ══ GIMMICKS + CHART STATS: 같은 행에 나란히 배치 (오른쪽 빈 공간 활용) ══ */
+        .stats-section-label { font-family: 'Orbitron'; font-size: 8px; letter-spacing: 3px; color: #626c86; margin-top: 4px; }
+        .gimmick-stats-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; }
+        .gimmick-col { flex-shrink: 0; }
+        .chart-stats-card {
+            display: none; opacity: 0; align-items: center; gap: 22px;
+            padding: 0; flex-shrink: 0;
+            transition: opacity 0.35s ease;
+        }
+        .chart-stats-card.show { display: flex; }
+        .chart-stats-card.fade-in { opacity: 1; }
+        .chart-stats-card-title { font-family: 'Orbitron'; font-size: 7.5px; letter-spacing: 2.5px; color: #56607a; text-align: center; margin-bottom: 4px; }
+        .chart-radar-wrap { display: flex; justify-content: center; filter: drop-shadow(0 0 8px rgba(0,242,255,0.18)); flex-shrink: 0; }
+        .chart-radar-axis-label { font-family: 'Orbitron'; font-size: 7.5px; letter-spacing: 0.5px; fill: #8a8aa0; }
+        .chart-radar-value-label { font-family: 'Orbitron'; font-size: 8px; fill: #00f2ff; font-weight: 700; }
+        .chart-meta-stats { display: flex; flex-direction: column; gap: 10px; padding-left: 14px; border-left: 1px solid rgba(255,255,255,0.07); }
+        .chart-meta-stat { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+        .chart-meta-stat-label { font-family: 'Orbitron'; font-size: 7.5px; letter-spacing: 1.5px; color: #56607a; }
+        .chart-meta-stat-value { font-family: 'Orbitron'; font-size: 16px; font-weight: 700; color: #fff; text-shadow: 0 0 10px rgba(0,242,255,0.25); }
+        .gimmick-empty { font-family: 'Orbitron'; font-size: 9px; letter-spacing: 1px; color: #2a2a3a; }
+        .gimmick-icon {
+            position: relative; width: 30px; height: 30px; border-radius: 8px;
+            background: rgba(255,255,255,0.035); border: 1px solid rgba(255,255,255,0.09);
+            display: flex; align-items: center; justify-content: center;
+            color: #666; cursor: default; transition: all 0.2s;
+        }
+        .gimmick-icon svg { width: 16px; height: 16px; display: block; }
+        .gimmick-icon:hover {
+            color: var(--gimmick-color, var(--accent));
+            border-color: var(--gimmick-color, var(--accent));
+            background: rgba(255,255,255,0.07);
+            box-shadow: 0 0 10px var(--gimmick-glow, rgba(0,242,255,0.35)), 0 1px 0 rgba(255,255,255,0.06);
+        }
+        .gimmick-tip {
+            position: fixed; left: 0; top: 0;
+            min-width: 168px; max-width: 260px;
+            background: rgba(8,8,20,0.96); backdrop-filter: blur(10px);
+            border: 1px solid var(--gimmick-color, var(--accent));
+            border-radius: 8px; padding: 9px 11px;
+            opacity: 0; pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            transform: translateY(4px);
+            z-index: 500; box-shadow: 0 6px 24px rgba(0,0,0,0.5), 0 0 14px var(--gimmick-glow, rgba(0,242,255,0.25));
+        }
+        .gimmick-tip.show { opacity: 1; transform: translateY(0); }
+        .gimmick-tip-title {
+            font-family: 'Orbitron'; font-size: 10px; font-weight: 700; letter-spacing: 1px;
+            color: var(--gimmick-color, var(--accent)); margin-bottom: 4px; white-space: nowrap;
+        }
+        .gimmick-tip-desc { font-size: 10.5px; color: #ccc; line-height: 1.45; }
+        .gimmick-tip-timeline { display: flex; flex-direction: column; gap: 4px; margin-top: 2px; }
+        .gimmick-tip-timeline-row { display: flex; align-items: baseline; gap: 7px; font-size: 10px; }
+        .gimmick-tip-timeline-t { font-family: 'Orbitron'; color: #667; flex-shrink: 0; min-width: 32px; }
+        .gimmick-tip-timeline-keys { color: #fff; font-weight: 600; letter-spacing: 0.3px; }
+        .gimmick-tip-timeline-count { color: var(--gimmick-color, var(--accent)); font-weight: 700; margin-right: 4px; }
+        .gimmick-count-badge {
+            position: absolute; top: -6px; right: -6px; min-width: 15px; height: 15px; padding: 0 3px;
+            border-radius: 8px; background: var(--gimmick-color, var(--accent)); color: #000;
+            font-family: 'Orbitron'; font-size: 9px; font-weight: 900; line-height: 15px; text-align: center;
+            box-shadow: 0 0 6px var(--gimmick-glow, rgba(0,242,255,0.5));
+        }
+        .gimmick-loading { width: 30px; height: 30px; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06); }
         .diff-nav { display: flex; align-items: center; gap: 8px; justify-content: flex-end; }
         .diff-arrow { width: 28px; height: 28px; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; background: rgba(255,255,255,0.03); color: #333; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; font-family: 'Orbitron'; }
         .diff-arrow:hover:not(:disabled) { border-color: var(--cur-diff); color: var(--cur-diff); background: rgba(0,242,255,0.06); box-shadow: 0 0 8px var(--cur-diff-glow); }
         .diff-arrow:disabled { opacity: 0.15; cursor: default; }
-        .diff-arrow-hint { font-family: 'Orbitron'; font-size: 8px; color: #222; letter-spacing: 2px; }
+        .diff-arrow-hint { font-family: 'Orbitron'; font-size: 8px; color: var(--adapt-fg2); letter-spacing: 2px; transition: color 0.3s; }
 
         /* ── PLAY ROW ── */
         .play-row { margin-top: auto; display: flex; gap: 10px; align-items: stretch; }
@@ -255,9 +386,9 @@
         .btn-play:hover::before { transform: translateX(200%) skewX(-15deg); }
         .btn-play:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.5); }
         .btn-play:active { transform: scale(0.98); }
-        .key-hint-row { display: flex; gap: 5px; align-items: center; flex-wrap: wrap; }
-        .kh { font-family: 'Orbitron'; font-size: 8px; letter-spacing: 1px; color: #333; background: rgba(255,255,255,0.04); border: 1px solid #1e1e2e; border-radius: 4px; padding: 3px 6px; }
-        .kh-sep { color: #222; font-size: 9px; }
+        .key-hint-row { position: fixed; left: 20px; bottom: 52px; z-index: 50; display: flex; gap: 5px; align-items: center; flex-wrap: wrap; max-width: 270px; pointer-events: none; }
+        .kh { font-family: 'Orbitron'; font-size: 8px; letter-spacing: 1px; color: var(--adapt-fg); background: var(--adapt-chip-bg); border: 1px solid var(--adapt-chip-border); border-radius: 4px; padding: 3px 6px; transition: color 0.3s, background 0.3s, border-color 0.3s; }
+        .kh-sep { color: var(--adapt-fg2); font-size: 9px; transition: color 0.3s; }
 
         /* ═══════════════════════════════════════
            ★ RANKING SIDEBAR
@@ -502,7 +633,6 @@
 
         /* 팩별 달성률 */
         .pcs-pack-list { display: flex; flex-direction: column; gap: 6px; }
-        .pcs-pack-item {}
         .pcs-pack-header { display: flex; justify-content: space-between; margin-bottom: 3px; }
         .pcs-pack-name { font-size: 8px; color: #666; letter-spacing: 1px; }
         .pcs-pack-pct { font-size: 8px; font-weight: 700; color: #fff; }
@@ -511,7 +641,10 @@
 
         /* ══ MODALS ══ */
         .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,10,0.75); z-index: 2000; justify-content: center; align-items: center; backdrop-filter: blur(12px) saturate(0.8); }
-        .modal-box { background: rgba(8,8,20,0.92); border: 1px solid rgba(0,242,255,0.15); border-radius: 16px; padding: 36px; box-shadow: 0 0 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04); text-align: center; min-width: 400px; position: relative; backdrop-filter: blur(24px); }
+        .modal-box { background: rgba(8,8,20,0.92); border: 1px solid rgba(0,242,255,0.15); border-radius: 16px; padding: 36px; box-shadow: 0 0 80px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.04); text-align: center; min-width: 400px; max-height: 88vh; overflow-y: auto; position: relative; backdrop-filter: blur(24px); }
+        .modal-box::-webkit-scrollbar { width: 7px; }
+        .modal-box::-webkit-scrollbar-thumb { background: rgba(0,242,255,0.25); border-radius: 4px; }
+        .modal-box::-webkit-scrollbar-track { background: transparent; }
         .modal-title { font-family: 'Orbitron'; font-size: 20px; color: var(--accent); margin-bottom: 24px; letter-spacing: 3px; border-bottom: 1px solid rgba(0,242,255,0.1); padding-bottom: 14px; }
         .modal-close { position: absolute; top: 16px; right: 16px; background: none; border: none; color: #444; font-size: 20px; cursor: pointer; transition: color 0.2s; }
         .modal-close:hover { color: #fff; }
@@ -526,6 +659,24 @@
         .key-btn { width: 44px; height: 44px; border: 2px solid #222; border-radius: 8px; background: rgba(255,255,255,0.03); color: #ccc; font-family: 'Orbitron'; font-weight: bold; font-size: 14px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; justify-content: center; }
         .key-btn:hover { border-color: var(--accent); color: var(--accent); }
         .key-btn.listening { border-color: var(--gold); color: var(--gold); }
+
+        /* ══ KEY CONFIG (7라인) ══ */
+        .key-config-block { width: 100%; text-align: left; }
+        .key-config-preset-row { display: flex; gap: 5px; margin-bottom: 10px; }
+        .key-config-preset-btn { flex: 1; font-family: 'Orbitron'; font-size: 8px; letter-spacing: 0.3px; padding: 7px 4px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: #888; cursor: pointer; transition: 0.2s; line-height: 1.3; }
+        .key-config-preset-btn:hover { border-color: var(--accent); color: var(--accent); background: rgba(0,242,255,0.08); }
+        .key-config-lanes { display: flex; flex-direction: column; gap: 6px; padding-right: 2px; }
+        .key-config-lane-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+        .key-config-lane-label { font-family: 'Orbitron'; font-weight: 900; font-size: 11px; width: 24px; flex-shrink: 0; }
+        .key-config-chip { display: inline-flex; align-items: center; gap: 5px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); border-radius: 5px; padding: 4px 7px; font-family: 'Orbitron'; font-size: 10px; font-weight: 700; color: #ddd; cursor: pointer; transition: 0.2s; }
+        .key-config-chip:hover { border-color: var(--gold); color: var(--gold); }
+        .key-config-chip.listening { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); }
+        .key-config-chip-x { color: #555; font-size: 9px; cursor: pointer; }
+        .key-config-chip-x:hover { color: #ff2d78; }
+        .key-config-add { width: 24px; height: 24px; border-radius: 5px; border: 1px dashed rgba(255,255,255,0.2); background: none; color: #555; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s; flex-shrink: 0; }
+        .key-config-add:hover { border-color: var(--accent); color: var(--accent); }
+        .key-config-add.listening { border-color: var(--gold); color: var(--gold); background: rgba(255,215,0,0.1); }
+        .key-config-hint { font-size: 9px; color: #444; margin-top: 8px; line-height: 1.5; }
         .btn-full { width: 100%; padding: 12px; margin-top: 10px; background: rgba(0,242,255,0.06); border: 1px solid rgba(0,242,255,0.2); color: var(--accent); font-family: 'Orbitron'; font-weight: bold; font-size: 12px; cursor: pointer; border-radius: 8px; transition: 0.2s; letter-spacing: 1px; }
         .btn-full:hover { background: rgba(0,242,255,0.12); }
         .modal-input { background: transparent; border: none; border-bottom: 2px solid var(--accent); color: #fff; font-size: 20px; font-family: 'Orbitron'; text-align: center; width: 100%; outline: none; padding: 10px; margin: 16px 0; }
@@ -608,6 +759,15 @@
         <div class="pack-dots" id="pack-dots"></div>
     </div>
     <div class="topbar-right">
+        <div class="sort-control">
+            <select id="sort-select" class="sort-select-mini" onchange="setSortMode(this.value)">
+                <option value="default">기본 순서</option>
+                <option value="title">사전순 (가나다)</option>
+                <option value="level">난이도순</option>
+            </select>
+            <button class="btn-icon sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()" title="정렬 방향 전환">▲</button>
+        </div>
+        <button class="btn-icon" id="view-toggle-btn" onclick="toggleViewMode()" title="보기 방식 전환 (목록 / 전체보기)">▦</button>
         <button class="btn-icon" onclick="openSettings()">⚙️</button>
         <a href="game_editor.html" class="btn-create">🛠 CREATE</a>
         <button class="btn-icon" onclick="toggleProfile()">👤</button>
@@ -621,12 +781,28 @@
         </div>
     </div>
 
+    <!-- ★ 전체보기(그리드) 패널 — 곡/난이도 종류를 한번에 훑어볼 수 있는 뷰 -->
+    <div class="grid-panel" id="grid-panel">
+        <div class="grid-panel-header">
+            <div class="grid-panel-title" id="grid-panel-title">ALL SONGS</div>
+            <div class="grid-panel-sub" id="grid-panel-sub">— songs</div>
+        </div>
+        <div class="grid-scroll" id="grid-scroll">
+            <div class="grid-cards" id="grid-cards"></div>
+        </div>
+    </div>
+
     <div class="detail-panel" id="detail-panel">
         <div class="cover-row">
             <div class="big-cover" id="big-cover">🎵</div>
             <div class="song-meta">
-                <div class="meta-title" id="meta-title">SELECT A SONG</div>
-                <div class="meta-artist" id="meta-artist">—</div>
+                <div class="meta-title-row">
+                    <div class="meta-title-block">
+                        <div class="meta-title" id="meta-title">SELECT A SONG</div>
+                        <div class="meta-artist" id="meta-artist">—</div>
+                    </div>
+                    <div class="meta-quick-stats" id="meta-quick-stats"></div>
+                </div>
                 <div class="meta-sep"></div>
                 <div class="np-row" id="np-row">
                     <div class="np-dot" id="np-dot"></div>
@@ -662,13 +838,13 @@
             <div class="diff-card-viewport" id="diff-card-viewport">
                 <div class="diff-card-track" id="diff-card-track"></div>
             </div>
-        </div>
-
-        <div class="key-hint-row">
-            <span class="kh">↑ ↓</span><span class="kh-sep">곡</span>
-            <span class="kh">← →</span><span class="kh-sep">난이도</span>
-            <span class="kh">ENTER</span><span class="kh-sep">플레이</span>
-            <span class="kh">SHIFT</span><span class="kh-sep">팩</span>
+            <div class="gimmick-stats-row">
+                <div class="gimmick-col">
+                    <div class="stats-section-label">GIMMICKS</div>
+                    <div class="gimmick-row" id="gimmick-row"></div>
+                </div>
+                <div class="chart-stats-card" id="chart-stats-card"></div>
+            </div>
         </div>
 
         <div class="play-row">
@@ -704,6 +880,14 @@
     </div>
 </div>
 
+<div class="key-hint-row">
+    <span class="kh">↑ ↓</span><span class="kh-sep">곡</span>
+    <span class="kh">← →</span><span class="kh-sep">난이도</span>
+    <span class="kh">ENTER</span><span class="kh-sep">플레이</span>
+    <span class="kh">SHIFT</span><span class="kh-sep">팩</span>
+    <span class="kh">TAB</span><span class="kh-sep">보기전환</span>
+</div>
+
 <div class="bottom-bar">
     <span class="kh">◀ L.SHIFT &nbsp; PACK</span>
     <span style="color:#1a1a2a;font-size:10px;">•</span>
@@ -723,17 +907,17 @@
         <div class="setting-row"><span>JUDGE STYLE</span><select id="judge-style" class="setting-select"><option value="neon">NEON</option><option value="flat">FLAT</option><option value="outline">OUTLINE</option><option value="ripple">RIPPLE</option><option value="linewave">LINE WAVE</option></select><span class="setting-val"></span></div>
         <div class="setting-row"><span>FEVER</span><div class="setting-toggle"><button type="button" class="toggle-btn" id="fever-on" onclick="setFeverEnabled(true)">ON</button><button type="button" class="toggle-btn" id="fever-off" onclick="setFeverEnabled(false)">OFF</button></div><span class="setting-val"></span></div>
         <div class="setting-row"><span>VISUAL OFFSET</span><span class="setting-val" id="offset-display" style="width:auto;">0 ms</span></div>
-        <div class="setting-row"><span>KEY CONFIG</span><div class="key-bind-container" id="key-bind-group"></div></div>
+        <div class="setting-row" style="flex-direction:column;align-items:stretch;">
+            <span style="margin-bottom:8px;">KEY CONFIG (7 LANES)</span>
+            <div class="key-config-block">
+                <div class="key-config-preset-row" id="key-preset-row"></div>
+                <div class="key-config-lanes" id="key-bind-group"></div>
+                <div class="key-config-hint">칩을 클릭하면 그 키를 바로 바꿀 수 있어요. +는 겸용키 추가, ✕는 제거예요 (라인당 최소 1개).</div>
+            </div>
+        </div>
         <button class="btn-full" onclick="location.href='note_skin.html'">NOTE SKIN LAB</button>
         <button class="btn-full" onclick="location.href='offset.html'" style="margin-top:6px;">SYNC LAB</button>
         <button class="btn-full" onclick="closeSettings()" style="background:rgba(255,255,255,0.04);color:#888;margin-top:6px;">CLOSE</button>
-        <div id="key-overlay">
-            <div style="font-family:'Orbitron';font-size:17px;color:#fff;margin-bottom:18px;" id="key-msg">PRESS KEY...</div>
-            <div id="key-confirm-btns" style="display:none;gap:18px;">
-                <button class="btn-icon" style="border-color:#00e676;color:#00e676;" onclick="confirmKey(true)">✔</button>
-                <button class="btn-icon" style="border-color:#ff0055;color:#ff0055;" onclick="confirmKey(false)">✖</button>
-            </div>
-        </div>
     </div>
 </div>
 
@@ -792,6 +976,469 @@ const DIFF_COLORS = {
 let allSongs = [], packs = [];
 let currentPackIdx = 0, currentSongIdx = 0, currentDiffIdx = 0;
 let _cachedDiffs = [], _cardWidth = 0;
+
+// ═══════════ VIEW MODE (목록 / 전체보기) & 정렬 ═══════════
+let viewMode = localStorage.getItem('wb_view_mode') || 'list';
+let sortMode = localStorage.getItem('wb_sort_mode') || 'default';
+let sortDir  = parseInt(localStorage.getItem('wb_sort_dir') || '1', 10) === -1 ? -1 : 1;
+const _songWarnCache = {}; // folder -> Set(gimmick id) — 곡 전체 난이도를 훑어서 "주의할 기믹"이 있는지 미리 분석해둔 캐시
+
+// ═══════════ GIMMICK ICONS (채보 기믹 아이콘) ═══════════
+const GIMMICK_ICON_SVG = {
+    speed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M4.2 6.2l2 2M2 13h3M19 13h3M17.8 8.2l2-2"/><path d="M12 13l4-5"/><circle cx="12" cy="13" r="7.5"/></svg>',
+    keys:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/></svg>',
+    move:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg>',
+    pulse: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 3-10 2 3h5"/></svg>',
+    camera:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.5" r="3.4"/></svg>',
+    complex:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 12 C12 9 15 9 15 12 C15 16 9 16 9 11 C9 6 17 6 17 12 C17 18 7 18 7 11 C7 5 12 3 12 3"/></svg>',
+};
+const GIMMICK_DEFS = {
+    speed:  { title: '라인 속도 변속', color: '#ff9f2d', glow: 'rgba(255,159,45,0.4)',  desc: '곡 중간에 노트가 내려오는 속도가 빨라지거나 느려져요.' },
+    keys:   { title: '라인 개수 변경', color: '#00f2ff', glow: 'rgba(0,242,255,0.4)',   desc: '곡 중간에 눌러야 하는 키(라인) 개수가 바뀌어요.' },
+    move:   { title: '라인 이동',     color: '#ff2d78', glow: 'rgba(255,45,120,0.4)',  desc: '판정선이 곡 중간에 움직이거나 회전해요.' },
+    pulse:  { title: '비트 펄스',     color: '#c060ff', glow: 'rgba(192,96,255,0.4)',  desc: '라인이 박자에 맞춰 통통 튀는 연출이 있어요.' },
+    camera: { title: '카메라 연출',   color: '#ffd700', glow: 'rgba(255,215,0,0.4)',   desc: '화면 전체가 이동/회전/반전/확대축소돼요.' },
+    complex:{ title: '까다로운 박자', color: '#ff2d2d', glow: 'rgba(255,45,45,0.45)',  desc: '변박이나 복잡한 리듬이 섞여있어서 박자 잡기가 까다로울 수 있어요.' },
+};
+const _gimmickCache = {}; // `${folder}__${fileKey}` -> chart json (또는 null=로드 실패)
+let _gimmickReqToken = 0;
+
+function keyTokenLabel(tok) {
+    if (tok === 'space') return 'SPACE';
+    if (tok === 'shiftleft') return 'L-SHIFT';
+    if (tok === 'shiftright') return 'R-SHIFT';
+    return String(tok).toUpperCase();
+}
+function normalizeGimmickKeyMap(km) {
+    if (!Array.isArray(km)) return null;
+    const norm = km.map(entry => Array.isArray(entry) ? entry.slice() : [entry]);
+    while (norm.length < 7) norm.push([]);
+    return norm.slice(0, 7);
+}
+const GIMMICK_KEYMAP_DEFAULT = [['s'],['d'],['f'],['space'],['j'],['k'],['l']];
+const GIMMICK_ACTIVE_SETS = { 3:[2,4,5], 4:[1,2,4,5], 5:[1,2,3,4,5], 6:[0,1,2,4,5,6], 7:[0,1,2,3,4,5,6] };
+
+function fmtGimmickTime(ms) {
+    const s = Math.max(0, Math.round(ms / 1000));
+    const m = Math.floor(s / 60), r = s % 60;
+    return `${m}:${String(r).padStart(2,'0')}`;
+}
+
+// 라인 개수 변경(activeEvents) 기믹의 "시간에 따라 어떻게 키가 바뀌는지" 타임라인 계산
+function computeKeyChangeTimeline(chart) {
+    const LANE_COUNT = 7, BASE_RES = 192;
+    const bpm = chart.bpm || 120, beatNum = chart.beat || 4, beatDenom = chart.beatDenom || 4;
+    const mpm = (60000 / bpm) * (4 / beatDenom) * beatNum;
+    function evTimeMs(ev) {
+        if (ev.measureIdx !== undefined) return ev.measureIdx * mpm + (ev.pos / BASE_RES) * mpm;
+        return ev.time || 0;
+    }
+    const activeEvents = chart.activeEvents || [];
+    let defaultSet = [1,2,4,5];
+    if (chart.initKeyCount) {
+        const n = Math.max(1, Math.min(LANE_COUNT, chart.initKeyCount));
+        defaultSet = GIMMICK_ACTIVE_SETS[n] || Array.from({length:n},(_,i)=>i);
+    }
+    function laneActiveAt(lane, t) {
+        let active = defaultSet.includes(lane);
+        const events = activeEvents[lane] || [];
+        for (const ev of events) { if (evTimeMs(ev) <= t) active = ev.active; else break; }
+        return active;
+    }
+    const keyMap = normalizeGimmickKeyMap(chart.keyMap) || GIMMICK_KEYMAP_DEFAULT;
+    function labelFor(lane) {
+        const keys = keyMap[lane];
+        if (!keys || !keys.length) return '?';
+        return keys.map(keyTokenLabel).join('/');
+    }
+    const timesSet = new Set([0]);
+    activeEvents.forEach(arr => (arr||[]).forEach(ev => timesSet.add(Math.max(0, Math.round(evTimeMs(ev))))));
+    const times = Array.from(timesSet).sort((a,b) => a - b);
+    const timeline = [];
+    let prevSig = null;
+    times.forEach(t => {
+        const activeLanes = [];
+        // t는 표시용으로 반올림된 값이라, 그 순간 막 시작되는 이벤트가 부동소수점 오차로 누락되지 않도록 1ms 뒤 시점으로 조회
+        for (let l = 0; l < LANE_COUNT; l++) if (laneActiveAt(l, t + 1)) activeLanes.push(l);
+        const sig = activeLanes.join(',');
+        if (sig === prevSig) return;
+        prevSig = sig;
+        timeline.push({ t, count: activeLanes.length, labels: activeLanes.map(labelFor) });
+    });
+    return timeline.slice(0, 8); // 팝업이 너무 길어지지 않게 최대 8개 구간만
+}
+
+// 박자가 까다로운 채보인지 대략적으로 감지: 변박(4/4가 아님) 또는 노트 상당수가
+// 2,3의 배수로 전혀 안 떨어지는(=192분해상도를 꽉 채워야만 표현되는) 위치에 찍혀있으면 "까다로운 박자"로 판단
+function isComplexRhythm(chart) {
+    if ((chart.beat && chart.beat !== 4) || (chart.beatDenom && chart.beatDenom !== 4)) return true;
+    if (!chart.measures || !chart.measures.length) return false;
+    let total = 0, weird = 0;
+    chart.measures.forEach(m => {
+        (m.notes || []).forEach(n => {
+            const pos = n.pos || 0;
+            if (pos === 0) return; // 마디 시작(다운비트)은 늘 단순 박자라 통계에서 제외
+            total++;
+            // 192 = 2^6 × 3 이라, 2의 배수도 3의 배수도 아닌 위치는 192분해상도를 다 써야만 표현 가능
+            // = 흔한 8/16/32비트나 3연음 그리드 어디에도 안 맞는 위치라는 뜻
+            if (pos % 2 !== 0 && pos % 3 !== 0) weird++;
+        });
+    });
+    return total >= 8 && (weird / total) > 0.08;
+}
+
+function detectGimmicks(chart) {
+    const found = ['keys']; // 시작 라인 수는 항상 표시 (변경 여부와 무관)
+    if (chart.speedEvents && chart.speedEvents.some(e => Math.abs((e.mult ?? 1) - 1) > 0.001)) found.push('speed');
+    if (chart.lineEvents && chart.lineEvents.some(arr => arr && arr.length > 0)) found.push('move');
+    if (chart.pulseEvents && chart.pulseEvents.some(arr => arr && arr.length > 0)) found.push('pulse');
+    if ((chart.cameraEvents && chart.cameraEvents.length) ||
+        (chart.camFlipXEvents && chart.camFlipXEvents.length) ||
+        (chart.camFlipYEvents && chart.camFlipYEvents.length) ||
+        (chart.camZoomEvents && chart.camZoomEvents.length)) found.push('camera');
+    if (isComplexRhythm(chart)) found.push('complex');
+    return found;
+}
+
+function renderGimmickIcon(id, chart) {
+    const def = GIMMICK_DEFS[id];
+    const wrap = document.createElement('div');
+    wrap.className = 'gimmick-icon';
+    wrap.style.setProperty('--gimmick-color', def.color);
+    wrap.style.setProperty('--gimmick-glow', def.glow);
+    wrap.innerHTML = GIMMICK_ICON_SVG[id];
+
+    const tip = document.createElement('div');
+    tip.className = 'gimmick-tip';
+    let inner;
+
+    if (id === 'keys') {
+        const timeline = computeKeyChangeTimeline(chart);
+        const start = timeline[0] || { count: 4, labels: ['D','F','J','K'] };
+        const changes = timeline.length > 1;
+
+        // 아이콘 위에 시작 라인 수를 숫자 뱃지로 항상 표시 (호버 안 해도 바로 보이게)
+        const badge = document.createElement('div');
+        badge.className = 'gimmick-count-badge';
+        badge.textContent = start.count;
+        wrap.appendChild(badge);
+
+        const title = changes ? '라인 개수 변경' : `${start.count}키로 시작`;
+        const desc = changes
+            ? `${start.count}키(${start.labels.join(' ')})로 시작해서, 곡 중간에 눌러야 하는 키 개수가 바뀌어요.`
+            : `이 채보는 ${start.count}키(${start.labels.join(' ')})로 시작해서 끝까지 유지돼요.`;
+        inner = `<div class="gimmick-tip-title">${title}</div><div class="gimmick-tip-desc">${desc}</div>`;
+        if (changes) {
+            const rows = timeline.map(row => `
+                <div class="gimmick-tip-timeline-row">
+                    <span class="gimmick-tip-timeline-t">${fmtGimmickTime(row.t)}</span>
+                    <span class="gimmick-tip-timeline-count">${row.count}키</span>
+                    <span class="gimmick-tip-timeline-keys">${row.labels.join(' ')}</span>
+                </div>`).join('');
+            inner += `<div class="gimmick-tip-timeline">${rows}</div>`;
+        }
+    } else {
+        inner = `<div class="gimmick-tip-title">${def.title}</div><div class="gimmick-tip-desc">${def.desc}</div>`;
+    }
+    tip.innerHTML = inner;
+    wrap.appendChild(tip);
+
+    // ★ 툴팁이 왼쪽 사이드바 등에 가려지지 않도록, 화면 좌표 기준으로 직접 위치 계산 (fixed)
+    wrap.addEventListener('mouseenter', () => positionGimmickTip(wrap, tip));
+    wrap.addEventListener('mouseleave', () => tip.classList.remove('show'));
+
+    return wrap;
+}
+
+function positionGimmickTip(wrap, tip) {
+    // 어떤 조상 요소의 stacking context / containing block 영향도 안 받도록 body 바로 아래로 옮김
+    if (tip.parentNode !== document.body) document.body.appendChild(tip);
+    tip.classList.add('show');
+    const iconRect = wrap.getBoundingClientRect();
+    const tipRect = tip.getBoundingClientRect();
+    let left = iconRect.left + iconRect.width / 2 - tipRect.width / 2;
+    left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+    const spaceAbove = iconRect.top;
+    const spaceBelow = window.innerHeight - iconRect.bottom;
+    let top;
+    if (spaceAbove >= tipRect.height + 14 || spaceAbove >= spaceBelow) {
+        top = iconRect.top - tipRect.height - 10; // 위쪽에 표시
+    } else {
+        top = iconRect.bottom + 10; // 위쪽 공간이 부족하면 아래쪽에 표시
+    }
+    top = Math.max(8, Math.min(top, window.innerHeight - tipRect.height - 8));
+    tip.style.left = left + 'px';
+    tip.style.top = top + 'px';
+}
+
+// ═══════════ 곡 단위 "주의할 기믹" 경고 뱃지 (리스트/그리드에서 곡 하나로 한눈에 보여주는 용도) ═══════════
+// 개별 난이도 상세 패널의 기믹 아이콘과 다르게, 여기서는 "이 곡을 플레이하기 전에 알아두면 좋은" 굵직한 것만 추림.
+// - keys는 항상 표시되는 정보라 시작 키 개수만으로는 경고로 치지 않고, 실제로 곡 중간에 키 개수가 "바뀌는" 경우만 경고.
+function renderWarnBadge(typeSet) {
+    const wrap = document.createElement('div');
+    wrap.className = 'warn-badge';
+    wrap.textContent = '!';
+
+    const tip = document.createElement('div');
+    tip.className = 'gimmick-tip warn-tip';
+    const rows = Array.from(typeSet).map(id => {
+        const def = GIMMICK_DEFS[id] || GIMMICK_DEFS.camera;
+        const label = id === 'keys' ? '라인 개수 변경' : def.title;
+        return `<div class="gimmick-tip-timeline-row"><span class="gimmick-tip-timeline-count" style="color:${def.color};">●</span><span class="gimmick-tip-timeline-keys">${label}</span></div>`;
+    }).join('');
+    tip.innerHTML = `<div class="gimmick-tip-title">⚠ 이 곡은 특이한 기믹이 있어요</div><div class="gimmick-tip-timeline">${rows}</div>`;
+    wrap.appendChild(tip);
+
+    wrap.addEventListener('mouseenter', (e) => { e.stopPropagation(); positionGimmickTip(wrap, tip); });
+    wrap.addEventListener('mouseleave', (e) => { e.stopPropagation(); tip.classList.remove('show'); });
+    wrap.addEventListener('click', (e) => e.stopPropagation()); // 리스트 아이템 클릭(곡 선택)으로 전파되지 않게
+
+    return wrap;
+}
+// 곡 하나의 모든 난이도를 훑어서 "경고할만한" 기믹 종류의 집합을 계산
+async function analyzeSongWarning(song) {
+    const types = new Set();
+    const diffs = getDiffs(song);
+    for (const d of diffs) {
+        if (!d.fileKey) continue;
+        const cacheKey = `${song.folder}__${d.fileKey}`;
+        let chart = _gimmickCache[cacheKey];
+        if (chart === undefined) {
+            try {
+                const res = await fetch(`Maps/${encodeURIComponent(song.folder)}/${encodeURIComponent(d.fileKey)}.json`);
+                chart = res.ok ? await res.json() : null;
+            } catch (e) { chart = null; }
+            _gimmickCache[cacheKey] = chart;
+        }
+        if (!chart) continue;
+        detectGimmicks(chart).forEach(id => {
+            if (id === 'keys') {
+                if (computeKeyChangeTimeline(chart).length > 1) types.add('keys'); // 실제로 바뀔 때만 경고
+            } else {
+                types.add(id);
+            }
+        });
+    }
+    return types;
+}
+// 리스트/그리드에 이미 그려진 해당 곡의 커버 위에 뱃지를 얹음 (아직 안 그려졌으면 다음 렌더 때 캐시에서 자동 반영됨)
+function refreshWarnBadgeForSong(song, types) {
+    if (!types || !types.size) return;
+    const escFolder = (window.CSS && CSS.escape) ? CSS.escape(song.folder) : song.folder.replace(/["\\]/g, '\\$&');
+    document.querySelectorAll(`.item-cover[data-folder="${escFolder}"], .grid-cover[data-folder="${escFolder}"]`).forEach(cov => {
+        if (!cov.querySelector('.warn-badge')) cov.appendChild(renderWarnBadge(types));
+    });
+}
+// 백그라운드에서 전체 곡의 기믹을 미리 분석 — 서버 부담을 줄이기 위해 동시 4개까지만 병렬로 로드
+async function prefetchAllGimmickWarnings() {
+    const queue = allSongs.slice();
+    const CONCURRENCY = 4;
+    async function worker() {
+        while (queue.length) {
+            const song = queue.shift();
+            if (!song || _songWarnCache[song.folder]) continue;
+            try {
+                const types = await analyzeSongWarning(song);
+                _songWarnCache[song.folder] = types;
+                refreshWarnBadgeForSong(song, types);
+            } catch (e) { _songWarnCache[song.folder] = new Set(); }
+        }
+    }
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+}
+
+async function loadGimmicksForCurrentDiff() {
+    const row = document.getElementById('gimmick-row');
+    const statsCard = document.getElementById('chart-stats-card');
+    if (!row) return;
+    document.querySelectorAll('body > .gimmick-tip').forEach(t => t.remove()); // 이전 난이도의 툴팁 잔재 정리
+    const song = currentSongs()[currentSongIdx];
+    const d = _cachedDiffs[currentDiffIdx];
+    if (!song || !d || !d.fileKey) {
+        row.innerHTML = '';
+        if (statsCard) statsCard.classList.remove('show', 'fade-in');
+        const mqs = document.getElementById('meta-quick-stats'); if (mqs) mqs.innerHTML = '';
+        return;
+    }
+
+    const token = ++_gimmickReqToken;
+    row.innerHTML = `<div class="gimmick-loading"></div><div class="gimmick-loading"></div><div class="gimmick-loading"></div>`;
+    if (statsCard) statsCard.classList.remove('fade-in');
+
+    const cacheKey = `${song.folder}__${d.fileKey}`;
+    let chart = _gimmickCache[cacheKey];
+    if (chart === undefined) {
+        try {
+            const res = await fetch(`Maps/${encodeURIComponent(song.folder)}/${encodeURIComponent(d.fileKey)}.json`);
+            chart = res.ok ? await res.json() : null;
+        } catch (e) { chart = null; }
+        _gimmickCache[cacheKey] = chart;
+    }
+    if (token !== _gimmickReqToken) return; // 그 사이 다른 난이도/곡으로 넘어감 → 이 결과는 버림
+
+    row.innerHTML = '';
+    if (!chart) {
+        row.innerHTML = '<div class="gimmick-empty">— 정보 없음 —</div>';
+        if (statsCard) statsCard.classList.remove('show', 'fade-in');
+        const mqs = document.getElementById('meta-quick-stats'); if (mqs) mqs.innerHTML = '';
+        return;
+    }
+
+    const found = detectGimmicks(chart);
+    found.forEach(id => row.appendChild(renderGimmickIcon(id, chart)));
+
+    // ★ song_list.json에 수동으로 지정한 stats가 있으면 그걸 우선 사용, 없으면 자동 분석
+    const auto = computeChartStats(chart);
+    const manual = (d.stats && typeof d.stats === 'object') ? d.stats : {};
+    const stats = {
+        bpm: auto.bpm, lengthSec: auto.lengthSec,
+        stamina: manual.stamina ?? auto.stamina,
+        speed: manual.speed ?? auto.speed,
+        rhythm: manual.rhythm ?? auto.rhythm,
+        readability: manual.readability ?? auto.readability,
+        pattern: manual.pattern ?? auto.pattern,
+    };
+    renderMetaQuickStats(stats);
+    if (statsCard) {
+        renderChartStatsCard(statsCard, stats);
+        statsCard.classList.add('show');
+        requestAnimationFrame(() => requestAnimationFrame(() => statsCard.classList.add('fade-in')));
+    }
+}
+
+// ═══════════ CHART STATS (스테미나/빠르기/박자/난독성 + BPM/길이) ═══════════
+function clamp01to100(v) { return Math.max(0, Math.min(100, v)); }
+function fmtLength(sec) {
+    sec = Math.max(0, Math.round(sec));
+    return `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+}
+function computeChartStats(chart) {
+    const BASE_RES = 192;
+    const bpm = chart.bpm || 120;
+    const beatNum = chart.beat || 4, beatDenom = chart.beatDenom || 4;
+    const mpm = (60000 / bpm) * (4 / beatDenom) * beatNum;
+
+    let totalNotes = 0, longNoteMs = 0, lastMs = 0;
+    let weirdPos = 0, posSamples = 0;
+    const denomsUsed = new Set();
+    const noteTimes = [];
+    const notesWithLane = [];
+
+    (chart.measures || []).forEach(m => {
+        const ratio = BASE_RES / (m.split || 32);
+        (m.notes || []).forEach(n => {
+            const pos = Math.round((n.pos || 0) * ratio);
+            const t = (m.index * mpm) + (pos / BASE_RES) * mpm;
+            const dur = ((n.len || 0) * ratio / BASE_RES) * mpm;
+            noteTimes.push(t);
+            notesWithLane.push({ t, lane: n.lane || 0 });
+            totalNotes++;
+            if (dur > 0) longNoteMs += dur;
+            lastMs = Math.max(lastMs, t + dur);
+            if (pos !== 0) {
+                posSamples++;
+                if (pos % 2 !== 0 && pos % 3 !== 0) weirdPos++;
+                for (const dcand of [4, 8, 16, 24, 32, 48, 64, 96, 192]) {
+                    if (pos % (BASE_RES / dcand) === 0) { denomsUsed.add(dcand); break; }
+                }
+            }
+        });
+    });
+    noteTimes.sort((a, b) => a - b);
+    notesWithLane.sort((a, b) => a.t - b.t);
+    const lengthSec = lastMs / 1000;
+
+    // ── 스테미나: 총 노트 수 + 롱노트 총 유지시간 + 곡 길이 자체 ──
+    const stamina = clamp01to100(totalNotes / 6 + longNoteMs / 4000 + lengthSec / 8);
+
+    // ── 빠르기: 가장 몰린 구간의 순간 밀도(1초 슬라이딩 윈도) + BPM ──
+    let peakNps = 0, left = 0;
+    for (let right = 0; right < noteTimes.length; right++) {
+        while (noteTimes[right] - noteTimes[left] >= 1000) left++;
+        peakNps = Math.max(peakNps, right - left + 1);
+    }
+    const bpmNorm = clamp01to100((bpm - 70) / (220 - 70) * 100);
+    const speed = clamp01to100((peakNps / 12) * 70 + bpmNorm * 0.3);
+
+    // ── 박자: 흔한 격자(2,3의 배수)에 안 맞는 위치 비율 + 변박 + 세분 다양성 ──
+    const nonStd = (beatNum !== 4 || beatDenom !== 4);
+    const weirdRatio = posSamples > 0 ? weirdPos / posSamples : 0;
+    const rhythm = clamp01to100(weirdRatio * 260 + (nonStd ? 35 : 0) + Math.max(0, denomsUsed.size - 2) * 8);
+
+    // ── 난독성: 화면을 읽기 어렵게 만드는 연출(카메라 반전/회전/줌, 라인 이동/개수변경, 펄스)의 정도 ──
+    let readability = 0;
+    if (chart.camFlipXEvents?.length || chart.camFlipYEvents?.length) readability += 30;
+    if (chart.cameraEvents?.some(e => Math.abs(e.angle || 0) > 0.01)) readability += 18;
+    if (chart.camZoomEvents?.length) readability += 14;
+    if (chart.cameraEvents?.length) readability += 10;
+    if (chart.lineEvents?.some(a => a?.length)) readability += 16;
+    if (chart.activeEvents?.some(a => a?.length)) readability += 18;
+    if (chart.pulseEvents?.some(a => a?.length)) readability += 8;
+    readability = clamp01to100(readability);
+
+    // ── 패턴: 동시치기(코드) 비율 + 한 손가락 연타(잭) 비율 ──
+    let chordNotes = 0, jackNotes = 0;
+    let i = 0;
+    while (i < notesWithLane.length) {
+        let j = i;
+        while (j < notesWithLane.length && notesWithLane[j].t - notesWithLane[i].t < 15) j++; // 15ms 이내는 동시치기로 취급
+        if (j - i >= 2) chordNotes += (j - i);
+        i = j;
+    }
+    const lastLaneTime = {};
+    notesWithLane.forEach(n => {
+        const prevT = lastLaneTime[n.lane];
+        if (prevT !== undefined && n.t - prevT > 0 && n.t - prevT < 180) jackNotes++; // 같은 레인 180ms 이내 재입력 = 잭
+        lastLaneTime[n.lane] = n.t;
+    });
+    const pattern = totalNotes > 0
+        ? clamp01to100((chordNotes / totalNotes) * 130 + (jackNotes / totalNotes) * 170)
+        : 0;
+
+    return { bpm, lengthSec, stamina, speed, rhythm, readability, pattern };
+}
+function renderRadarChart(stats) {
+    const cx = 62, cy = 62, R = 44;
+    const axes = [
+        { key: 'stamina',     label: '스테미나', angle: -90 },
+        { key: 'speed',       label: '빠르기',   angle: -18 },
+        { key: 'pattern',     label: '패턴',     angle: 54 },
+        { key: 'rhythm',      label: '박자',     angle: 126 },
+        { key: 'readability', label: '난독성',   angle: 198 },
+    ];
+    const pt = (angleDeg, r) => {
+        const rad = angleDeg * Math.PI / 180;
+        return [cx + r * Math.cos(rad), cy + r * Math.sin(rad)];
+    };
+    let gridPaths = '';
+    [0.25, 0.5, 0.75, 1].forEach(frac => {
+        const pts = axes.map(a => pt(a.angle, R * frac).join(',')).join(' ');
+        gridPaths += `<polygon points="${pts}" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>`;
+    });
+    const valuePts = axes.map(a => pt(a.angle, R * (stats[a.key] / 100)).join(',')).join(' ');
+    const labels = axes.map(a => {
+        const [x, y] = pt(a.angle, R + 15);
+        const cosA = Math.cos(a.angle * Math.PI / 180);
+        const anchor = cosA > 0.3 ? 'start' : cosA < -0.3 ? 'end' : 'middle';
+        return `<text x="${x}" y="${y}" text-anchor="${anchor}" dominant-baseline="middle" class="chart-radar-axis-label">${a.label}</text>`;
+    }).join('');
+    return `<svg viewBox="0 0 124 124" width="124" height="124" style="overflow:visible;">
+        ${gridPaths}
+        <polygon points="${valuePts}" fill="rgba(0,242,255,0.22)" stroke="#00f2ff" stroke-width="1.6"/>
+        ${labels}
+    </svg>`;
+}
+function renderChartStatsCard(container, stats) {
+    container.innerHTML = `<div class="chart-radar-wrap">${renderRadarChart(stats)}</div>`;
+}
+function renderMetaQuickStats(stats) {
+    const el = document.getElementById('meta-quick-stats');
+    if (!el) return;
+    el.innerHTML = `
+        <div class="meta-quick-stat"><span class="meta-quick-stat-label">BPM</span><span class="meta-quick-stat-value">${Math.round(stats.bpm)}</span></div>
+        <div class="meta-quick-stat"><span class="meta-quick-stat-label">LENGTH</span><span class="meta-quick-stat-value">${fmtLength(stats.lengthSec)}</span></div>`;
+}
+
 let previewTimer = null;
 
 // ═══════════ AUDIO PIPELINE ═══════════
@@ -942,6 +1589,9 @@ function updateScoreBar(scoreStr) {
 // ═══════════ INIT ═══════════
 window.addEventListener('DOMContentLoaded', () => {
     initSettings(); initKeyBindings(); checkLoginStatus(); buildVisualizer();
+    const sortSel = document.getElementById('sort-select'); if (sortSel) sortSel.value = sortMode;
+    const sortDirBtn = document.getElementById('sort-dir-btn'); if (sortDirBtn) sortDirBtn.textContent = sortDir > 0 ? '▲' : '▼';
+    applyViewMode();
     const justIn = localStorage.getItem('wb_just_logged_in');
     if (justIn==='true') { openNicknameModal(true); localStorage.removeItem('wb_just_logged_in'); }
     loadSongs();
@@ -951,7 +1601,8 @@ async function loadSongs() {
     try {
         const res = await fetch('song_list.json?t='+Date.now());
         allSongs = await res.json();
-        buildPacks(); renderList(); selectSong(0, true);
+        buildPacks(); refreshCurrentView(); selectSong(0, true);
+        prefetchAllGimmickWarnings(); // ★ 백그라운드로 전체 곡의 "주의할 기믹" 여부를 미리 분석
     } catch(e) {
         document.getElementById('list-wrap').innerHTML='<div style="padding:40px;text-align:center;color:#f55;font-family:Orbitron;font-size:13px;">LOAD FAILED</div>';
     }
@@ -969,15 +1620,52 @@ function buildPackDots() {
     const el=document.getElementById('pack-dots'); el.innerHTML='';
     packs.forEach((_,i)=>{ const d=document.createElement('div'); d.className='pack-dot'+(i===currentPackIdx?' active':''); el.appendChild(d); });
 }
-function currentSongs() { return packs[currentPackIdx]?.songs||allSongs; }
+
+// ═══════════ 정렬 ═══════════
+function songMaxLevel(song) {
+    const diffs = getDiffs(song);
+    if (!diffs.length) return 0;
+    return Math.max(...diffs.map(d => d.level || 0));
+}
+function sortSongsList(list) {
+    if (sortMode === 'default') return sortDir < 0 ? list.slice().reverse() : list.slice();
+    const arr = list.slice();
+    if (sortMode === 'title') {
+        arr.sort((a, b) => (a.title || '').localeCompare(b.title || '', 'ko'));
+    } else if (sortMode === 'level') {
+        arr.sort((a, b) => songMaxLevel(a) - songMaxLevel(b));
+    }
+    if (sortDir < 0) arr.reverse();
+    return arr;
+}
+function currentSongs() { return sortSongsList(packs[currentPackIdx]?.songs || allSongs); }
+function setSortMode(mode) {
+    sortMode = mode; localStorage.setItem('wb_sort_mode', mode);
+    reindexAfterListChange();
+}
+function toggleSortDir() {
+    sortDir *= -1; localStorage.setItem('wb_sort_dir', String(sortDir));
+    const btn = document.getElementById('sort-dir-btn'); if (btn) btn.textContent = sortDir > 0 ? '▲' : '▼';
+    reindexAfterListChange();
+}
+// 정렬/팩 변경으로 목록 순서가 바뀐 뒤, 방금 보고 있던 곡을 그대로 다시 찾아서 선택 유지
+function reindexAfterListChange() {
+    const prevSong = currentSongs()[currentSongIdx];
+    refreshCurrentView();
+    const songs = currentSongs();
+    let idx = prevSong ? songs.findIndex(s => s.folder === prevSong.folder) : 0;
+    selectSong(idx >= 0 ? idx : 0, true);
+}
 function changePack(dir) {
     if(packs.length<=1) return;
     currentPackIdx=(currentPackIdx+dir+packs.length)%packs.length;
     currentSongIdx=0; currentDiffIdx=0;
     const el=document.getElementById('pack-name-display'); el.classList.add('switching');
     setTimeout(()=>{ el.textContent=packs[currentPackIdx].name; el.classList.remove('switching'); },200);
-    buildPackDots(); renderList(); selectSong(0,true);
+    buildPackDots(); refreshCurrentView(); selectSong(0,true);
 }
+// 목록(list) + 전체보기(grid) 뷰를 함께 다시 그림
+function refreshCurrentView() { renderList(); renderGrid(); }
 
 function renderList() {
     const wrap = document.getElementById('list-wrap'); 
@@ -988,6 +1676,7 @@ function renderList() {
         const el = document.createElement('div'); 
         el.className = 'song-item'; 
         el.dataset.idx = idx; 
+        el.dataset.folder = song.folder;
         el.style.height = ITEM_H + 'px';
         
         // [핵심 수정] d.type 클래스 매칭 대신, 함수를 돌려 hex 컬러를 추출한 뒤 인라인 style로 주입
@@ -997,11 +1686,15 @@ function renderList() {
             return `<div class="idot" style="background: ${col.hex}"></div>`;
         }).join('');
         
-        el.innerHTML = `<div class="item-num">${idx+1}</div><div class="item-cover">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div><div class="item-diffs">${dots}</div></div>`;
+        el.innerHTML = `<div class="item-num">${idx+1}</div><div class="item-cover" data-folder="${song.folder}">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div><div class="item-diffs">${dots}</div></div>`;
         
         const cover = el.querySelector('.item-cover'), img = new Image(); 
         img.src = `songs/${song.folder}/image.png`;
         img.onload = () => { cover.style.backgroundImage = `url('${img.src}')`; cover.textContent = ''; };
+
+        // ★ 이미 분석돼있는 "주의할 기믹" 정보가 있으면 바로 뱃지 표시
+        const warn = _songWarnCache[song.folder];
+        if (warn && warn.size) cover.appendChild(renderWarnBadge(warn));
         
         el.addEventListener('click', () => selectSong(idx)); 
         frag.appendChild(el);
@@ -1022,6 +1715,72 @@ function scrollList(instant) {
     });
 }
 
+// ═══════════ 전체보기(그리드) 뷰 — 곡/난이도 종류를 한 화면에서 훑어보기 ═══════════
+function renderGrid() {
+    const cards = document.getElementById('grid-cards');
+    if (!cards) return;
+    cards.innerHTML = '';
+    const songs = currentSongs();
+
+    const titleEl = document.getElementById('grid-panel-title'), subEl = document.getElementById('grid-panel-sub');
+    if (titleEl) titleEl.textContent = packs[currentPackIdx]?.name || 'ALL SONGS';
+    if (subEl) subEl.textContent = `${songs.length} SONGS`;
+
+    const frag = document.createDocumentFragment();
+    songs.forEach((song, idx) => {
+        const diffs = getDiffs(song);
+        const pills = diffs.map(d => {
+            const col = getLevelColor(d.level, d.customColor);
+            return `<div class="grid-diff-pill" style="background:${col.hex}">${d.levelRaw}</div>`;
+        }).join('');
+
+        const card = document.createElement('div');
+        card.className = 'grid-card' + (idx === currentSongIdx ? ' active' : '');
+        card.dataset.folder = song.folder;
+        card.innerHTML = `
+            <div class="grid-cover" data-folder="${song.folder}">🎵</div>
+            <div class="grid-info">
+                <div class="grid-song-title">${song.title}</div>
+                <div class="grid-song-artist">${song.artist || ''}</div>
+                <div class="grid-diff-row">${pills}</div>
+            </div>`;
+
+        const cov = card.querySelector('.grid-cover'), img = new Image();
+        img.src = `songs/${song.folder}/image.png`;
+        img.onload = () => { cov.style.backgroundImage = `url('${img.src}')`; cov.textContent = ''; };
+
+        const warn = _songWarnCache[song.folder];
+        if (warn && warn.size) cov.appendChild(renderWarnBadge(warn));
+
+        card.addEventListener('click', () => {
+            const i = currentSongs().findIndex(s => s.folder === song.folder);
+            selectSong(i >= 0 ? i : idx, true);
+            setViewMode('list'); // 카드를 고르면 상세/플레이가 가능한 목록 뷰로 전환
+        });
+
+        frag.appendChild(card);
+    });
+    cards.appendChild(frag);
+}
+function applyViewMode() {
+    const main = document.querySelector('.main');
+    if (main) main.classList.toggle('grid-mode', viewMode === 'grid');
+    const btn = document.getElementById('view-toggle-btn');
+    if (btn) {
+        btn.textContent = viewMode === 'grid' ? '☰' : '▦';
+        btn.classList.toggle('view-toggle-active', viewMode === 'grid');
+        btn.title = viewMode === 'grid' ? '목록 보기로 전환' : '전체보기(그리드)로 전환';
+    }
+    if (viewMode === 'grid') renderGrid();
+}
+function setViewMode(mode) {
+    if (viewMode === mode) return;
+    viewMode = mode;
+    localStorage.setItem('wb_view_mode', viewMode);
+    applyViewMode();
+}
+function toggleViewMode() { setViewMode(viewMode === 'grid' ? 'list' : 'grid'); }
+
 // ═══════════ SONG SELECT ═══════════
 let _rsbLoadTimer = null;
 function selectSong(idx, instant) {
@@ -1033,6 +1792,13 @@ function selectSong(idx, instant) {
     setTimeout(()=>{ const s=songs[currentSongIdx]; title.textContent=s.title; artist.textContent=s.artist||'—'; title.classList.remove('fade'); artist.classList.remove('fade'); updateAlbumArt(s); },200);
     buildDiffUI(); schedulePreview(); updateScoreVisualizer();
 
+    // 그리드 뷰가 그려져 있다면 선택 표시도 같이 갱신
+    const gridCards = document.getElementById('grid-cards');
+    if (gridCards) {
+        const curFolder = songs[currentSongIdx].folder;
+        gridCards.querySelectorAll('.grid-card').forEach(c => c.classList.toggle('active', c.dataset.folder === curFolder));
+    }
+
     // ★ 랭킹 사이드바 로드 (디바운스)
     clearTimeout(_rsbLoadTimer);
     _rsbLoadTimer = setTimeout(loadRankingSidebar, 600);
@@ -1042,8 +1808,37 @@ function updateAlbumArt(song) {
     if(!song) return;
     const path=`songs/${song.folder}/image.png`, dynBg=document.getElementById('dynamic-bg'), bigCover=document.getElementById('big-cover'), img=new Image();
     img.src=path;
-    img.onload=()=>{ dynBg.style.backgroundImage=`url('${path}')`; bigCover.style.backgroundImage=`url('${path}')`; bigCover.style.backgroundSize='cover'; bigCover.textContent=''; };
-    img.onerror=()=>{ dynBg.style.backgroundImage='none'; bigCover.style.backgroundImage='linear-gradient(135deg, #0a0a1a 0%, #141430 100%)'; bigCover.textContent='🎵'; };
+    img.onload=()=>{ dynBg.style.backgroundImage=`url('${path}')`; bigCover.style.backgroundImage=`url('${path}')`; bigCover.style.backgroundSize='cover'; bigCover.textContent=''; applyAdaptiveTextTheme(computeImageBrightness(img)); };
+    img.onerror=()=>{ dynBg.style.backgroundImage='none'; bigCover.style.backgroundImage='linear-gradient(135deg, #0a0a1a 0%, #141430 100%)'; bigCover.textContent='🎵'; applyAdaptiveTextTheme(40); };
+}
+
+// ═══════════ ADAPTIVE TEXT (배경 밝기에 따라 텍스트 색 자동 전환) ═══════════
+function computeImageBrightness(img) {
+    try {
+        const c = document.createElement('canvas'); c.width = 12; c.height = 12;
+        const cx = c.getContext('2d'); cx.drawImage(img, 0, 0, 12, 12);
+        const data = cx.getImageData(0, 0, 12, 12).data;
+        let sum = 0, n = 0;
+        for (let i = 0; i < data.length; i += 4) { sum += 0.299*data[i] + 0.587*data[i+1] + 0.114*data[i+2]; n++; }
+        return n ? sum / n : 40;
+    } catch (e) { return 40; } // 픽셀을 못 읽으면(드문 CORS 케이스) 무난히 어두운 값으로 처리
+}
+function applyAdaptiveTextTheme(rawBrightness) {
+    // #dynamic-bg에는 항상 brightness(0.3) 필터가 걸려있어서, 실제로 화면에 보이는 밝기는 그 정도로 낮아짐
+    const displayed = rawBrightness * 0.3;
+    const bright = displayed > 55;
+    const root = document.documentElement.style;
+    if (bright) {
+        root.setProperty('--adapt-fg', 'rgba(6,8,16,0.85)');
+        root.setProperty('--adapt-fg2', 'rgba(6,8,16,0.7)');
+        root.setProperty('--adapt-chip-bg', 'rgba(255,255,255,0.55)');
+        root.setProperty('--adapt-chip-border', 'rgba(6,8,16,0.28)');
+    } else {
+        root.setProperty('--adapt-fg', '#333');
+        root.setProperty('--adapt-fg2', '#222');
+        root.setProperty('--adapt-chip-bg', 'rgba(255,255,255,0.04)');
+        root.setProperty('--adapt-chip-border', '#1e1e2e');
+    }
 }
 
 function getDiffs(song) {
@@ -1088,7 +1883,8 @@ function getDiffs(song) {
                 level: lv,        // 내부 정렬용 (14.5)
                 levelRaw: lvRaw,  // UI 텍스트 출력용 ("14+")
                 fileKey: c.file ? c.file.replace(/\.json$/i, '') : '',
-                customColor: c.customColor || null
+                customColor: c.customColor || null,
+                stats: c.stats || null // ★ song_list.json에서 수동으로 지정한 스탯 (없으면 자동 분석으로 대체)
             });
         }
     });
@@ -1174,6 +1970,9 @@ function applyDiffSelection() {
     // ★ 난이도 변경 시 랭킹 사이드바 디바운스 갱신 
     clearTimeout(_rsbLoadTimer); 
     _rsbLoadTimer = setTimeout(loadRankingSidebar, 400); 
+
+    // ★ 기믹 아이콘 갱신
+    loadGimmicksForCurrentDiff();
 }
 function selectDiff(idx) { currentDiffIdx=idx; applyDiffSelection(); updateScoreVisualizer(); }
 function changeDiff(dir) { const next=currentDiffIdx+dir; if(next<0||next>=_cachedDiffs.length)return; selectDiff(next); }
@@ -1247,7 +2046,7 @@ async function loadRankingSidebar() {
         <div class="rsb-skeleton"></div>`;
 
     try {
-        const res  = await fetch(`${API_BASE}/api/ranking/${song.folder}/${d.fileKey}`);
+        const res  = await fetch(`${API_BASE}/api/ranking/${encodeURIComponent(song.folder)}/${encodeURIComponent(d.fileKey)}`);
         const data = await res.json();
 
         if (!Array.isArray(data) || data.length === 0) {
@@ -1420,8 +2219,9 @@ document.addEventListener('keydown', e => {
         case 'ArrowDown': e.preventDefault();if(currentSongIdx<songs.length-1)selectSong(currentSongIdx+1);break;
         case 'ArrowLeft': e.preventDefault();changeDiff(-1);break;
         case 'ArrowRight':e.preventDefault();changeDiff(1);break;
-        case 'Enter':     e.preventDefault();playSelected();break;
+        case 'Enter':     e.preventDefault();if(viewMode!=='grid')playSelected();break;
         case 'Shift':     e.preventDefault();changePack(e.location===1?-1:1);break;
+        case 'Tab':       e.preventDefault();toggleViewMode();break;
     }
 });
 
@@ -1452,14 +2252,148 @@ document.getElementById('judge-size').addEventListener('input',e=>{document.getE
 document.getElementById('hit-meter-size').addEventListener('input',e=>{document.getElementById('hit-meter-size-val').textContent=e.target.value+'%';localStorage.setItem('wb_hit_meter_size',e.target.value);});
 document.getElementById('judge-style').addEventListener('change',e=>{localStorage.setItem('wb_judge_style',e.target.value);});
 
-// ═══════════ KEY BINDING ═══════════
-let currentKeys=JSON.parse(localStorage.getItem('wb_key_layout'))||['d','f','j','k'];
-let bindingIndex=-1,tempKey='';
-function initKeyBindings() { const c=document.getElementById('key-bind-group');c.innerHTML='';currentKeys.forEach((k,i)=>{const btn=document.createElement('button');btn.className='key-btn';btn.textContent=k===' '?'SPC':k.toUpperCase();btn.onclick=()=>startBinding(i);c.appendChild(btn);}); }
-function startBinding(idx) { bindingIndex=idx;document.getElementById('key-overlay').style.display='flex';document.getElementById('key-msg').textContent='PRESS ANY KEY...';document.getElementById('key-confirm-btns').style.display='none';window.addEventListener('keydown',handleKeyInput); }
-function handleKeyInput(e) { e.preventDefault();if(e.key==='Escape'){cancelBinding();return;}tempKey=e.key.toLowerCase();window.removeEventListener('keydown',handleKeyInput);const disp=tempKey===' '?'SPACE':tempKey.toUpperCase();document.getElementById('key-msg').innerHTML=`SET TO <span style="color:#00e5ff;font-weight:bold;">[ ${disp} ]</span> ?`;document.getElementById('key-confirm-btns').style.display='flex'; }
-function confirmKey(yes) { if(yes&&bindingIndex!==-1){currentKeys[bindingIndex]=tempKey;localStorage.setItem('wb_key_layout',JSON.stringify(currentKeys));initKeyBindings();}cancelBinding(); }
-function cancelBinding() { bindingIndex=-1;tempKey='';document.getElementById('key-overlay').style.display='none';window.removeEventListener('keydown',handleKeyInput); }
+// ═══════════ KEY CONFIG (7 LANES) ═══════════
+const KEYCFG_LANE_COUNT = 7;
+const KEYCFG_LANE_COLORS = ['#ff4081','#00e676','#29b6f6','#ffa726','#c084fc','#ff6b6b','#4dd0e1'];
+const KEYCFG_DEFAULT = [['s'],['d'],['f'],['space'],['j'],['k'],['l']];
+const KEYCFG_PRESETS = {
+    key7:      { label: '7키 개별<br>S D F SPACE J K L', map: [['s'],['d'],['f'],['space'],['j'],['k'],['l']] },
+    keyFJ:     { label: 'F/J 겸용<br>스페이스 없이', map: [['s'],['d'],['f'],['f','j'],['j'],['k'],['l']] },
+    key8share: { label: '8키 공용<br>LShift A S [D/L] ; \' RShift', map: [['shiftleft'],['a'],['s'],['d','l'],[';'],["'"],['shiftright']] },
+};
+function normalizeKeyCfgMap(km) {
+    if (!Array.isArray(km)) return null;
+    const norm = km.map(entry => Array.isArray(entry) ? entry.slice() : [entry]);
+    while (norm.length < KEYCFG_LANE_COUNT) norm.push([]);
+    return norm.slice(0, KEYCFG_LANE_COUNT).map(a => a.length ? a : ['?']);
+}
+let KEYCFG_MAP;
+try {
+    const saved = JSON.parse(localStorage.getItem('wb_key_layout') || 'null');
+    KEYCFG_MAP = normalizeKeyCfgMap(saved) || KEYCFG_DEFAULT.map(a => a.slice());
+} catch (e) { KEYCFG_MAP = KEYCFG_DEFAULT.map(a => a.slice()); }
+
+function keyCfgLabel(tok) {
+    if (tok === 'space') return 'SPACE';
+    if (tok === 'shiftleft') return 'L-SHIFT';
+    if (tok === 'shiftright') return 'R-SHIFT';
+    if (tok === '?') return '?';
+    return String(tok).toUpperCase();
+}
+function normalizeKeyCfgEvent(e) {
+    if (e.code === 'Space' || e.key === ' ') return 'space';
+    if (e.code === 'ShiftLeft') return 'shiftleft';
+    if (e.code === 'ShiftRight') return 'shiftright';
+    return e.key.toLowerCase();
+}
+function saveKeyCfg() {
+    localStorage.setItem('wb_key_layout', JSON.stringify(KEYCFG_MAP.map(a => a.filter(k => k !== '?'))));
+}
+
+let keyCfgAwaitAdd = -1;              // 이 라인 인덱스에 키를 "추가" 대기 중
+let keyCfgAwaitReplace = null;        // {lane, oldKey} 특정 키를 "교체" 대기 중
+
+function initKeyBindings() { renderKeyPresetRow(); renderKeyBindGroup(); }
+
+function renderKeyPresetRow() {
+    const row = document.getElementById('key-preset-row');
+    if (!row) return;
+    row.innerHTML = '';
+    Object.keys(KEYCFG_PRESETS).forEach(name => {
+        const btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'key-config-preset-btn';
+        btn.innerHTML = KEYCFG_PRESETS[name].label;
+        btn.onclick = () => applyKeyCfgPreset(name);
+        row.appendChild(btn);
+    });
+}
+function applyKeyCfgPreset(name) {
+    const preset = KEYCFG_PRESETS[name]; if (!preset) return;
+    KEYCFG_MAP = preset.map.map(a => a.slice());
+    keyCfgAwaitAdd = -1; keyCfgAwaitReplace = null;
+    saveKeyCfg(); renderKeyBindGroup();
+}
+function renderKeyBindGroup() {
+    const c = document.getElementById('key-bind-group');
+    if (!c) return;
+    c.innerHTML = '';
+    for (let i = 0; i < KEYCFG_LANE_COUNT; i++) {
+        const row = document.createElement('div');
+        row.className = 'key-config-lane-row';
+        const label = document.createElement('span');
+        label.className = 'key-config-lane-label';
+        label.style.color = KEYCFG_LANE_COLORS[i];
+        label.textContent = 'L' + (i + 1);
+        row.appendChild(label);
+
+        (KEYCFG_MAP[i] || []).forEach(k => {
+            const chip = document.createElement('div');
+            const isListening = keyCfgAwaitReplace && keyCfgAwaitReplace.lane === i && keyCfgAwaitReplace.oldKey === k;
+            chip.className = 'key-config-chip' + (isListening ? ' listening' : '');
+            const label2 = document.createElement('span');
+            label2.textContent = isListening ? '키 입력…' : keyCfgLabel(k);
+            chip.appendChild(label2);
+            chip.onclick = (ev) => { ev.stopPropagation(); startKeyCfgReplace(i, k); };
+            if (KEYCFG_MAP[i].length > 1) {
+                const x = document.createElement('span');
+                x.className = 'key-config-chip-x'; x.textContent = '✕';
+                x.onclick = (ev) => { ev.stopPropagation(); removeKeyCfgKey(i, k); };
+                chip.appendChild(x);
+            }
+            row.appendChild(chip);
+        });
+
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'key-config-add' + (keyCfgAwaitAdd === i ? ' listening' : '');
+        addBtn.textContent = keyCfgAwaitAdd === i ? '…' : '+';
+        addBtn.onclick = (ev) => { ev.stopPropagation(); startKeyCfgAdd(i); };
+        row.appendChild(addBtn);
+
+        c.appendChild(row);
+    }
+}
+function startKeyCfgAdd(i) {
+    keyCfgAwaitAdd = (keyCfgAwaitAdd === i) ? -1 : i;
+    keyCfgAwaitReplace = null;
+    renderKeyBindGroup();
+}
+function startKeyCfgReplace(i, oldKey) {
+    const already = keyCfgAwaitReplace && keyCfgAwaitReplace.lane === i && keyCfgAwaitReplace.oldKey === oldKey;
+    keyCfgAwaitReplace = already ? null : { lane: i, oldKey };
+    keyCfgAwaitAdd = -1;
+    renderKeyBindGroup();
+}
+function removeKeyCfgKey(i, key) {
+    if (!KEYCFG_MAP[i] || KEYCFG_MAP[i].length <= 1) return;
+    const idx = KEYCFG_MAP[i].indexOf(key);
+    if (idx !== -1) KEYCFG_MAP[i].splice(idx, 1);
+    saveKeyCfg(); renderKeyBindGroup();
+}
+window.addEventListener('keydown', e => {
+    if (keyCfgAwaitAdd === -1 && !keyCfgAwaitReplace) return;
+    e.preventDefault();
+    if (e.key === 'Escape') { keyCfgAwaitAdd = -1; keyCfgAwaitReplace = null; renderKeyBindGroup(); return; }
+    const tok = normalizeKeyCfgEvent(e);
+    const dupLane = KEYCFG_MAP.findIndex(keys => keys.includes(tok));
+    if (keyCfgAwaitAdd !== -1) {
+        if (dupLane !== -1 && !confirm(`이 키는 이미 L${dupLane+1}에서도 쓰고 있어요. 그래도 L${keyCfgAwaitAdd+1}의 겸용키로 추가할까요?`)) {
+            keyCfgAwaitAdd = -1; renderKeyBindGroup(); return;
+        }
+        KEYCFG_MAP[keyCfgAwaitAdd].push(tok);
+        keyCfgAwaitAdd = -1; saveKeyCfg(); renderKeyBindGroup();
+    } else if (keyCfgAwaitReplace) {
+        const { lane, oldKey } = keyCfgAwaitReplace;
+        if (tok === oldKey) { keyCfgAwaitReplace = null; renderKeyBindGroup(); return; }
+        if (dupLane !== -1 && dupLane !== lane && !confirm(`이 키는 이미 L${dupLane+1}에서도 쓰고 있어요. 그래도 L${lane+1}에 겸용키로 바꿀까요?`)) {
+            keyCfgAwaitReplace = null; renderKeyBindGroup(); return;
+        }
+        const idx = KEYCFG_MAP[lane].indexOf(oldKey);
+        if (idx !== -1) KEYCFG_MAP[lane][idx] = tok;
+        keyCfgAwaitReplace = null; saveKeyCfg(); renderKeyBindGroup();
+    }
+});
+
 
 // ═══════════ SYNC ═══════════
 const BPM=120,INT_SEC=60/BPM;
