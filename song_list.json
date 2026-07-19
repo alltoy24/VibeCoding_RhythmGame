@@ -92,7 +92,7 @@
     "pack": "Reference1",
     "previewStart": 85,
     "charts": [
-      { "name": "Normal", "level": 10, "file": " hard_10.json", "stats": { "stamina": 34, "speed": 56, "pattern": 21, "rhythm": 34, "readability": 19 } },
+      { "name": "Hard", "level": 10, "file": "hard_10.json", "stats": { "stamina": 34, "speed": 56, "pattern": 21, "rhythm": 34, "readability": 19 } },
       { "name": "Troll", "level": "19+", "file": "troll_19.json", "stats": { "stamina": 98, "speed": 109, "pattern": 62, "rhythm": 49, "readability": 51 } }
     ]
   },
