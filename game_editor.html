@@ -1184,15 +1184,64 @@ function chartMsToUnit(chartMs){
   return chartUnitOf(point.mIdx,point.pos192);
 }
 function chartMsToPosition(chartMs){return chartQuarterToPosition(chartMsToQuarter(chartMs));}
+// 화면에서도 박자 하나의 세로 길이는 언제나 같다. 따라서 5/4는 4/4보다
+// 한 박만큼 실제로 더 길게 보여서, 칸만 촘촘해지는 착시가 생기지 않는다.
+function baseMeasureQuarterLength(){
+  return Math.max(0.0625,(Number(beatNum)||4)*(4/(Number(beatDenom)||4)));
+}
+function getMeasureDisplayHeight(measureIdx=0){
+  return measureHeight*(measureQuarterLength(measureIdx)/baseMeasureQuarterLength());
+}
+function getMeasureStartY(measureIdx=0){
+  const target=Math.max(0,Math.floor(Number(measureIdx)||0));
+  let y=0;
+  for(let i=0;i<target;i++)y+=getMeasureDisplayHeight(i);
+  return y;
+}
+function getTotalChartHeight(){
+  let y=0;
+  for(let i=0;i<measures.length;i++)y+=getMeasureDisplayHeight(i);
+  return y;
+}
+function getMeasurePositionAtY(absY=0){
+  const safeY=Math.max(0,Number(absY)||0);
+  let top=0;
+  const existing=Math.max(1,measures.length);
+  for(let i=0;i<existing;i++){
+    const height=getMeasureDisplayHeight(i);
+    if(safeY<top+height){
+      return {mIdx:i,relY:Math.max(0,Math.min(1,(safeY-top)/height))};
+    }
+    top+=height;
+  }
+  // 비어 있는 아래 영역을 클릭해 새 마디를 만들 때도 기본 박자 길이를 유지한다.
+  const height=getMeasureDisplayHeight(existing);
+  const extra=Math.floor((safeY-top)/height);
+  return {mIdx:existing+extra,relY:Math.max(0,Math.min(1,(safeY-top-extra*height)/height))};
+}
+function measurePosToY(mIdx,pos192=0){
+  const point=normalizeChartPosition(mIdx,pos192);
+  return getMeasureStartY(point.measureIdx)+(point.pos/BASE_RES)*getMeasureDisplayHeight(point.measureIdx);
+}
+function chartMsAtEditorY(absY){
+  const point=getMeasurePositionAtY(absY);
+  return chartPositionToMs(point.mIdx,point.relY*BASE_RES);
+}
+function eventGridPosition(ev){
+  return ev&&ev.measureIdx!==undefined
+    ? {mIdx:Number(ev.measureIdx)||0,pos192:Number(ev.pos)||0}
+    : chartMsToPosition(ev?.time||0);
+}
 function eventGridUnit(ev){
   return ev&&ev.measureIdx!==undefined
     ? chartUnitOf(ev.measureIdx,ev.pos)
     : chartMsToUnit(ev?.time||0);
 }
 function durationToGridHeight(ev,durationMs){
-  const startUnit=eventGridUnit(ev);
-  const endUnit=chartMsToUnit(chartUnitToMs(startUnit)+Math.max(0,Number(durationMs)||0));
-  return Math.max(0,(endUnit-startUnit)*measureHeight);
+  const start=eventGridPosition(ev);
+  const startMs=chartPositionToMs(start.mIdx,start.pos192);
+  const end=chartMsToPosition(startMs+Math.max(0,Number(durationMs)||0));
+  return Math.max(0,measurePosToY(end.mIdx,end.pos192)-measurePosToY(start.mIdx,start.pos192));
 }
 function bpmAtChartMs(chartMs){
   if(!tempoMap.length)rebuildTempoMap();
@@ -1225,12 +1274,12 @@ function adjustMeasureMeter(measureIdx,delta){
     measureMeters.push({measureIdx,numerator,denominator:current.denominator});
     measureMeters.sort((a,b)=>a.measureIdx-b.measureIdx);
   }
-  rebuildTempoMap();drawGrid();
+  rebuildTempoMap();resizeEditor();drawGrid();
 }
 function getMeasureMeterControlAt(x,absY){
-  const measureIdx=Math.floor(absY/measureHeight);
+  const {mIdx:measureIdx,relY}=getMeasurePositionAtY(absY);
   if(measureIdx<0)return null;
-  const yInMeasure=absY-measureIdx*measureHeight;
+  const yInMeasure=relY*getMeasureDisplayHeight(measureIdx);
   if(yInMeasure<3||yInMeasure>17)return null;
   if(x>=24&&x<=38)return {measureIdx,delta:-1};
   if(x>=81&&x<=95)return {measureIdx,delta:1};
@@ -1856,7 +1905,7 @@ function addKeyframe(){
   const scrollY=editorContainer.scrollTop;
   let chartMs;
   if(isEditPlaying) chartMs=(audio.currentTime*1000)-offset;
-  else chartMs=chartUnitToMs((scrollY+editorContainer.clientHeight/2)/measureHeight);
+  else chartMs=chartMsAtEditorY(scrollY+editorContainer.clientHeight/2);
   chartMs=Math.max(0,chartMs);
 
   const x=parseFloat(document.getElementById('kf-x').value)||0;
@@ -1875,7 +1924,7 @@ function addPulseEvent(type){
   const scrollY=editorContainer.scrollTop;
   let chartMs;
   if(isEditPlaying) chartMs=(audio.currentTime*1000)-offset;
-  else chartMs=chartUnitToMs((scrollY+editorContainer.clientHeight/2)/measureHeight);
+  else chartMs=chartMsAtEditorY(scrollY+editorContainer.clientHeight/2);
   chartMs=Math.max(0,chartMs);
 
   const intensity=parseInt(document.getElementById('pulse-intensity').value)||8;
@@ -2776,8 +2825,8 @@ function drawGrid(){
   const fxColumnX=getFxColumnX();
   const gridWidth=getGridCanvasWidth();
   const scrollY=editorContainer.scrollTop;
-  const startMI=Math.max(0,Math.floor(scrollY/measureHeight));
-  const endMI=Math.min(measures.length-1,Math.ceil((scrollY+gridCanvas.height)/measureHeight));
+  const startMI=Math.max(0,getMeasurePositionAtY(scrollY).mIdx);
+  const endMI=Math.min(measures.length-1,getMeasurePositionAtY(scrollY+gridCanvas.height).mIdx+1);
 
   // 카메라 전용 컬럼: 노트/라인 영역과 완전히 분리된 자리
   gridCtx.fillStyle='rgba(255,209,102,0.035)';
@@ -2792,10 +2841,11 @@ function drawGrid(){
   gridCtx.beginPath();gridCtx.moveTo(fxColumnX,0);gridCtx.lineTo(fxColumnX,gridCanvas.height);gridCtx.stroke();
 
   for(let i=startMI;i<=endMI;i++){
-    const drawY=i*measureHeight-scrollY;
+    const localHeight=getMeasureDisplayHeight(i);
+    const drawY=getMeasureStartY(i)-scrollY;
     const meter=getMeasureMeter(i);
     const gridSteps=getGridStepsPerMeasure(i);
-    const cellH=measureHeight/gridSteps;
+    const cellH=localHeight/gridSteps;
     for(let j=0;j<gridSteps;j++){
       const ly=drawY+j*cellH;
       const beatProgress=(j*meter.numerator)/gridSteps;
@@ -2815,7 +2865,7 @@ function drawGrid(){
     gridCtx.fillText('−',27,drawY+14);gridCtx.fillText(`${meter.numerator}/${meter.denominator}`,43,drawY+14);gridCtx.fillText('+',84,drawY+14);
     for(let k=1;k<visibleLanes.length;k++){
       gridCtx.strokeStyle='#222';gridCtx.lineWidth=1;
-      gridCtx.beginPath();gridCtx.moveTo(k*100,drawY);gridCtx.lineTo(k*100,drawY+measureHeight);gridCtx.stroke();
+      gridCtx.beginPath();gridCtx.moveTo(k*100,drawY);gridCtx.lineTo(k*100,drawY+localHeight);gridCtx.stroke();
     }
     // 고급 모드에서만 레인의 오른쪽을 라인 이벤트 전용 구역으로 남긴다.
     if(!isSimpleEditor){
@@ -2823,7 +2873,7 @@ function drawGrid(){
         const divX=k*100+76;
         gridCtx.strokeStyle='rgba(80,80,80,0.35)';gridCtx.lineWidth=1;
         gridCtx.setLineDash([2,4]);
-        gridCtx.beginPath();gridCtx.moveTo(divX,drawY);gridCtx.lineTo(divX,drawY+measureHeight);gridCtx.stroke();
+        gridCtx.beginPath();gridCtx.moveTo(divX,drawY);gridCtx.lineTo(divX,drawY+localHeight);gridCtx.stroke();
         gridCtx.setLineDash([]);
       }
     }
@@ -2831,11 +2881,12 @@ function drawGrid(){
 
   const ns=Math.max(0,startMI-20);
   for(let i=ns;i<=endMI;i++){
-    const m=measures[i];const drawY=i*measureHeight-scrollY;
+    const m=measures[i];const drawY=getMeasureStartY(i)-scrollY;
+    const localHeight=getMeasureDisplayHeight(i);
     m.notes.forEach(n=>{
-      const ny=drawY+(n.pos/BASE_RES)*measureHeight;
+      const ny=drawY+(n.pos/BASE_RES)*localHeight;
       const visH=10;
-      let tailY=n.len>0?ny+(n.len/BASE_RES)*measureHeight:ny+visH;
+      let tailY=n.len>0?measurePosToY(i,n.pos+n.len)-scrollY:ny+visH;
       if(tailY<0||ny>gridCanvas.height)return;
       // 간편 모드는 레인 전체를 노트 전용으로 사용한다.
       const laneX=getEditorLaneX(n.lane);
@@ -2855,10 +2906,10 @@ function drawGrid(){
 
   msgEvents.forEach(ev=>{
     if(ev.measureIdx<startMI||ev.measureIdx>endMI)return;
-    const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
+    const y=measurePosToY(ev.measureIdx,ev.pos)-scrollY;
     if(ev.len>0){
       gridCtx.fillStyle='rgba(208,132,255,0.15)';
-      gridCtx.fillRect(0,y,noteAreaWidth,(ev.len/BASE_RES)*measureHeight);
+      gridCtx.fillRect(0,y,noteAreaWidth,measurePosToY(ev.measureIdx,ev.pos+ev.len)-scrollY-y);
     }
     gridCtx.strokeStyle='#d084ff';gridCtx.lineWidth=2;
     gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(noteAreaWidth,y);gridCtx.stroke();
@@ -2868,7 +2919,7 @@ function drawGrid(){
 
   speedEvents.forEach(ev=>{
     if(ev.measureIdx<startMI||ev.measureIdx>endMI)return;
-    const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
+    const y=measurePosToY(ev.measureIdx,ev.pos)-scrollY;
     gridCtx.strokeStyle='#ffd700';gridCtx.lineWidth=2;
     gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(noteAreaWidth,y);gridCtx.stroke();
     gridCtx.fillStyle='#ffd700';gridCtx.font='bold 11px Arial';
@@ -2877,7 +2928,7 @@ function drawGrid(){
 
   bpmEvents.forEach(ev=>{
     if(ev.measureIdx<startMI||ev.measureIdx>endMI)return;
-    const y=ev.measureIdx*measureHeight+(ev.pos/BASE_RES)*measureHeight-scrollY;
+    const y=measurePosToY(ev.measureIdx,ev.pos)-scrollY;
     gridCtx.strokeStyle='#ff9e77';gridCtx.lineWidth=2;
     gridCtx.setLineDash([7,3]);
     gridCtx.beginPath();gridCtx.moveTo(0,y);gridCtx.lineTo(noteAreaWidth,y);gridCtx.stroke();
@@ -2894,10 +2945,10 @@ function drawGrid(){
     const evZoneX=laneX1-24, evZoneW=22;
     const evCX=evZoneX+evZoneW/2; // 이벤트 존 중앙 x
     events.forEach(kf=>{
-      const mIdx=eventGridUnit(kf);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(kf);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       const dim=(lane!==selectedLineLane);
       const isSel=(lane===selectedLineLane && lineEvents[selectedLineLane][selectedKfIdx]===kf);
       gridCtx.globalAlpha=dim?0.4:1;
@@ -2955,10 +3006,10 @@ function drawGrid(){
     // pulse도 이벤트 전용 구역(우측 22px) 안에 표시
     const cx=laneX1-13;
     events.forEach(pe=>{
-      const mIdx=eventGridUnit(pe);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(pe);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       if(pe.type==='beat'){
         gridCtx.fillStyle=LANE_COLORS[lane];
         gridCtx.beginPath();gridCtx.arc(cx,y,5,0,Math.PI*2);gridCtx.fill();
@@ -2976,9 +3027,9 @@ function drawGrid(){
     const laneX0=getEditorLaneX(lane);
     if(laneX0===null)return;
     events.forEach(ev=>{
-      const unit=eventGridUnit(ev), drawMI=Math.floor(unit);
+      const point=eventGridPosition(ev), drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=unit*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       gridCtx.strokeStyle='#78baff';gridCtx.lineWidth=2;
       gridCtx.setLineDash([5,3]);
       gridCtx.beginPath();gridCtx.moveTo(laneX0,y);gridCtx.lineTo(laneX0+74,y);gridCtx.stroke();
@@ -2994,10 +3045,10 @@ function drawGrid(){
     if(laneX0===null)return;
     const cx=laneX0+12;
     events.forEach(ae=>{
-      const mIdx=eventGridUnit(ae);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(ae);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       gridCtx.strokeStyle=ae.active?'#00ff88':'#ff4444';gridCtx.lineWidth=2;
       gridCtx.beginPath();gridCtx.moveTo(laneX0,y);gridCtx.lineTo(laneX0+90,y);gridCtx.stroke();
       gridCtx.fillStyle=ae.active?'#00ff88':'#ff4444';
@@ -3012,10 +3063,10 @@ function drawGrid(){
   {
     const CAM_COLOR='#ffd166', camCX=cameraColumnX+40;
     cameraEvents.forEach(kf=>{
-      const mIdx=eventGridUnit(kf);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(kf);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       const isSel=(cameraEvents[selectedCamKfIdx]===kf);
       const isAbs=kf.moveType==='absolute';
       if(kf.duration>0){
@@ -3049,10 +3100,10 @@ function drawGrid(){
 
     // 반전 트리거 마커
     camFlipXEvents.forEach(fe=>{
-      const mIdx=eventGridUnit(fe);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(fe);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       gridCtx.fillStyle=fe.flipped?'#00ff88':'#333';
       gridCtx.beginPath();gridCtx.arc(camCX-25,y,6,0,Math.PI*2);gridCtx.fill();
       gridCtx.strokeStyle='#000';gridCtx.lineWidth=1;gridCtx.stroke();
@@ -3061,10 +3112,10 @@ function drawGrid(){
       gridCtx.textAlign='start';
     });
     camFlipYEvents.forEach(fe=>{
-      const mIdx=eventGridUnit(fe);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(fe);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       gridCtx.fillStyle=fe.flipped?'#00e5ff':'#333';
       gridCtx.beginPath();gridCtx.arc(camCX+25,y,6,0,Math.PI*2);gridCtx.fill();
       gridCtx.strokeStyle='#000';gridCtx.lineWidth=1;gridCtx.stroke();
@@ -3076,10 +3127,10 @@ function drawGrid(){
     // 줌(확대/축소) 키프레임 마커 — 초록색, 카메라 이동 마커와 구분되는 위치/모양
     const ZOOM_COLOR='#00ff88', zoomCX=camCX+47;
     camZoomEvents.forEach(kf=>{
-      const mIdx=eventGridUnit(kf);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(kf);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       const isSel=(camZoomEvents[selectedCamZoomKfIdx]===kf);
       const isAbs=kf.moveType==='absolute';
       if(kf.duration>0){
@@ -3106,10 +3157,10 @@ function drawGrid(){
     const slotMap=computeFxSlots();
     const slotW=28; // 라인 하나가 차지하는 폭
     effectEvents.forEach(kf=>{
-      const mIdx=eventGridUnit(kf);
-      const drawMI=Math.floor(mIdx);
+      const point=eventGridPosition(kf);
+      const drawMI=point.mIdx;
       if(drawMI<startMI-1||drawMI>endMI+1)return;
-      const y=mIdx*measureHeight-scrollY;
+      const y=measurePosToY(point.mIdx,point.pos192)-scrollY;
       const def=EFFECT_TYPES.find(t=>t.key===kf.type)||EFFECT_TYPES[0];
       const isSel=(effectEvents[selectedEffectIdx]===kf);
       const slotCX=getFxSlotXs()[slotMap.get(kf)??1];
@@ -3168,7 +3219,7 @@ function drawGrid(){
     gridCtx.setLineDash([]);
   }
 
-  const centerMs=chartUnitToMs((scrollY+editorContainer.clientHeight/2)/measureHeight);
+  const centerMs=chartMsAtEditorY(scrollY+editorContainer.clientHeight/2);
   updateCoordDisplay(Math.max(0,centerMs));
 }
 
@@ -3176,7 +3227,7 @@ function drawGrid(){
 //  EDITOR RESIZE / SCROLL
 // ═══════════════════════════════════════════════════════════════
 function resizeEditor(){
-  document.getElementById('canvas-layer').style.height=(measures.length*measureHeight)+'px';
+  document.getElementById('canvas-layer').style.height=getTotalChartHeight()+'px';
   gridCanvas.height=window.innerHeight+measureHeight;
   syncEditorViewport();
   gridCanvas.width=getGridCanvasWidth();
@@ -3191,7 +3242,7 @@ editorContainer.addEventListener('scroll',()=>requestAnimationFrame(drawGrid));
 // ═══════════════════════════════════════════════════════════════
 //  MOUSE INTERACTION (GRID)
 // ═══════════════════════════════════════════════════════════════
-let dragTarget=null,isDragging=false,startY=0;
+let dragTarget=null,isDragging=false,startY=0,dragTargetMeasureIdx=null;
 let lineDragKf=null, lineDragStartY=0;  // 라인 키프레임 duration 드래그
 
 // ═══════════════════════════════════════════════════════════════
@@ -3271,13 +3322,11 @@ let moveOrigin=null;
 function clearSelection(){ selection=[]; }
 
 function yToMeasurePos(absY){
-  const mIdx=Math.floor(absY/measureHeight);
-  const relY=(absY%measureHeight)/measureHeight;
+  const {mIdx,relY}=getMeasurePositionAtY(absY);
   const snapped=snapMeasurePosition(relY,mIdx);
   if(snapped.pos192>=BASE_RES)return {mIdx:mIdx+1,pos192:0};
   return {mIdx,pos192:snapped.pos192};
 }
-function measurePosToY(mIdx,pos192){ return mIdx*measureHeight+(pos192/BASE_RES)*measureHeight; }
 function elemY(el){ return measurePosToY(el.measureIdx!==undefined?el.measureIdx:el._mIdx, el.pos); }
 
 function enumerateModeElements(){
@@ -3354,7 +3403,8 @@ gridCanvas.addEventListener('mousedown',e=>{
   const absY=(e.clientY-rect.top)+editorContainer.scrollTop;
   const x=e.clientX-rect.left;
   const lane=getEditorLaneFromX(x);
-  const mIdx=Math.floor(absY/measureHeight);
+  const measurePoint=getMeasurePositionAtY(absY);
+  const mIdx=measurePoint.mIdx;
 
   const meterControl=getMeasureMeterControlAt(x,absY);
   if(meterControl){adjustMeasureMeter(meterControl.measureIdx,meterControl.delta);return;}
@@ -3390,7 +3440,7 @@ gridCanvas.addEventListener('mousedown',e=>{
     resizeEditor();
   }
 
-  const relY=(absY%measureHeight)/measureHeight;
+  const relY=measurePoint.relY;
   const {pos192}=snapMeasurePosition(relY,mIdx);
   if(pos192>=BASE_RES)return;
 
@@ -3452,12 +3502,12 @@ gridCanvas.addEventListener('mousedown',e=>{
 
   if(editMode==='MSG'){
     const ei=msgEvents.findIndex(ev=>ev.measureIdx===mIdx&&Math.abs(ev.pos-pos192)<10);
-    if(ei!==-1){pushHistory();dragTarget=msgEvents[ei];isDragging=true;startY=mIdx*measureHeight+(dragTarget.pos/BASE_RES)*measureHeight;}
+    if(ei!==-1){pushHistory();dragTarget=msgEvents[ei];dragTargetMeasureIdx=mIdx;isDragging=true;startY=measurePosToY(mIdx,dragTarget.pos);}
     else{
       pushHistory();
       const nm={time:0,measureIdx:mIdx,pos:pos192,len:0,text:msgTextInput.value||'MESSAGE'};
       msgEvents.push(nm);msgEvents.sort((a,b)=>(a.measureIdx-b.measureIdx)||(a.pos-b.pos));
-      dragTarget=nm;isDragging=true;startY=absY;
+      dragTarget=nm;dragTargetMeasureIdx=mIdx;isDragging=true;startY=absY;
     }
     drawGrid();return;
   }
@@ -3467,11 +3517,11 @@ gridCanvas.addEventListener('mousedown',e=>{
   if(ei===-1){
     pushHistory();
     const nn={lane,pos:pos192,len:0};
-    m.notes.push(nn);dragTarget=nn;isDragging=true;startY=absY;playSfx('hit');
+    m.notes.push(nn);dragTarget=nn;dragTargetMeasureIdx=mIdx;isDragging=true;startY=absY;playSfx('hit');
   }else{
     pushHistory();
-    dragTarget=m.notes[ei];isDragging=true;
-    startY=mIdx*measureHeight+(dragTarget.pos/BASE_RES)*measureHeight;
+    dragTarget=m.notes[ei];dragTargetMeasureIdx=mIdx;isDragging=true;
+    startY=measurePosToY(mIdx,dragTarget.pos);
   }
   drawGrid();
 });
@@ -3517,9 +3567,10 @@ window.addEventListener('mousemove',e=>{
 
   // 라인/카메라 키프레임 Duration 드래그 (롱노트처럼)
   if(lineDragKf){
-    const distPx=Math.max(0,curAbsY-lineDragStartY);
-    const startUnit=eventGridUnit(lineDragKf);
-    let durMs=Math.round(chartUnitToMs(startUnit+(distPx/measureHeight))-chartUnitToMs(startUnit));
+    const startPoint=eventGridPosition(lineDragKf);
+    const startMs=chartPositionToMs(startPoint.mIdx,startPoint.pos192);
+    const curPoint=yToMeasurePos(curAbsY);
+    let durMs=Math.max(0,Math.round(chartPositionToMs(curPoint.mIdx,curPoint.pos192)-startMs));
     if(editMode==='EFFECT'){
       const start=evTimeMs(lineDragKf);
       const cap=fxOverlapCapEnd(start,lineDragKf);
@@ -3546,8 +3597,9 @@ window.addEventListener('mousemove',e=>{
   }
 
   if(!isDragging||!dragTarget)return;
-  const dist=Math.max(0,curAbsY-startY);
-  dragTarget.len=Math.round((dist/measureHeight)*BASE_RES);
+  const startPoint=normalizeChartPosition(dragTargetMeasureIdx,dragTarget.pos);
+  const endPoint=yToMeasurePos(curAbsY);
+  dragTarget.len=Math.max(0,Math.round((endPoint.mIdx-startPoint.measureIdx)*BASE_RES+endPoint.pos192-startPoint.pos));
   drawGrid();
 });
 
@@ -3579,7 +3631,7 @@ window.addEventListener('mouseup',()=>{
     return;
   }
   if(lineDragKf){ lineDragKf=null; drawGrid(); return; }
-  isDragging=false;dragTarget=null;
+  isDragging=false;dragTarget=null;dragTargetMeasureIdx=null;
 });
 
 function relocateLaneItems(arrays){
@@ -3600,9 +3652,10 @@ gridCanvas.addEventListener('contextmenu',e=>{
   const absY=(e.clientY-rect.top)+editorContainer.scrollTop;
   const x=e.clientX-rect.left;
   const lane=getEditorLaneFromX(x);
-  const mIdx=Math.floor(absY/measureHeight);
+  const measurePoint=getMeasurePositionAtY(absY);
+  const mIdx=measurePoint.mIdx;
   if(mIdx>=measures.length)return;
-  const {pos192}=snapMeasurePosition((absY%measureHeight)/measureHeight,mIdx);
+  const {pos192}=snapMeasurePosition(measurePoint.relY,mIdx);
   if(x>=getNoteAreaWidth() && !['CAMERA','FLIPX','FLIPY','CAMZOOM','EFFECT'].includes(editMode)) return;
 
   if(editMode==='LINE'){
@@ -4341,7 +4394,8 @@ function stopEditPlay(){
 
 function updatePlayHeadPos(){
   const chartMs=audio.currentTime*1000-offset;
-  const y=Math.max(0,chartMsToUnit(chartMs)*measureHeight);
+  const point=chartMsToPosition(chartMs);
+  const y=Math.max(0,measurePosToY(point.mIdx,point.pos192));
   playHead.style.transform=`translateY(${y}px)`;
   return y;
 }
