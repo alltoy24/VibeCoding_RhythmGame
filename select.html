@@ -1715,6 +1715,7 @@ const _songWarnCache = {}; // folder -> Set(gimmick id) — 곡 전체 난이도
 const GIMMICK_ICON_SVG = {
     speed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M4.2 6.2l2 2M2 13h3M19 13h3M17.8 8.2l2-2"/><path d="M12 13l4-5"/><circle cx="12" cy="13" r="7.5"/></svg>',
     tempo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V6l9-2v12"/><path d="M13 9l7 2v7"/><ellipse cx="8" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="18" rx="3" ry="2"/></svg>',
+    meter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 18h16"/><path d="M8 9v6M12 8v8M16 9v6"/></svg>',
     keys:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/></svg>',
     move:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg>',
     pulse: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 3-10 2 3h5"/></svg>',
@@ -1724,6 +1725,7 @@ const GIMMICK_ICON_SVG = {
 const GIMMICK_DEFS = {
     speed:  { title: '라인 속도 변속', color: '#ff9f2d', glow: 'rgba(255,159,45,0.4)',  desc: '곡 중간에 노트가 내려오는 속도가 빨라지거나 느려져요.' },
     tempo:  { title: 'BPM 변경',       color: '#ff7a45', glow: 'rgba(255,122,69,0.42)',  desc: '곡 중간에 BPM이 바뀌어요. 박자의 흐름이 전환되는 구간에 주의하세요.' },
+    meter:  { title: '라인별 박자표',  color: '#78baff', glow: 'rgba(120,186,255,0.42)', desc: '특정 라인만 곡 중간에 다른 박자 단위로 전환돼요.' },
     keys:   { title: '라인 개수 변경', color: '#00f2ff', glow: 'rgba(0,242,255,0.4)',   desc: '곡 중간에 눌러야 하는 키(라인) 개수가 바뀌어요.' },
     move:   { title: '라인 이동',     color: '#ff2d78', glow: 'rgba(255,45,120,0.4)',  desc: '판정선이 곡 중간에 움직이거나 회전해요.' },
     pulse:  { title: '비트 펄스',     color: '#c060ff', glow: 'rgba(192,96,255,0.4)',  desc: '라인이 박자에 맞춰 통통 튀는 연출이 있어요.' },
@@ -1856,6 +1858,7 @@ function detectGimmicks(chart) {
     const found = ['keys']; // 시작 라인 수는 항상 표시 (변경 여부와 무관)
     if (chart.speedEvents && chart.speedEvents.some(e => Math.abs((e.mult ?? 1) - 1) > 0.001)) found.push('speed');
     if (chart.bpmEvents && chart.bpmEvents.length) found.push('tempo');
+    if (chart.meterEvents && chart.meterEvents.some(arr => arr && arr.length)) found.push('meter');
     if (chart.lineEvents && chart.lineEvents.some(arr => arr && arr.length > 0)) found.push('move');
     if (chart.pulseEvents && chart.pulseEvents.some(arr => arr && arr.length > 0)) found.push('pulse');
     if ((chart.cameraEvents && chart.cameraEvents.length) ||

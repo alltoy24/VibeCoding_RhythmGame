@@ -1711,6 +1711,7 @@
     const DEFAULT_LINE = Array.from({length:LANE_COUNT},(_,i)=>({x:(i+0.5)/LANE_COUNT, y:0.85, angle:0}));
     let lineEvents  = Array.from({length:LANE_COUNT},()=>[]);
     let pulseEvents = Array.from({length:LANE_COUNT},()=>[]);
+    let meterEvents = Array.from({length:LANE_COUNT},()=>[]);
     let activeEvents = Array.from({length:LANE_COUNT},()=>[]); // 라인 등장/퇴장(온오프) 이벤트
     let DEFAULT_ACTIVE_SET = [1,2,4,5]; // 기존 맵은 다 4키(D F J K)로 만들어졌으니, 정보가 없으면 기본 4키 (차트의 initKeyCount/activeEvents로 갱신됨)
     function defaultLineActive(lane){ return DEFAULT_ACTIVE_SET.includes(lane); }
@@ -2526,6 +2527,21 @@ function renderScreenEffects(ctx,gw,gh,ct){
       }
       return {x:resultX,y:resultY,angle:resultAngle};
     }
+    // 라인별 박자표는 노트의 실제 시간축을 재계산하지 않는다.
+    // 대신 그 라인의 비트 단위(펄스)와 제작 화면의 박자 그룹을 독립적으로 바꾼다.
+    function getLineMeterAt(lane,chartMs){
+      let meter={numerator:beatNum,denominator:beatDenom,startedAt:0};
+      const events=meterEvents[lane]||[];
+      for(const ev of events){
+        if(evTimeMs(ev)>chartMs)break;
+        meter={
+          numerator:Math.max(1,Math.round(Number(ev.numerator)||beatNum)),
+          denominator:Number(ev.denominator)||beatDenom,
+          startedAt:evTimeMs(ev)
+        };
+      }
+      return meter;
+    }
     function getPulseMagnitude(lane,chartMs){
       const events=pulseEvents[lane];
       if(!events||!events.length) return 0;
@@ -2534,15 +2550,20 @@ function renderScreenEffects(ctx,gw,gh,ct){
         if(evTimeMs(events[i])<=chartMs){p=events[i];break;}
       }
       if(!p||p.type==='stop') return 0;
-      const beatLen=60000/getBpmAtChartMs(chartMs);
-      const phase=(chartMs-evTimeMs(p))%beatLen;
+      const meter=getLineMeterAt(lane,chartMs);
+      const beatLen=(60000/getBpmAtChartMs(chartMs))*(4/meter.denominator);
+      const phaseOrigin=Math.max(evTimeMs(p),meter.startedAt);
+      const elapsed=chartMs-phaseOrigin;
+      const phase=elapsed%beatLen;
       const d=p.decay;
       if(phase>d) return 0;
       const u=phase/d;
       let env;
       if(u<0.12){ env=u/0.12; }
       else{ const k=(u-0.12)/0.88; env=Math.pow(1-k,2); }
-      return p.intensity*env;
+      const beatIndex=Math.max(0,Math.floor(elapsed/beatLen));
+      const accent=(beatIndex%meter.numerator===0)?1:0.72;
+      return p.intensity*env*accent;
     }
     function hexA(hex,a){
       const h=hex.replace('#','');
@@ -2967,6 +2988,11 @@ function renderScreenEffects(ctx,gw,gh,ct){
         };
         lineEvents   = padToLaneCount(data.lineEvents  ? data.lineEvents.map(arr=>arr.map(e=>({...e})))  : []);
         pulseEvents  = padToLaneCount(data.pulseEvents ? data.pulseEvents.map(arr=>arr.map(e=>({...e}))) : []);
+        meterEvents  = padToLaneCount(data.meterEvents ? data.meterEvents.map(arr=>arr.map(e=>({
+            ...e,
+            numerator: Math.max(1, Math.round(Number(e.numerator) || beatNum)),
+            denominator: Number(e.denominator) || beatDenom
+        })).sort((a,b)=>evTimeMs(a)-evTimeMs(b))) : []);
         activeEvents = padToLaneCount(data.activeEvents ? data.activeEvents.map(arr=>arr.map(e=>({...e}))) : []);
 
         // ★ 곡 시작 시 기본으로 켜져있는 라인 + 가운데 정렬 배치 (에디터의 "초기 키 개수" 설정과 동일)
