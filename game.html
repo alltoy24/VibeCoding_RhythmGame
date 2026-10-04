@@ -962,6 +962,8 @@
             name: 'Perfect',
             window: 100,
             rate: 90,
+            // 일반 모드의 Perfect는 TP Perfect와 동일한 원점수다.
+            // 두 판정의 차이는 RATE와 시각 효과에만 반영한다.
             scoreRate: 1.0,
             key: 'perfect',
             cssClass: 'judge-perfect',
@@ -986,7 +988,7 @@
             name: 'Bad',
             window: 200,
             rate: 40,
-            scoreRate: 0.30,
+            scoreRate: 0.40,
             key: 'bad',
             cssClass: 'judge-bad',
             color: '#ff9e77',
@@ -1018,6 +1020,10 @@
         { name:'Miss',         window:Infinity, rate:0,   scoreRate:0,   key:'miss',         cssClass:'judge-miss',          color:'#747d91', glowColor:'#545d70', particleColors:['#747d91'], comboBreak:true },
     ];
     const ABSOLUTE_SYNC_WEIGHTS = { absoluteSync:1.0, tpPerfect:0.90, perfect:0.80, good:0.60, bad:0.40, miss:0 };
+    // 일반 연주는 판정 70%와 최대 콤보 30%를 합산한다.
+    // 같은 판정 분포라도 콤보를 끝까지 이어 간 플레이가 확실히 앞서도록 한다.
+    const STANDARD_JUDGMENT_PORTION = 0.70;
+    const STANDARD_COMBO_PORTION = 0.30;
     let precisionPlayMode = false;
     let requestedPrecisionPlayMode = false;
     function isPrecisionEligibleDiffKey(diffKey) {
@@ -1029,6 +1035,19 @@
         const weighted = Object.entries(ABSOLUTE_SYNC_WEIGHTS)
             .reduce((sum, [key, weight]) => sum + ((stats[key] || 0) * weight), 0);
         return Math.floor((weighted / total) * 1000000);
+    }
+    function calculateStandardScore(stats = judgeStats, bestCombo = maxCombo, total = totalMaxHits) {
+        if (!total) return 0;
+        const weighted = JUDGE_TABLE.reduce((sum, judge) => {
+            return sum + ((stats[judge.key] || 0) * judge.scoreRate);
+        }, 0);
+        const judgmentRatio = weighted / total;
+        const comboRatio = Math.max(0, Math.min(1, (Number(bestCombo) || 0) / total));
+        const scoreValue = 1000000 * (
+            (judgmentRatio * STANDARD_JUDGMENT_PORTION) +
+            (comboRatio * STANDARD_COMBO_PORTION)
+        );
+        return Math.floor(scoreValue + 0.0000001);
     }
     function getActiveJudgeTable() {
         return precisionPlayMode ? ABSOLUTE_SYNC_JUDGE_TABLE : JUDGE_TABLE;
@@ -2543,7 +2562,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
     let combo           = 0, maxCombo = 0, totalHits = 0, totalRateSum = 0, score = 0;
     let gameAnimId;
     let baseNoteSpeed   = 5.0;
-    let scorePerHit     = 0;
 
     let startTimestamp  = 0;
     const START_DELAY   = 2000;
@@ -2930,7 +2948,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
             }
         }
         gameNotes.sort((a,b) => a.time - b.time);
-        scorePerHit = totalMaxHits > 0 ? (1000000 / totalMaxHits) : 0;
     }
 
     function buildSpeedMap() {
@@ -3479,8 +3496,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
         judgeStats[judgeInfo.key] += units;
         totalRateSum += judgeInfo.rate * units;
-        score += scorePerHit * judgeInfo.scoreRate * units;
-
         if(judgeInfo.comboBreak) {
             combo = 0;
             resetFever();
@@ -3489,6 +3504,8 @@ function renderScreenEffects(ctx,gw,gh,ct){
             if(combo > maxCombo) maxCombo = combo;
             checkFeverState(combo);
         }
+
+        score = precisionPlayMode ? calculatePrecisionScore() : calculateStandardScore();
 
         updateGameHUD();
         showJudgePopup(judgeInfo, note ? note.lane : 0);
@@ -3522,9 +3539,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
         judgeStats[perfectKey] = totalMaxHits;
         totalHits = totalMaxHits;
         totalRateSum = totalMaxHits * perfectJudge.rate;
-        score = scorePerHit * totalMaxHits * perfectJudge.scoreRate;
         combo = totalMaxHits;
         maxCombo = totalMaxHits;
+        score = precisionPlayMode ? calculatePrecisionScore() : calculateStandardScore();
         gameNotes.forEach(note => { note.hit = true; note.finished = true; });
         activeNotes.forEach(note => { note.hit = true; note.finished = true; });
         updateGameHUD();
@@ -3790,7 +3807,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
     function updateGameHUD() {
         const comboEl = document.getElementById('g-combo');
         comboEl.innerText  = combo;
-        const displayScore = precisionPlayMode ? calculatePrecisionScore() : Math.round(score);
+        const displayScore = precisionPlayMode ? calculatePrecisionScore() : calculateStandardScore();
         document.getElementById('g-score').innerText = precisionPlayMode
             ? formatPrecisionPercent(displayScore)
             : displayScore.toString().padStart(6, '0');
@@ -4038,11 +4055,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
             }
 
             const pureScore = Math.floor(score);
-            const standardScore = Math.floor(scorePerHit * (
-                (judgeStats.tpPerfect + judgeStats.perfect) +
-                (judgeStats.good * 0.70) +
-                (judgeStats.bad * 0.30)
-            ));
+            const standardScore = calculateStandardScore();
             const calcScore = precisionPlayMode ? calculatePrecisionScore() : standardScore;
             if (!precisionPlayMode && Math.abs(pureScore - standardScore) > 1) {
                 alert("데이터 무결성 오류가 발생했습니다. (점수 불일치)");
