@@ -2244,7 +2244,7 @@ function startPreview() {
     if (!song) return;
     if (_previewStopTimer) { clearTimeout(_previewStopTimer); _previewStopTimer = null; }
     const ps = parseFloat(song.previewStart || 0);
-    previewAudio.src = `songs/${song.folder}/audio.mp3`;
+    previewAudio.src = `Maps/${song.folder}/audio.mp3`;
     previewAudio.volume = 0;
     previewAudio.currentTime = ps;
     ensureAudioPipeline();
@@ -2468,7 +2468,7 @@ function renderList() {
         el.innerHTML = `<div class="item-num">${idx+1}</div><div class="item-cover" data-folder="${song.folder}">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div></div><div class="item-difficulty-grid">${difficultyGrid}</div>`;
         
         const cover = el.querySelector('.item-cover'), img = new Image(); 
-        img.src = `songs/${song.folder}/image.png`;
+        img.src = `Maps/${song.folder}/image.png`;
         img.onload = () => { cover.style.backgroundImage = `url('${img.src}')`; cover.textContent = ''; };
 
         // ★ 이미 분석돼있는 "주의할 기믹" 정보가 있으면 바로 뱃지 표시
@@ -2525,7 +2525,7 @@ function renderGrid() {
             </div>`;
 
         const cov = card.querySelector('.grid-cover'), img = new Image();
-        img.src = `songs/${song.folder}/image.png`;
+        img.src = `Maps/${song.folder}/image.png`;
         img.onload = () => { cov.style.backgroundImage = `url('${img.src}')`; cov.textContent = ''; };
 
         const warn = _songWarnCache[song.folder];
@@ -2585,7 +2585,7 @@ function selectSong(idx, instant) {
 
 function updateAlbumArt(song) {
     if(!song) return;
-    const path=`songs/${song.folder}/image.png`, dynBg=document.getElementById('dynamic-bg'), bigCover=document.getElementById('big-cover'), img=new Image();
+    const path=`Maps/${song.folder}/image.png`, dynBg=document.getElementById('dynamic-bg'), bigCover=document.getElementById('big-cover'), img=new Image();
     img.src=path;
     img.onload=()=>{ dynBg.style.backgroundImage=`url('${path}')`; bigCover.style.backgroundImage=`url('${path}')`; bigCover.style.backgroundSize='cover'; bigCover.textContent=''; applyAdaptiveTextTheme(computeImageBrightness(img)); };
     img.onerror=()=>{ dynBg.style.backgroundImage='none'; bigCover.style.backgroundImage='linear-gradient(135deg, #0a0a1a 0%, #141430 100%)'; bigCover.textContent='🎵'; applyAdaptiveTextTheme(40); };

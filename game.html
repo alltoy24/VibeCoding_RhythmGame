@@ -2819,10 +2819,10 @@ function renderScreenEffects(ctx,gw,gh,ct){
             const chartData = await chartRes.json();
             parseChartData(chartData);
 
-            // ★ 곡 이미지 배경 (songs/{folder}/image.png, 전체화면 블러)
+            // ★ 곡 이미지 배경 (Maps/{folder}/image.png, 전체화면 블러)
             bgaImage.onload  = () => { bgaImage.style.display = 'block'; };
             bgaImage.onerror = () => { bgaImage.style.display = 'none'; };
-            bgaImage.src = `songs/${song}/image.png`;
+            bgaImage.src = `Maps/${song}/image.png`;
 
             logStatus("LOADING AUDIO...");
             const audioPath = `Maps/${song}/audio.mp3`;

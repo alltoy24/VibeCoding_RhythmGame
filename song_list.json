@@ -111,10 +111,20 @@
     "folder": "GetDat",
     "title": "Get Dat",
     "artist": "Righten",
-    "pack": "Core2",
+    "pack": "Reference1",
     "previewStart": 50,
     "charts": [
       { "name": "Troll", "level": "19", "file": "troll_19.json", "stats": { "stamina": 40, "speed": 88, "pattern": 56, "rhythm": 27, "readability": 145 } }
+    ]
+  },
+  {
+    "folder": "FreedomDive",
+    "title": "FREEDOM DiVE",
+    "artist": "Xi",
+    "pack": "Reference1",
+    "previewStart": 20,
+    "charts": [
+      { "name": "Troll", "level": "16", "file": "troll_16.json", "stats": { "stamina": 87, "speed": 72, "pattern": 64, "rhythm": 16, "readability": 12 } }
     ]
   }
 ]
