@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="ui-refresh.css">
     <title>WEB BEAT : ARCHIVE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;400;600;700&display=swap');
@@ -124,7 +126,7 @@
         }
     </style>
 </head>
-<body>
+<body data-ui="archive">
     <div class="shell">
         <div class="topbar">
             <div class="brand">WEB <span>BEAT</span></div>
@@ -232,7 +234,7 @@
             const records = [];
             const packs = {};
             const gradeCounts = Object.fromEntries(GRADE_THRESHOLDS.map(g => [g.grade, 0]));
-            const judgeTotals = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
+            const judgeTotals = { tpPerfect: 0, perfect: 0, good: 0, bad: 0, miss: 0 };
             let totalCharts = 0;
 
             songs.forEach(song => {
@@ -312,10 +314,17 @@
                 return barRow(pack, `${p.played}/${p.total}`, pct, '#00e5ff');
             }).join('') || '<div class="empty">No pack data.</div>';
 
-            const totalJudges = Object.values(stats.judgeTotals).reduce((a, b) => a + b, 0);
-            const judgeColors = { perfectEx:'#ffffff', perfect:'#ffe000', great:'#00f2ff', good:'#88ff00', notBad:'#ffb300', save:'#ff7733', oh:'#ff2d78', miss:'#555566' };
+            const displayJudgeTotals = {
+                perfect: stats.judgeTotals.tpPerfect + stats.judgeTotals.perfect,
+                good: stats.judgeTotals.good,
+                bad: stats.judgeTotals.bad,
+                miss: stats.judgeTotals.miss
+            };
+            const totalJudges = Object.values(displayJudgeTotals).reduce((a, b) => a + b, 0);
+            const judgeColors = { perfect:'#f1c765', good:'#9ee68a', bad:'#ff9e77', miss:'#747d91' };
+            const judgeLabels = { perfect:'PERFECT', good:'GOOD', bad:'BAD', miss:'MISS' };
             document.getElementById('judge-bars').innerHTML = totalJudges
-                ? Object.entries(stats.judgeTotals).map(([k, v]) => barRow(k.toUpperCase(), v, (v / totalJudges) * 100, judgeColors[k] || '#00e5ff')).join('')
+                ? Object.entries(displayJudgeTotals).map(([k, v]) => barRow(judgeLabels[k] || k.toUpperCase(), v, (v / totalJudges) * 100, judgeColors[k] || '#00e5ff')).join('')
                 : '<div class="empty">Detailed judgment logs will appear after future plays.</div>';
 
             document.getElementById('top-records').innerHTML = stats.records.length

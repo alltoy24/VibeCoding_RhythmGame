@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="ui-refresh.css">
     <title>WEB BEAT : MULTI BATTLE ARENA (FULL)</title>
     <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -260,7 +262,7 @@
         }
     </style>
 </head>
-<body>
+<body data-ui="game-multi">
     <div id="loading-screen" class="overlay-screen" style="display:flex;">
         <div class="loading-text" id="loading-msg">SYNCHRONIZING...</div>
     </div>
@@ -318,7 +320,7 @@
         (function() {
         // --- 1. GLOBAL & SETUP ---
         const socket = io("https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app", { transports: ['websocket'] });
-        const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+        const SERVER_URL = "https://webbeat-api.yunhogim528.workers.dev/api/score";
         const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         
         const FEVER_LV1 = 50; const FEVER_LV2 = 100; const FEVER_LV3 = 250;

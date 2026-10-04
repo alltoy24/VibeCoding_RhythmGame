@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>WEB BEAT : SELECT</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="ui-refresh.css">
+    <title>WEB BEAT : 곡 선택</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,300&display=swap');
 
@@ -688,24 +690,586 @@
         #dynamic-bg { position: fixed; top: -5%; left: -5%; width: 110%; height: 110%; background-size: cover; background-position: center; filter: blur(20px) brightness(0.3); z-index: -1; transition: background-image 0.4s ease; }
         .bottom-bar { position: relative; z-index: 20; display: flex; align-items: center; justify-content: center; gap: 20px; padding: 6px; background: rgba(4,4,16,0.6); backdrop-filter: blur(16px); border-top: 1px solid rgba(0,242,255,0.06); }
     </style>
+    <style>
+        /* SONG SELECT · readable library layout */
+        body[data-ui="select"] { background: radial-gradient(circle at 45% -15%, rgba(34,112,164,.22), transparent 43%), linear-gradient(135deg,#070b14 0%,#101827 52%,#080c15 100%); }
+        body[data-ui="select"]::before { opacity:.48; background-size:56px 56px; }
+        body[data-ui="select"]::after { opacity:.38; }
+        body[data-ui="select"] .topbar { min-height:76px; padding:12px 22px; background:rgba(9,14,25,.88); border-bottom:1px solid rgba(151,208,241,.16); box-shadow:0 8px 32px rgba(0,0,0,.24); }
+        body[data-ui="select"] .brand-block { min-width:210px; }
+        body[data-ui="select"] .logo { font-size:21px; letter-spacing:3px; text-shadow:none; }
+        body[data-ui="select"] .page-caption { margin-top:4px; color:#72829b; font-family:'Orbitron'; font-size:8px; letter-spacing:2.5px; }
+        body[data-ui="select"] .topbar-center { gap:4px; }
+        body[data-ui="select"] .pack-label { color:#7f91aa; font-family:'Orbitron'; font-size:8px; letter-spacing:2px; }
+        body[data-ui="select"] .pack-hint { display:none; }
+        body[data-ui="select"] .pack-name { font-size:18px; letter-spacing:1px; }
+        body[data-ui="select"] .pack-dots { margin-top:2px; gap:7px; }
+        body[data-ui="select"] .topbar-right { min-width:210px; justify-content:flex-end; }
+        body[data-ui="select"] .sort-control { border-radius:8px; padding:2px 3px 2px 10px; background:rgba(255,255,255,.045); border-color:rgba(255,255,255,.11); }
+        body[data-ui="select"] .sort-select-mini { color:#d9e4f1; }
+        body[data-ui="select"] .btn-icon { width:34px; height:34px; border-radius:8px; color:#b8c6d8; background:rgba(255,255,255,.045); border-color:rgba(255,255,255,.11); }
+        body[data-ui="select"] .btn-create { min-height:34px; padding:7px 11px; border-radius:8px; box-shadow:none; font-size:9px; }
+
+        body[data-ui="select"] .main { display:grid; grid-template-columns:280px minmax(440px,1fr) 270px; gap:14px; padding:16px; min-height:0; overflow:hidden; }
+        body[data-ui="select"] .main.grid-mode { display:flex; padding:16px; }
+        body[data-ui="select"] .main.grid-mode .grid-panel { padding:22px; border:1px solid rgba(151,208,241,.14); border-radius:16px; background:rgba(10,16,28,.84); box-shadow:0 18px 46px rgba(0,0,0,.23); }
+        body[data-ui="select"] .grid-panel-header { margin-bottom:18px; }
+        body[data-ui="select"] .grid-panel-title { font-size:16px; }
+        body[data-ui="select"] .grid-cards { grid-template-columns:repeat(auto-fill,minmax(190px,1fr)); gap:12px; }
+        body[data-ui="select"] .grid-card { border-radius:12px; background:rgba(255,255,255,.04); }
+        body[data-ui="select"] .list-panel, body[data-ui="select"] .detail-panel, body[data-ui="select"] .ranking-sidebar { border:1px solid rgba(151,208,241,.14); border-radius:16px; background:rgba(10,16,28,.82); box-shadow:0 18px 46px rgba(0,0,0,.22), inset 0 1px 0 rgba(255,255,255,.03); backdrop-filter:blur(20px) saturate(1.08); }
+        body[data-ui="select"] .list-panel { width:auto; min-width:0; border-right:1px solid rgba(151,208,241,.14); }
+        body[data-ui="select"] .list-panel::before, body[data-ui="select"] .list-panel::after { display:none; }
+        body[data-ui="select"] .library-head { display:flex; align-items:center; justify-content:space-between; padding:15px 16px 12px; border-bottom:1px solid rgba(255,255,255,.08); color:#e6eef8; font-family:'Orbitron'; font-size:11px; font-weight:700; letter-spacing:1.5px; }
+        body[data-ui="select"] .library-shortcut { color:#71819a; font-size:7px; letter-spacing:1px; }
+        body[data-ui="select"] .list-inner { margin:7px 0; }
+        body[data-ui="select"] .song-item { height:68px !important; margin:0 8px; width:calc(100% - 16px); padding:0 9px 0 7px; border-radius:10px; border:1px solid transparent; background:transparent; }
+        body[data-ui="select"] .song-item::before { left:0; top:12px; bottom:12px; width:3px; }
+        body[data-ui="select"] .song-item.active { background:linear-gradient(90deg,rgba(86,185,255,.18),rgba(86,185,255,.045)); border-color:rgba(112,200,255,.23); }
+        body[data-ui="select"] .song-item.active::before { background:#72d5ff; box-shadow:0 0 10px #72d5ff; }
+        body[data-ui="select"] .item-num { color:#76869b; width:18px; }
+        body[data-ui="select"] .item-cover { width:40px; height:40px; margin:0 9px; border-radius:8px; }
+        body[data-ui="select"] .item-title { color:#c8d3e2; font-size:12px; }
+        body[data-ui="select"] .song-item.active .item-title { color:#fff; }
+        body[data-ui="select"] .item-artist { color:#718097; }
+        body[data-ui="select"] .song-item.active .item-artist { color:#b0becf; }
+
+        body[data-ui="select"] .detail-panel { padding:22px; gap:18px; overflow:hidden; border-color:rgba(128,209,255,.24); }
+        body[data-ui="select"] .detail-panel::before { opacity:.2; background:radial-gradient(ellipse 70% 55% at 70% 5%,var(--cur-diff-glow),transparent 72%); }
+        body[data-ui="select"] .detail-eyebrow { color:#8194ad; font-family:'Orbitron'; font-size:8px; letter-spacing:2.4px; }
+        body[data-ui="select"] .cover-row { gap:20px; align-items:center; }
+        body[data-ui="select"] .big-cover { width:172px; height:172px; border-radius:13px; border-color:rgba(157,219,255,.22); box-shadow:0 14px 34px rgba(0,0,0,.35); }
+        body[data-ui="select"] .song-meta { gap:9px; }
+        body[data-ui="select"] .meta-title { font-size:clamp(22px,2.1vw,32px); line-height:1.08; }
+        body[data-ui="select"] .meta-artist { color:#aebdce; font-size:13px; }
+        body[data-ui="select"] .meta-quick-stats { gap:12px; padding:0; }
+        body[data-ui="select"] .meta-quick-stat { align-items:flex-start; min-width:58px; padding:7px 10px; border-radius:8px; background:rgba(255,255,255,.045); border:1px solid rgba(255,255,255,.07); }
+        body[data-ui="select"] .meta-quick-stat-value { font-size:14px; }
+        body[data-ui="select"] .np-row { letter-spacing:1.2px; }
+        body[data-ui="select"] .visualizer { height:16px; }
+        body[data-ui="select"] .score-chip, body[data-ui="select"] .rank-chip { padding:6px 10px; }
+        body[data-ui="select"] .diff-area { padding:16px; gap:13px; border-radius:13px; background:rgba(3,7,15,.36); border:1px solid rgba(255,255,255,.075); }
+        body[data-ui="select"] .diff-indicator-row { min-height:26px; }
+        body[data-ui="select"] .diff-ind-label { color:#9fb4ca; font-size:9px; }
+        body[data-ui="select"] .diff-ind-chip { width:30px; background:rgba(255,255,255,.12); }
+        body[data-ui="select"] .diff-card-viewport { height:96px; }
+        body[data-ui="select"] .diff-card { height:96px; border-radius:10px; background:rgba(255,255,255,.045); }
+        body[data-ui="select"] .diff-card-body { padding:12px 14px; }
+        body[data-ui="select"] .diff-card-lv { font-size:30px; }
+        body[data-ui="select"] .diff-card-score { color:#96a6ba; }
+        body[data-ui="select"] .gimmick-stats-row { padding-top:2px; }
+        body[data-ui="select"] .stats-section-label { color:#9fb4ca; }
+        body[data-ui="select"] .gimmick-icon { background:rgba(255,255,255,.055); }
+        body[data-ui="select"] .diff-arrow { width:32px; height:32px; color:#bed0e1; border-radius:8px; }
+        body[data-ui="select"] .play-row { gap:12px; min-height:58px; }
+        body[data-ui="select"] .play-ready { min-width:130px; padding:0 4px; display:flex; flex-direction:column; justify-content:center; color:#8fa2b7; font-family:'Orbitron'; font-size:8px; letter-spacing:1.5px; }
+        body[data-ui="select"] .play-ready kbd { align-self:flex-start; margin-top:5px; padding:3px 6px; border-radius:4px; background:rgba(255,255,255,.07); color:#e3edf8; font-size:9px; }
+        body[data-ui="select"] .btn-play { min-height:58px; border-radius:11px; font-size:15px; letter-spacing:3px; }
+        body[data-ui="select"] .ranking-sidebar { width:auto; min-width:0; border-left:1px solid rgba(151,208,241,.14); }
+        body[data-ui="select"] .rsb-header { padding:16px; border-bottom-color:rgba(255,255,255,.08); }
+        body[data-ui="select"] .rsb-label { color:#9fb4ca; font-size:9px; }
+        body[data-ui="select"] .rsb-song-name { font-size:10px; margin-bottom:5px; }
+        body[data-ui="select"] .rsb-item { padding:9px 13px; }
+        body[data-ui="select"] .rsb-name { color:#c5d0dd; }
+        body[data-ui="select"] .rsb-score { color:#a8b6c8; }
+        body[data-ui="select"] .rsb-my-record { padding:13px 15px; background:rgba(0,0,0,.22); }
+        body[data-ui="select"] .rsb-my-label { color:#8496aa; }
+        body[data-ui="select"] .key-hint-row { left:32px; bottom:22px; padding:7px 9px; border-radius:9px; background:rgba(9,14,25,.72); border:1px solid rgba(255,255,255,.07); }
+        body[data-ui="select"] .bottom-bar { display:none; }
+        @media (max-width:1180px) { body[data-ui="select"] .main { grid-template-columns:250px minmax(400px,1fr); } body[data-ui="select"] .ranking-sidebar { display:none; } }
+        @media (max-width:900px) {
+            body[data-ui="select"] { overflow:auto; }
+            body[data-ui="select"] .topbar { min-height:auto; padding:11px 14px; }
+            body[data-ui="select"] .brand-block { min-width:0; }
+            body[data-ui="select"] .page-caption { display:none; }
+            body[data-ui="select"] .topbar-center { order:3; width:100%; }
+            body[data-ui="select"] .topbar-right { min-width:0; margin-left:auto; }
+            body[data-ui="select"] .main { display:flex; min-height:auto; padding:10px; gap:10px; overflow:visible; }
+            body[data-ui="select"] .list-panel { width:100%; height:276px; min-height:276px; }
+            body[data-ui="select"] .detail-panel { min-height:540px; padding:16px; }
+            body[data-ui="select"] .detail-eyebrow { margin-bottom:-8px; }
+            body[data-ui="select"] .big-cover { width:112px; height:112px; }
+            body[data-ui="select"] .cover-row { gap:14px; align-items:flex-start; }
+            body[data-ui="select"] .meta-title-row { gap:8px; }
+            body[data-ui="select"] .meta-quick-stats { gap:5px; }
+            body[data-ui="select"] .meta-quick-stat { padding:5px 6px; min-width:45px; }
+            body[data-ui="select"] .meta-quick-stat-value { font-size:11px; }
+            body[data-ui="select"] .diff-area { padding:13px; }
+            body[data-ui="select"] .play-ready { display:none; }
+            body[data-ui="select"] .key-hint-row { display:none; }
+            body[data-ui="select"] .main.grid-mode { padding:10px; }
+            body[data-ui="select"] .main.grid-mode .grid-panel { padding:14px; }
+        }
+    </style>
+    <style>
+        /* Usability pass: stable lists and visible choices over decorative motion. */
+        body[data-ui="select"] { background:#0b1018; }
+        body[data-ui="select"] #dynamic-bg { opacity:.14; filter:blur(28px) brightness(.24); }
+        body[data-ui="select"]::before, body[data-ui="select"]::after { display:none; }
+        body[data-ui="select"] .topbar { min-height:64px; padding:9px 20px; background:#101722; box-shadow:none; }
+        body[data-ui="select"] .page-caption, body[data-ui="select"] .pack-label { color:#8b9aae; }
+        body[data-ui="select"] .pack-name { font-size:16px; }
+        body[data-ui="select"] .main { grid-template-columns:300px minmax(520px,1fr) 250px; gap:12px; padding:12px; background:rgba(4,8,13,.46); }
+        body[data-ui="select"] .list-panel, body[data-ui="select"] .detail-panel, body[data-ui="select"] .ranking-sidebar { border-radius:10px; background:rgba(18,26,38,.94); border-color:#2a394e; box-shadow:none; }
+        body[data-ui="select"] .library-head { padding:14px 16px; background:#151e2b; }
+        body[data-ui="select"] .list-inner { overflow-y:auto; overflow-x:hidden; margin:0; scrollbar-color:#526780 transparent; }
+        body[data-ui="select"] .list-wrap { position:relative; transform:none !important; transition:none !important; padding:4px 0; }
+        body[data-ui="select"] .song-item { width:100%; margin:0; height:64px !important; opacity:1 !important; transform:none !important; border-radius:0; border:0; border-bottom:1px solid rgba(174,193,215,.09); padding:0 14px; }
+        body[data-ui="select"] .song-item:hover { background:rgba(111,191,255,.08); }
+        body[data-ui="select"] .song-item.active { background:#20344b; border-color:rgba(130,211,255,.35); }
+        body[data-ui="select"] .song-item::before { left:0; top:0; bottom:0; border-radius:0; width:4px; }
+        body[data-ui="select"] .item-num { color:#9babbd; width:22px; }
+        body[data-ui="select"] .item-cover { width:38px; height:38px; margin:0 10px; }
+        body[data-ui="select"] .item-title { color:#edf3f9; font-size:13px; }
+        body[data-ui="select"] .item-artist { color:#aab7c6; font-size:10px; }
+        body[data-ui="select"] .detail-panel { padding:22px 24px; gap:20px; }
+        body[data-ui="select"] .detail-panel::before { display:none; }
+        body[data-ui="select"] .detail-eyebrow { color:#aebfd0; font-size:9px; }
+        body[data-ui="select"] .cover-row { padding-bottom:20px; border-bottom:1px solid #2a394e; align-items:center; }
+        body[data-ui="select"] .big-cover { width:152px; height:152px; border-radius:8px; box-shadow:none; }
+        body[data-ui="select"] .meta-title { font-size:28px; }
+        body[data-ui="select"] .meta-artist { color:#c2ccd7; }
+        body[data-ui="select"] .meta-quick-stat { background:#172231; border-color:#2f4055; }
+        body[data-ui="select"] .meta-quick-stat-label { color:#98aabd; }
+        body[data-ui="select"] .meta-quick-stat-value { color:#fff; }
+        body[data-ui="select"] .score-chip, body[data-ui="select"] .rank-chip { background:#172231; border-color:#2f4055; }
+        body[data-ui="select"] .chip-label { color:#9aabbe; }
+        body[data-ui="select"] .diff-area { padding:0; border:0; border-radius:0; background:transparent; }
+        body[data-ui="select"] .diff-indicator-row { min-height:26px; }
+        body[data-ui="select"] .diff-indicators { display:none; }
+        body[data-ui="select"] .diff-ind-label { color:#e4edf5; font-size:10px; letter-spacing:1.6px; }
+        body[data-ui="select"] .diff-arrow-hint { display:none; }
+        body[data-ui="select"] .diff-card-viewport { height:auto; overflow:visible; }
+        body[data-ui="select"] .diff-card-track { position:relative; display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; transform:none !important; }
+        body[data-ui="select"] .diff-card { width:auto !important; height:94px; border-radius:8px; cursor:pointer; background:#172231; }
+        body[data-ui="select"] .diff-card:hover { background:#1f2d3e; }
+        body[data-ui="select"] .diff-card-body { padding:11px 12px; }
+        body[data-ui="select"] .diff-card-lv { font-size:28px; }
+        body[data-ui="select"] .diff-card-right { padding:10px; }
+        body[data-ui="select"] .gimmick-stats-row { padding-top:8px; }
+        body[data-ui="select"] .chart-stats-card { gap:12px; }
+        body[data-ui="select"] .gimmick-icon { width:28px; height:28px; border-radius:6px; }
+        body[data-ui="select"] .play-row { border-top:1px solid #2a394e; padding-top:16px; }
+        body[data-ui="select"] .btn-play { min-height:54px; border-radius:8px; }
+        body[data-ui="select"] .ranking-sidebar { background:#151e2b; }
+        body[data-ui="select"] .rsb-header { background:#192433; }
+        body[data-ui="select"] .rsb-item { border-bottom:1px solid rgba(174,193,215,.08); }
+        body[data-ui="select"] .rsb-item:hover { background:rgba(111,191,255,.08); }
+        body[data-ui="select"] .rsb-name { color:#e1e9f1; }
+        body[data-ui="select"] .rsb-lv, body[data-ui="select"] .rsb-my-label { color:#90a1b5; }
+        body[data-ui="select"] .rsb-score { color:#d4e0ec; }
+        body[data-ui="select"] .rsb-my-record { background:#111925; border-top-color:#2a394e; }
+        body[data-ui="select"] .key-hint-row { background:#151e2b; border-color:#2f4055; }
+        @media (max-width:1180px) { body[data-ui="select"] .main { grid-template-columns:280px minmax(460px,1fr); } }
+        @media (max-width:900px) {
+            body[data-ui="select"] .main { display:flex; padding:8px; }
+            body[data-ui="select"] .list-panel { height:300px; min-height:300px; }
+            body[data-ui="select"] .detail-panel { min-height:0; padding:18px; }
+            body[data-ui="select"] .cover-row { align-items:flex-start; }
+            body[data-ui="select"] .big-cover { width:105px; height:105px; }
+            body[data-ui="select"] .meta-title { font-size:20px; }
+            body[data-ui="select"] .diff-card-track { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            body[data-ui="select"] .diff-card { height:88px; }
+            body[data-ui="select"] .chart-stats-card { display:none !important; }
+        }
+    </style>
+    <style>
+        /* Final hierarchy: browse on the left, make one play decision on the right. */
+        body[data-ui="select"] .main { grid-template-columns:minmax(340px,38%) minmax(0,1fr); gap:16px; padding:18px; }
+        body[data-ui="select"] .list-panel { border-radius:12px; }
+        body[data-ui="select"] .library-head { padding:16px 18px; }
+        body[data-ui="select"] .song-item { height:72px !important; padding:0 16px; }
+        body[data-ui="select"] .item-cover { width:46px; height:46px; }
+        body[data-ui="select"] .item-title { font-size:14px; }
+        body[data-ui="select"] .item-artist { font-size:11px; }
+        body[data-ui="select"] .item-level { margin-left:auto; min-width:42px; padding:5px 7px; border-radius:5px; color:#f4f8fc; background:#2a394d; font-family:'Orbitron'; font-size:10px; font-weight:700; text-align:center; }
+        body[data-ui="select"] .detail-panel { display:flex; min-width:0; padding:28px; gap:22px; }
+        body[data-ui="select"] .detail-eyebrow { margin-bottom:-10px; color:#8fa4b9; }
+        body[data-ui="select"] .cover-row { padding-bottom:22px; }
+        body[data-ui="select"] .big-cover { width:188px; height:188px; }
+        body[data-ui="select"] .meta-title { font-size:clamp(28px,3vw,42px); }
+        body[data-ui="select"] .meta-artist { margin-top:8px; font-size:15px; }
+        body[data-ui="select"] .score-chips { margin-top:5px; }
+        body[data-ui="select"] .diff-area { gap:10px; }
+        body[data-ui="select"] .diff-nav { display:none; }
+        body[data-ui="select"] .diff-card-track { grid-template-columns:repeat(auto-fit,minmax(126px,1fr)); gap:8px; }
+        body[data-ui="select"] .diff-card { height:76px; min-width:0; background:#1a2736; }
+        body[data-ui="select"] .diff-card-slab { width:4px; }
+        body[data-ui="select"] .diff-card-body { padding:10px 11px; justify-content:center; }
+        body[data-ui="select"] .diff-card-top { gap:5px; }
+        body[data-ui="select"] .diff-card-type { font-size:9px; letter-spacing:1px; }
+        body[data-ui="select"] .diff-card-lv { font-size:25px; }
+        body[data-ui="select"] .diff-card-bar-wrap, body[data-ui="select"] .diff-card-right { display:none; }
+        body[data-ui="select"] .details-bottom { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(225px,.85fr); gap:16px; min-height:154px; }
+        body[data-ui="select"] .gimmick-stats-row { margin:0; padding:14px; display:flex; flex-direction:column; justify-content:space-between; gap:10px; border:1px solid #2d4055; border-radius:8px; background:#151f2c; }
+        body[data-ui="select"] .gimmick-col { width:100%; }
+        body[data-ui="select"] .stats-section-label { margin:0; color:#a9bacb; }
+        body[data-ui="select"] .gimmick-row { margin-top:7px; }
+        body[data-ui="select"] .chart-stats-card { width:100%; min-height:64px; padding-top:9px; border-top:1px solid #2d4055; }
+        body[data-ui="select"] .chart-stat-list { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px 14px; }
+        body[data-ui="select"] .chart-stat-row { display:grid; grid-template-columns:54px 1fr 28px; align-items:center; gap:7px; }
+        body[data-ui="select"] .chart-stat-name { color:#a5b6c7; font-family:'Orbitron'; font-size:7px; letter-spacing:.8px; }
+        body[data-ui="select"] .chart-stat-track { height:6px; overflow:hidden; border-radius:999px; background:#2b3b4e; }
+        body[data-ui="select"] .chart-stat-fill { height:100%; border-radius:inherit; background:var(--cur-diff); }
+        body[data-ui="select"] .chart-stat-value { color:#eef5fb; font-family:'Orbitron'; font-size:8px; text-align:right; }
+        body[data-ui="select"] .details-bottom .ranking-sidebar { width:auto; min-width:0; min-height:0; display:flex; border-radius:8px; border-color:#2d4055; background:#151f2c; }
+        body[data-ui="select"] .details-bottom .rsb-header { padding:12px 14px; background:#1a2736; }
+        body[data-ui="select"] .details-bottom .rsb-list { min-height:0; padding:3px 0; }
+        body[data-ui="select"] .details-bottom .rsb-item { padding:6px 10px; }
+        body[data-ui="select"] .details-bottom .rsb-my-record { display:none; }
+        body[data-ui="select"] .play-row { margin-top:auto; padding-top:18px; justify-content:flex-end; }
+        body[data-ui="select"] .play-ready { margin-right:auto; }
+        body[data-ui="select"] .btn-play { flex:0 1 390px; min-height:62px; font-size:17px; letter-spacing:4px; }
+        @media (max-height:840px) and (min-width:901px) { body[data-ui="select"] .main { padding:10px; } body[data-ui="select"] .detail-panel { padding:18px; gap:14px; } body[data-ui="select"] .big-cover { width:138px; height:138px; } body[data-ui="select"] .cover-row { padding-bottom:14px; } body[data-ui="select"] .details-bottom { min-height:122px; } body[data-ui="select"] .btn-play { min-height:52px; } }
+        @media (max-width:1050px) { body[data-ui="select"] .main { grid-template-columns:330px minmax(0,1fr); padding:12px; gap:12px; } body[data-ui="select"] .detail-panel { padding:20px; } body[data-ui="select"] .big-cover { width:145px; height:145px; } body[data-ui="select"] .details-bottom { grid-template-columns:1fr; } body[data-ui="select"] .details-bottom .ranking-sidebar { min-height:200px; } }
+        @media (max-width:900px) { body[data-ui="select"] .main { display:flex; padding:8px; } body[data-ui="select"] .list-panel { width:100%; } body[data-ui="select"] .detail-panel { padding:18px; } body[data-ui="select"] .details-bottom { grid-template-columns:1fr; } body[data-ui="select"] .big-cover { width:112px; height:112px; } body[data-ui="select"] .meta-title { font-size:24px; } body[data-ui="select"] .diff-card-track { grid-template-columns:repeat(2,minmax(0,1fr)); } body[data-ui="select"] .btn-play { flex:1; } }
+    </style>
+    <style>
+        /* Clean collection theme: fewer surfaces, stronger type, one obvious action. */
+        body[data-ui="select"] { background:#f4f6fa; color:#1d2733; }
+        body[data-ui="select"] #dynamic-bg, body[data-ui="select"] #bg-canvas { display:none; }
+        body[data-ui="select"] .topbar { min-height:66px; padding:10px 28px; background:#fff; border-bottom:1px solid #dfe5ed; box-shadow:none; }
+        body[data-ui="select"] .logo { color:#1d2733; text-shadow:none; }
+        body[data-ui="select"] .logo em { color:#5e5ce6; }
+        body[data-ui="select"] .page-caption, body[data-ui="select"] .pack-label { color:#7c8998; }
+        body[data-ui="select"] .pack-name { color:#1d2733; font-size:15px; }
+        body[data-ui="select"] .pack-dot { background:#d5dce5; }
+        body[data-ui="select"] .pack-dot.active { background:#5e5ce6; box-shadow:none; }
+        body[data-ui="select"] .btn-icon, body[data-ui="select"] .sort-control { background:#fff; border-color:#d8e0e9; color:#435264; }
+        body[data-ui="select"] .sort-select-mini { color:#435264; }
+        body[data-ui="select"] .btn-create { background:#202938; color:#fff; }
+        body[data-ui="select"] .main { grid-template-columns:minmax(370px,39%) minmax(0,1fr); gap:20px; padding:24px 28px; background:#f4f6fa; }
+        body[data-ui="select"] .list-panel, body[data-ui="select"] .detail-panel { background:#fff; border:1px solid #dfe5ed; border-radius:16px; box-shadow:0 8px 24px rgba(31,46,61,.06); }
+        body[data-ui="select"] .library-head { padding:18px 20px; background:#fff; border-bottom:1px solid #e7ecf2; color:#273343; font-size:12px; }
+        body[data-ui="select"] .library-diff-key { display:grid; grid-template-columns:repeat(4,27px); gap:4px; color:#8290a0; font-style:normal; text-align:center; }
+        body[data-ui="select"] .library-diff-key i { font-style:normal; font-family:'Orbitron'; font-size:7px; }
+        body[data-ui="select"] .list-inner { scrollbar-color:#b8c3d0 transparent; }
+        body[data-ui="select"] .song-item { height:76px !important; padding:0 18px; background:#fff; border-bottom-color:#edf0f4; }
+        body[data-ui="select"] .song-item:hover { background:#f7f9fc; }
+        body[data-ui="select"] .song-item.active { background:#eef1ff; border-color:#dde2ff; }
+        body[data-ui="select"] .song-item.active::before { background:#5e5ce6; box-shadow:none; }
+        body[data-ui="select"] .item-num { display:none; }
+        body[data-ui="select"] .item-cover { width:48px; height:48px; margin:0 12px 0 0; border:0; border-radius:10px; }
+        body[data-ui="select"] .item-title { color:#1f2a37; font-size:14px; }
+        body[data-ui="select"] .item-artist { color:#8290a0; font-size:11px; margin-top:4px; }
+        body[data-ui="select"] .item-difficulty-grid { display:grid; grid-template-columns:repeat(4,27px); gap:4px; margin-left:12px; }
+        body[data-ui="select"] .diff-slot { display:grid; place-items:center; min-height:26px; border-radius:5px; background:color-mix(in srgb, var(--slot-color) 12%, white); border:1px solid color-mix(in srgb, var(--slot-color) 45%, white); color:var(--slot-color); font-family:'Orbitron'; font-size:9px; font-weight:700; }
+        body[data-ui="select"] .diff-slot.empty { background:#f4f6f8; border-color:#edf0f4; }
+        body[data-ui="select"] .detail-panel { padding:34px 38px; gap:24px; }
+        body[data-ui="select"] .detail-eyebrow { color:#5e5ce6; font-size:9px; letter-spacing:2px; }
+        body[data-ui="select"] .cover-row { padding-bottom:26px; border-bottom-color:#e7ecf2; }
+        body[data-ui="select"] .big-cover { width:205px; height:205px; border:0; border-radius:14px; box-shadow:0 10px 22px rgba(31,46,61,.14); }
+        body[data-ui="select"] .meta-title { color:#182231; font-size:clamp(30px,3.2vw,46px); letter-spacing:-1.3px; }
+        body[data-ui="select"] .meta-artist { color:#718093; }
+        body[data-ui="select"] .meta-sep { background:#e7ecf2; }
+        body[data-ui="select"] .np-row { color:#5e5ce6; }
+        body[data-ui="select"] .meta-quick-stat, body[data-ui="select"] .score-chip, body[data-ui="select"] .rank-chip { background:#f6f8fb; border-color:#e2e8f0; }
+        body[data-ui="select"] .meta-quick-stat-label, body[data-ui="select"] .chip-label { color:#8090a1; }
+        body[data-ui="select"] .meta-quick-stat-value, body[data-ui="select"] .chip-val { color:#1f2a37; text-shadow:none; }
+        body[data-ui="select"] .score-bar-wrap { background:#e7ecf2; }
+        body[data-ui="select"] .diff-ind-label { color:#263445; font-size:10px; }
+        body[data-ui="select"] .diff-card-track { grid-template-columns:repeat(auto-fit,minmax(104px,1fr)); gap:9px; }
+        body[data-ui="select"] .diff-card { height:70px; background:#f7f9fc; border-color:#e0e6ee; border-radius:9px; }
+        body[data-ui="select"] .diff-card:hover { background:#eef2f7; }
+        body[data-ui="select"] .diff-card-lv-label { color:#8c99a8; }
+        body[data-ui="select"] .diff-card-lv { color:#1e2936; }
+        body[data-ui="select"] .details-bottom { display:flex; gap:10px; min-height:0; }
+        body[data-ui="select"] .chart-info, body[data-ui="select"] .ranking-module { flex:1; border:1px solid #e1e7ee; border-radius:9px; background:#fff; }
+        body[data-ui="select"] .chart-info > summary, body[data-ui="select"] .ranking-module > summary { display:flex; align-items:center; justify-content:space-between; padding:11px 13px; color:#344253; cursor:pointer; font-family:'Orbitron'; font-size:8px; font-weight:700; letter-spacing:1px; list-style:none; }
+        body[data-ui="select"] summary::-webkit-details-marker { display:none; }
+        body[data-ui="select"] summary span { color:#8b98a7; font-size:7px; }
+        body[data-ui="select"] summary::after { content:'+'; color:#5e5ce6; font-size:15px; line-height:1; }
+        body[data-ui="select"] details[open] summary { border-bottom:1px solid #e7ecf2; }
+        body[data-ui="select"] details[open] summary::after { content:'−'; }
+        body[data-ui="select"] .gimmick-stats-row { border:0; border-radius:0; background:#fff; }
+        body[data-ui="select"] .stats-section-label { color:#8290a0; }
+        body[data-ui="select"] .chart-stats-card { border-top-color:#e7ecf2; }
+        body[data-ui="select"] .chart-stat-name { color:#708094; }
+        body[data-ui="select"] .chart-stat-track { background:#e7ecf2; }
+        body[data-ui="select"] .chart-stat-value { color:#344253; }
+        body[data-ui="select"] .details-bottom .ranking-sidebar { border:0; border-radius:0; background:#fff; }
+        body[data-ui="select"] .details-bottom .rsb-header { background:#f7f9fc; }
+        body[data-ui="select"] .rsb-song-name { color:#344253; }
+        body[data-ui="select"] .rsb-name, body[data-ui="select"] .rsb-score { color:#344253; }
+        body[data-ui="select"] .rsb-item { border-bottom-color:#edf0f4; }
+        body[data-ui="select"] .play-row { border-top-color:#e7ecf2; padding-top:24px; }
+        body[data-ui="select"] .play-ready { color:#8090a1; }
+        body[data-ui="select"] .play-ready kbd { background:#f0f3f7; color:#344253; }
+        body[data-ui="select"] .btn-play { background:linear-gradient(135deg,#ff8055,#f04f3c) !important; color:#fff; box-shadow:0 8px 18px rgba(240,79,60,.26); }
+        body[data-ui="select"] .btn-play:hover { box-shadow:0 10px 22px rgba(240,79,60,.36); }
+        body[data-ui="select"] .key-hint-row { display:none; }
+        @media (max-width:1050px) { body[data-ui="select"] .main { grid-template-columns:340px minmax(0,1fr); padding:14px; gap:14px; } body[data-ui="select"] .detail-panel { padding:24px; } body[data-ui="select"] .big-cover { width:160px; height:160px; } }
+        @media (max-width:900px) { body[data-ui="select"] .topbar { padding:10px 14px; } body[data-ui="select"] .main { display:flex; padding:10px; } body[data-ui="select"] .list-panel { height:340px; } body[data-ui="select"] .detail-panel { padding:20px; } body[data-ui="select"] .big-cover { width:118px; height:118px; } body[data-ui="select"] .item-difficulty-grid, body[data-ui="select"] .library-diff-key { grid-template-columns:repeat(4,22px); gap:3px; } body[data-ui="select"] .diff-slot { font-size:8px; } body[data-ui="select"] .details-bottom { flex-direction:column; } }
+    </style>
+    <style>
+        /* Theme picker */
+        body[data-ui="select"] .theme-setting { align-items:flex-start; gap:10px; flex-direction:column; }
+        body[data-ui="select"] .theme-picker { width:100%; display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+        body[data-ui="select"] .theme-option { min-height:48px; display:flex; align-items:center; justify-content:center; gap:7px; border:1px solid rgba(255,255,255,.14); border-radius:8px; background:rgba(255,255,255,.04); color:#aeb8c7; font-family:'Orbitron'; font-size:8px; font-weight:700; cursor:pointer; }
+        body[data-ui="select"] .theme-option:hover { border-color:rgba(0,242,255,.65); color:#fff; }
+        body[data-ui="select"] .theme-option.active { color:#fff; border-color:#00f2ff; background:rgba(0,242,255,.14); box-shadow:inset 0 0 0 1px rgba(0,242,255,.16); }
+        body[data-ui="select"] .theme-swatch { width:12px; height:12px; border-radius:50%; border:1px solid rgba(255,255,255,.3); }
+        body[data-ui="select"] .theme-swatch.white { background:#f7f8fb; }
+        body[data-ui="select"] .theme-swatch.dark { background:#1b2432; }
+        body[data-ui="select"] .theme-swatch.green { background:#2b9a70; }
+
+        /* Dark: low-glare evening palette */
+        body[data-ui="select"][data-theme="dark"] { background:#10141b; color:#e8edf3; }
+        body[data-ui="select"][data-theme="dark"] .topbar { background:#151b24; border-bottom-color:#2b3543; }
+        body[data-ui="select"][data-theme="dark"] .logo, body[data-ui="select"][data-theme="dark"] .pack-name { color:#f4f7fa; }
+        body[data-ui="select"][data-theme="dark"] .logo em, body[data-ui="select"][data-theme="dark"] .detail-eyebrow { color:#78a6ff; }
+        body[data-ui="select"][data-theme="dark"] .main { background:#10141b; }
+        body[data-ui="select"][data-theme="dark"] .list-panel, body[data-ui="select"][data-theme="dark"] .detail-panel { background:#181f29; border-color:#2c3746; box-shadow:none; }
+        body[data-ui="select"][data-theme="dark"] .library-head { background:#181f29; border-bottom-color:#2c3746; color:#e7edf4; }
+        body[data-ui="select"][data-theme="dark"] .song-item { background:#181f29; border-bottom-color:#26313f; }
+        body[data-ui="select"][data-theme="dark"] .song-item:hover { background:#202a36; }
+        body[data-ui="select"][data-theme="dark"] .song-item.active { background:#27344a; border-color:#354b6a; }
+        body[data-ui="select"][data-theme="dark"] .song-item.active::before { background:#78a6ff; }
+        body[data-ui="select"][data-theme="dark"] .item-title, body[data-ui="select"][data-theme="dark"] .meta-title, body[data-ui="select"][data-theme="dark"] .diff-card-lv { color:#f2f6fa; }
+        body[data-ui="select"][data-theme="dark"] .item-artist, body[data-ui="select"][data-theme="dark"] .meta-artist { color:#9eacbc; }
+        body[data-ui="select"][data-theme="dark"] .diff-slot.empty { background:#202935; border-color:#2b3645; }
+        body[data-ui="select"][data-theme="dark"] .cover-row, body[data-ui="select"][data-theme="dark"] .play-row { border-color:#2c3746; }
+        body[data-ui="select"][data-theme="dark"] .meta-sep, body[data-ui="select"][data-theme="dark"] .score-bar-wrap { background:#2b3543; }
+        body[data-ui="select"][data-theme="dark"] .meta-quick-stat, body[data-ui="select"][data-theme="dark"] .score-chip, body[data-ui="select"][data-theme="dark"] .rank-chip, body[data-ui="select"][data-theme="dark"] .diff-card { background:#202936; border-color:#303c4c; }
+        body[data-ui="select"][data-theme="dark"] .meta-quick-stat-value, body[data-ui="select"][data-theme="dark"] .chip-val { color:#edf2f7; }
+        body[data-ui="select"][data-theme="dark"] .chart-info, body[data-ui="select"][data-theme="dark"] .ranking-module { background:#1d2632; border-color:#303c4c; }
+        body[data-ui="select"][data-theme="dark"] .gimmick-stats-row, body[data-ui="select"][data-theme="dark"] .details-bottom .ranking-sidebar { background:#1d2632; }
+        body[data-ui="select"][data-theme="dark"] .details-bottom .rsb-header { background:#202a36; }
+        body[data-ui="select"][data-theme="dark"] .rsb-song-name, body[data-ui="select"][data-theme="dark"] .rsb-name, body[data-ui="select"][data-theme="dark"] .rsb-score { color:#e3eaf2; }
+        body[data-ui="select"][data-theme="dark"] .btn-play { background:linear-gradient(135deg,#5d8df1,#4668d8) !important; box-shadow:0 8px 18px rgba(70,104,216,.28); }
+
+        /* Green: calm, high-clarity collection palette */
+        body[data-ui="select"][data-theme="green"] { background:#f1f8f4; }
+        body[data-ui="select"][data-theme="green"] .topbar { border-bottom-color:#d6e9dc; }
+        body[data-ui="select"][data-theme="green"] .logo em, body[data-ui="select"][data-theme="green"] .detail-eyebrow { color:#17845c; }
+        body[data-ui="select"][data-theme="green"] .main { background:#f1f8f4; }
+        body[data-ui="select"][data-theme="green"] .list-panel, body[data-ui="select"][data-theme="green"] .detail-panel { border-color:#d5e8dc; }
+        body[data-ui="select"][data-theme="green"] .song-item.active { background:#e1f2e7; border-color:#c7e5d2; }
+        body[data-ui="select"][data-theme="green"] .song-item.active::before { background:#17845c; }
+        body[data-ui="select"][data-theme="green"] .pack-dot.active { background:#17845c; }
+        body[data-ui="select"][data-theme="green"] .chart-stat-fill { background:#17845c; }
+        body[data-ui="select"][data-theme="green"] summary::after { color:#17845c; }
+        body[data-ui="select"][data-theme="green"] .btn-play { background:linear-gradient(135deg,#32a678,#16855b) !important; box-shadow:0 8px 18px rgba(22,133,91,.25); }
+    </style>
+    <style>
+        /* Regular difficulties stay in the library; custom charts are opt-in. */
+        body[data-ui="select"] .list-panel { overflow:hidden; }
+        body[data-ui="select"] .library-diff-key, body[data-ui="select"] .item-difficulty-grid { grid-template-columns:repeat(var(--library-slot-count, 3),27px); }
+        body[data-ui="select"] .list-panel.special-library-mode .library-diff-key, body[data-ui="select"] .list-panel.special-library-mode .item-difficulty-grid { grid-template-columns:repeat(var(--library-slot-count, 1),minmax(40px,max-content)); }
+        body[data-ui="select"] .list-panel.special-library-mode .library-diff-key i { font-size:6px; letter-spacing:0; text-transform:none; }
+        body[data-ui="select"] .special-charts { margin-top:4px; border:1px solid #e1e7ee; border-radius:9px; background:#fff; }
+        body[data-ui="select"] .special-charts[hidden] { display:none; }
+        body[data-ui="select"] .special-charts summary { display:flex; align-items:center; justify-content:space-between; padding:10px 12px; color:#4a596b; cursor:pointer; font-family:'Orbitron'; font-size:8px; font-weight:700; letter-spacing:1px; list-style:none; }
+        body[data-ui="select"] .special-charts summary::-webkit-details-marker { display:none; }
+        body[data-ui="select"] .special-charts summary::after { content:'+'; margin-left:auto; color:#5e5ce6; font-size:15px; line-height:1; }
+        body[data-ui="select"] .special-charts[open] summary { border-bottom:1px solid #e7ecf2; }
+        body[data-ui="select"] .special-charts[open] summary::after { content:'−'; }
+        body[data-ui="select"] .special-charts summary small { margin-left:8px; color:#8a97a7; font-size:7px; }
+        body[data-ui="select"] .special-diff-list { display:flex; flex-wrap:wrap; gap:7px; padding:10px; }
+        body[data-ui="select"] .special-diff-button { min-height:40px; display:flex; align-items:center; gap:10px; padding:7px 10px; border:1px solid color-mix(in srgb, var(--special-color) 45%, white); border-radius:7px; background:color-mix(in srgb, var(--special-color) 8%, white); color:var(--special-color); font-family:'Orbitron'; font-size:9px; font-weight:700; cursor:pointer; }
+        body[data-ui="select"] .special-diff-button strong { color:#2d3a49; font-size:10px; }
+        body[data-ui="select"] .special-diff-button.active { background:var(--special-color); border-color:var(--special-color); color:#fff; box-shadow:0 4px 10px color-mix(in srgb, var(--special-color) 32%, transparent); }
+        body[data-ui="select"] .special-diff-button.active strong { color:#fff; }
+        body[data-ui="select"][data-theme="dark"] .special-charts { background:#1d2632; border-color:#303c4c; }
+        body[data-ui="select"][data-theme="dark"] .special-charts summary { color:#d6e0ea; }
+        body[data-ui="select"][data-theme="dark"] .special-charts[open] summary { border-bottom-color:#303c4c; }
+        body[data-ui="select"][data-theme="dark"] .special-diff-button { background:color-mix(in srgb, var(--special-color) 13%, #1d2632); border-color:color-mix(in srgb, var(--special-color) 50%, #1d2632); }
+        body[data-ui="select"][data-theme="dark"] .special-diff-button strong { color:#e5edf5; }
+        @media (max-width:900px) { body[data-ui="select"] .item-difficulty-grid, body[data-ui="select"] .library-diff-key { grid-template-columns:repeat(var(--library-slot-count, 3),22px); } body[data-ui="select"] .list-panel.special-library-mode .library-diff-key, body[data-ui="select"] .list-panel.special-library-mode .item-difficulty-grid { grid-template-columns:repeat(var(--library-slot-count, 1),minmax(34px,max-content)); } }
+    </style>
+    <style>
+        /* Special charts use a restrained, status-like switch instead of a second CTA. */
+        body[data-ui="select"] .special-mode-toggle { min-height:22px; display:flex; align-items:center; gap:6px; padding:0; border:0; background:transparent; color:#7d8998; font-family:'Orbitron'; font-size:7px; font-weight:700; letter-spacing:.8px; cursor:pointer; }
+        body[data-ui="select"] .special-mode-toggle[hidden] { display:none !important; }
+        body[data-ui="select"] .special-toggle-control { width:25px; height:14px; position:relative; flex:0 0 auto; border:1px solid #b9c3d0; border-radius:999px; background:#e9edf2; transition:border-color .2s, background .2s; }
+        body[data-ui="select"] .special-toggle-control i { position:absolute; top:2px; left:2px; width:8px; height:8px; border-radius:50%; background:#8a97a7; transition:transform .2s ease, background .2s; }
+        body[data-ui="select"] .special-mode-toggle small { color:#a2acb9; font-size:6px; letter-spacing:.7px; }
+        body[data-ui="select"] .special-mode-toggle:hover { color:#6648c9; }
+        body[data-ui="select"] .special-mode-toggle.active { color:#7652ba; }
+        body[data-ui="select"] .special-mode-toggle.active .special-toggle-control { border-color:#9d79e3; background:#ede5fb; }
+        body[data-ui="select"] .special-mode-toggle.active .special-toggle-control i { transform:translateX(11px); background:#7652ba; }
+        body[data-ui="select"] .special-mode-toggle.active small { color:#8c70c5; }
+        body[data-ui="select"] .diff-card.absolute-sync-ready { border-color:rgba(118,160,255,.8) !important; box-shadow:0 0 0 1px rgba(255,255,255,.6), 0 10px 25px rgba(93,137,240,.28) !important; }
+        body[data-ui="select"] .diff-card.absolute-sync-ready::before { inset:0; z-index:3; width:auto; height:auto; padding:2px; border-radius:10px; opacity:1; pointer-events:none; background:linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff,#ff4a91); background-size:300% 100%; box-shadow:0 0 11px rgba(132,169,255,.46); -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; animation:absolute-sync-spectrum 1.2s linear infinite; }
+        body[data-ui="select"] .special-diff-button { position:relative; overflow:hidden; }
+        body[data-ui="select"] .special-diff-button.absolute-sync-ready { border-color:#9dbdff; box-shadow:0 0 0 1px rgba(255,255,255,.6), 0 6px 16px rgba(91,138,224,.3); }
+        body[data-ui="select"] .special-diff-button.absolute-sync-ready::after { content:''; position:absolute; inset:0 0 auto; height:4px; background:linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff,#ff4a91); background-size:300% 100%; animation:absolute-sync-spectrum 1.2s linear infinite; }
+        @keyframes absolute-sync-spectrum { to { background-position:300% 0; } }
+        body[data-ui="select"][data-theme="dark"] .special-mode-toggle { color:#adb9c7; }
+        body[data-ui="select"][data-theme="dark"] .special-toggle-control { border-color:#4e5d70; background:#26303c; }
+        body[data-ui="select"][data-theme="dark"] .special-toggle-control i { background:#9eacbc; }
+        body[data-ui="select"][data-theme="dark"] .special-mode-toggle.active .special-toggle-control { border-color:#9d79e3; background:#37274c; }
+        body[data-ui="select"][data-theme="dark"] .special-mode-toggle.active .special-toggle-control i { background:#c5a8ff; }
+
+        #special-mode-fx { position:fixed; z-index:90; inset:0; display:none; overflow:hidden; pointer-events:none; }
+        #special-mode-fx::before, #special-mode-fx::after { content:''; position:absolute; inset:0; }
+        #special-mode-fx::before { border:1px solid rgba(185,133,255,.38); box-shadow:inset 0 0 22px rgba(137,76,213,.16), inset 0 0 2px rgba(255,255,255,.42); opacity:.72; }
+        #special-mode-fx::after { opacity:.34; background:linear-gradient(90deg, rgba(255,103,192,.2), transparent 2%, transparent 98%, rgba(78,212,255,.2)), linear-gradient(180deg, rgba(178,122,255,.16), transparent 3%, transparent 97%, rgba(255,103,192,.16)); }
+        body.special-difficulty-mode #special-mode-fx { display:block; }
+        body.special-difficulty-mode { background:#170b28; }
+        body.special-difficulty-mode .topbar { background:#1d102e; border-bottom-color:#6f3ba7; }
+        body.special-difficulty-mode .logo, body.special-difficulty-mode .pack-name { color:#f5edff; }
+        body.special-difficulty-mode .logo em, body.special-difficulty-mode .detail-eyebrow { color:#d3a2ff; }
+        body.special-difficulty-mode .main { background:radial-gradient(circle at 75% 15%, rgba(123,48,194,.23), transparent 34%), #170b28; }
+        body.special-difficulty-mode .list-panel, body.special-difficulty-mode .detail-panel { background:rgba(31,16,49,.96); border-color:#623c92; box-shadow:0 0 24px rgba(149,57,255,.16); }
+        body.special-difficulty-mode .library-head, body.special-difficulty-mode .song-item { background:transparent; border-bottom-color:rgba(209,167,255,.16); color:#e8ddf8; }
+        body.special-difficulty-mode .song-item.active { background:rgba(141,73,218,.28); border-color:rgba(198,143,255,.48); }
+        body.special-difficulty-mode .song-item.active::before { background:#d3a2ff; }
+        body.special-difficulty-mode .item-title, body.special-difficulty-mode .meta-title, body.special-difficulty-mode .diff-ind-label { color:#f5edff; }
+        body.special-difficulty-mode .item-artist, body.special-difficulty-mode .meta-artist, body.special-difficulty-mode .library-diff-key { color:#c3afd8; }
+        body.special-difficulty-mode .meta-quick-stat, body.special-difficulty-mode .score-chip, body.special-difficulty-mode .rank-chip { background:rgba(255,255,255,.08); border-color:rgba(215,176,255,.22); }
+        body.special-difficulty-mode .meta-quick-stat-value, body.special-difficulty-mode .chip-val { color:#fff; }
+        body.special-difficulty-mode .cover-row, body.special-difficulty-mode .play-row, body.special-difficulty-mode .meta-sep { border-color:rgba(215,176,255,.18); }
+        body.special-difficulty-mode .diff-card-viewport { display:none; }
+        body.special-difficulty-mode .special-charts { display:block !important; margin-top:2px; border-color:#9a62de; background:rgba(60,30,90,.72); box-shadow:inset 0 0 24px rgba(174,89,255,.16); }
+        body.special-difficulty-mode .special-charts summary { display:none; }
+        body.special-difficulty-mode .special-diff-list { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; padding:14px; }
+        body.special-difficulty-mode .special-diff-button { min-height:76px; justify-content:space-between; padding:14px; border-color:color-mix(in srgb, var(--special-color) 72%, white); background:color-mix(in srgb, var(--special-color) 16%, #25123d); color:#eee2ff; font-size:10px; }
+        body.special-difficulty-mode .special-diff-button strong { color:#fff; font-size:13px; }
+        body.special-difficulty-mode .special-diff-button.active { transform:translateY(-2px); box-shadow:0 0 0 1px #fff, 0 0 24px color-mix(in srgb, var(--special-color) 62%, transparent); }
+        body.special-difficulty-mode .chart-info, body.special-difficulty-mode .ranking-module { border-color:#5a397d; background:rgba(37,19,57,.88); }
+        body.special-difficulty-mode .chart-info > summary, body.special-difficulty-mode .ranking-module > summary { color:#d8c5ef; }
+        body.special-difficulty-mode .btn-play { background:linear-gradient(135deg,#9b4ee4,#d33b8d) !important; box-shadow:0 8px 20px rgba(195,52,164,.38); }
+
+        /* Difficulty selection: 한 줄로 정렬되는 밀도 높은 선택 카드. */
+        body[data-ui="select"] .diff-card-track { display:grid; grid-template-columns:repeat(var(--diff-card-count, 1), minmax(0,1fr)); justify-content:stretch; align-items:stretch; gap:10px; }
+        body[data-ui="select"] .diff-card-track[data-diff-count="1"] { grid-template-columns:minmax(0,260px); }
+        body[data-ui="select"] .diff-card { width:auto !important; height:80px; min-width:0; display:flex; flex-direction:column; justify-content:space-between; padding:10px 13px 9px 16px; border:1px solid color-mix(in srgb, var(--diff-color) 32%, #cbd5df); border-radius:10px; background:linear-gradient(90deg,color-mix(in srgb, var(--diff-color) 11%, #edf2f6),#f5f7fa 66%); box-shadow:0 3px 10px rgba(31,46,61,.045); cursor:pointer; isolation:isolate; transition:transform .2s ease, box-shadow .2s ease, border-color .2s ease, background .2s ease; }
+        body[data-ui="select"] .diff-card::before { content:''; position:absolute; z-index:-1; top:0; bottom:0; left:0; width:3px; height:auto; border-radius:10px 0 0 10px; background:var(--diff-color); opacity:.92; }
+        body[data-ui="select"] .diff-card::after { display:none; }
+        body[data-ui="select"] .diff-card:hover { background:linear-gradient(90deg,color-mix(in srgb, var(--diff-color) 16%, #edf2f6),#f5f7fa 66%); transform:translateY(-2px); }
+        body[data-ui="select"] .diff-card.selected { transform:translateY(-2px); }
+        body[data-ui="select"] .diff-card-slab, body[data-ui="select"] .diff-card-body, body[data-ui="select"] .diff-card-right, body[data-ui="select"] .diff-card-bar-wrap { display:none; }
+        body[data-ui="select"] .diff-card-main { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:8px; min-width:0; }
+        body[data-ui="select"] .diff-card-type { min-width:0; overflow:hidden; text-overflow:ellipsis; color:var(--diff-color) !important; font-size:10px; font-weight:800; letter-spacing:1px; line-height:1.4; }
+        body[data-ui="select"] .diff-card-level { display:flex; align-items:baseline; gap:4px; flex-shrink:0; }
+        body[data-ui="select"] .diff-card-level span { color:#7c8999; font-family:'Orbitron'; font-size:7px; letter-spacing:.7px; }
+        body[data-ui="select"] .diff-card-level strong { color:#263342; font-family:'Orbitron'; font-size:28px; font-weight:900; line-height:.9; letter-spacing:-1.5px; }
+        body[data-ui="select"] .diff-card-footer { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; gap:8px; color:#8290a0; font-family:'Orbitron'; font-size:7px; letter-spacing:.45px; }
+        body[data-ui="select"] .diff-card-score { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+        body[data-ui="select"] .diff-card-badge { min-width:14px; text-align:right; font-size:13px; line-height:1; }
+
+        /* Library badges share the theme surface; only their level color stands out. */
+        body[data-ui="select"] .diff-slot { min-height:27px; border-radius:7px; background:color-mix(in srgb, var(--slot-color) 14%, #e8edf3); border:1px solid color-mix(in srgb, var(--slot-color) 48%, #d8e0e9); color:var(--slot-color); box-shadow:inset 0 1px 0 rgba(255,255,255,.45); }
+        body[data-ui="select"] .diff-slot.empty { background:#e9eef4; border-color:#e1e7ee; box-shadow:none; }
+        body[data-ui="select"][data-theme="dark"] .diff-card { background:linear-gradient(145deg,color-mix(in srgb, var(--diff-color) 13%, #1a222d),#1d2632 78%); border-color:color-mix(in srgb, var(--diff-color) 42%, #354252); box-shadow:0 5px 14px rgba(0,0,0,.2); }
+        body[data-ui="select"][data-theme="dark"] .diff-card:hover { background:linear-gradient(145deg,color-mix(in srgb, var(--diff-color) 18%, #1a222d),#1d2632 78%); }
+        body[data-ui="select"][data-theme="dark"] .diff-card-level strong { color:#edf3f8; }
+        body[data-ui="select"][data-theme="dark"] .diff-card-level span, body[data-ui="select"][data-theme="dark"] .diff-card-footer { color:#9dabba; }
+        body[data-ui="select"][data-theme="dark"] .diff-slot { background:color-mix(in srgb, var(--slot-color) 15%, #202936); border-color:color-mix(in srgb, var(--slot-color) 44%, #2b3746); box-shadow:inset 0 1px 0 rgba(255,255,255,.035); }
+        body[data-ui="select"][data-theme="dark"] .diff-slot.empty { background:#202936; border-color:#2b3746; }
+        body[data-ui="select"][data-theme="green"] .diff-card { background:linear-gradient(145deg,color-mix(in srgb, var(--diff-color) 13%, #e3eee8),#f3f8f5 78%); border-color:color-mix(in srgb, var(--diff-color) 38%, #cadfd2); }
+        body[data-ui="select"][data-theme="green"] .diff-card:hover { background:linear-gradient(145deg,color-mix(in srgb, var(--diff-color) 18%, #e3eee8),#f3f8f5 78%); }
+        body[data-ui="select"][data-theme="green"] .diff-card-level strong { color:#234334; }
+        body[data-ui="select"][data-theme="green"] .diff-card-level span, body[data-ui="select"][data-theme="green"] .diff-card-footer { color:#6f8a7a; }
+        body[data-ui="select"][data-theme="green"] .diff-slot { background:color-mix(in srgb, var(--slot-color) 13%, #e4f0e8); border-color:color-mix(in srgb, var(--slot-color) 43%, #cde2d4); }
+        body[data-ui="select"][data-theme="green"] .diff-slot.empty { background:#e5f0e9; border-color:#d8e8de; }
+        body.special-difficulty-mode .diff-slot { background:color-mix(in srgb, var(--slot-color) 16%, #25163a); border-color:color-mix(in srgb, var(--slot-color) 48%, #4d3270); box-shadow:inset 0 1px 0 rgba(255,255,255,.05); }
+        body.special-difficulty-mode .diff-slot.empty { background:#281a3b; border-color:#40275e; }
+
+        /* 선택 뒤의 행동을 바로 이어 보여 주고, 단일 난이도는 배너처럼 늘리지 않는다. */
+        body[data-ui="select"] .play-row { margin-top:4px; padding-top:14px; }
+
+        body.special-mode-entering #special-mode-fx::before { animation:special-edge-pulse .48s ease-out both; }
+        body.special-mode-entering #special-mode-fx::after { inset:-8px; mix-blend-mode:screen; background:repeating-linear-gradient(0deg, transparent 0 8px, rgba(233,209,255,.2) 9px 10px), linear-gradient(90deg, rgba(255,66,161,.38), transparent 12%, transparent 87%, rgba(63,222,255,.38)); animation:special-glitch-burst .46s steps(2,end) both; }
+        body.special-mode-entering .topbar, body.special-mode-entering .main { animation:special-content-glitch .42s steps(2,end) both; }
+        /* |SYNC| 전환: 짧은 RGB 오류와 스캔라인으로 모드 진입을 강하게 알린다. */
+        body.absolute-sync-entering #special-mode-fx { display:block; }
+        body.absolute-sync-entering #special-mode-fx::before { inset:-6px; border:2px solid rgba(181,212,255,.8); background:linear-gradient(90deg,rgba(255,74,145,.18),rgba(99,214,255,.05) 30%,rgba(255,243,107,.18) 51%,rgba(183,139,255,.06) 72%,rgba(255,74,145,.18)); background-size:300% 100%; box-shadow:inset 0 0 28px rgba(99,214,255,.34), inset 0 0 5px #fff, 0 0 25px rgba(119,126,255,.35); opacity:0; animation:absolute-sync-error-frame .68s steps(2,end) both, absolute-sync-spectrum .65s linear infinite; }
+        body.absolute-sync-entering #special-mode-fx::after { inset:-12px; opacity:0; mix-blend-mode:screen; background:repeating-linear-gradient(0deg,transparent 0 5px,rgba(221,239,255,.21) 6px 7px), linear-gradient(90deg,rgba(255,54,130,.46),transparent 13%,transparent 47%,rgba(94,230,255,.42) 49%,transparent 52%,transparent 86%,rgba(255,225,90,.36)); animation:absolute-sync-error-noise .68s steps(2,end) both; }
+        body.absolute-sync-entering .topbar, body.absolute-sync-entering .main, body.absolute-sync-entering .info-side-dock { animation:absolute-sync-content-error .58s steps(2,end) both; }
+        @keyframes special-edge-pulse { 0% { opacity:0; box-shadow:inset 0 0 0 rgba(137,76,213,0); } 35% { opacity:1; box-shadow:inset 0 0 32px rgba(166,90,255,.32), inset 0 0 2px #fff; } 100% { opacity:.72; box-shadow:inset 0 0 22px rgba(137,76,213,.16), inset 0 0 2px rgba(255,255,255,.42); } }
+        @keyframes special-glitch-burst { 0% { opacity:0; transform:translateX(0); clip-path:inset(0); } 18% { opacity:.82; transform:translateX(-5px); clip-path:inset(7% 0 71% 0); } 38% { opacity:.62; transform:translateX(5px); clip-path:inset(44% 0 29% 0); } 62% { opacity:.48; transform:translateX(-2px); clip-path:inset(76% 0 7% 0); } 100% { opacity:.34; transform:translateX(0); clip-path:inset(0); } }
+        @keyframes special-content-glitch { 0% { filter:none; transform:translateX(0); } 16% { filter:contrast(1.16) saturate(1.3); transform:translateX(2px); } 34% { filter:contrast(1.08) hue-rotate(10deg); transform:translateX(-3px); } 54% { filter:brightness(1.12) saturate(1.18); transform:translateX(1px); } 100% { filter:none; transform:translateX(0); } }
+        @keyframes absolute-sync-error-frame { 0% { opacity:0; transform:scale(1.02); clip-path:inset(0); } 16% { opacity:1; transform:scale(1); clip-path:inset(4% 0 72% 0); } 34% { opacity:.9; transform:translateX(-3px); clip-path:inset(46% 0 28% 0); } 53% { opacity:1; transform:translateX(3px); clip-path:inset(10% 0 56% 0); } 100% { opacity:0; transform:scale(1); clip-path:inset(0); } }
+        @keyframes absolute-sync-error-noise { 0% { opacity:0; transform:translateX(0); clip-path:inset(0); } 17% { opacity:.88; transform:translateX(8px); clip-path:inset(8% 0 69% 0); } 36% { opacity:.55; transform:translateX(-7px); clip-path:inset(63% 0 15% 0); } 58% { opacity:.7; transform:translateX(4px); clip-path:inset(30% 0 41% 0); } 100% { opacity:0; transform:translateX(0); clip-path:inset(0); } }
+        @keyframes absolute-sync-content-error { 0% { filter:none; transform:translateX(0); } 14% { filter:contrast(1.22) saturate(1.55) drop-shadow(-2px 0 rgba(255,67,145,.65)) drop-shadow(2px 0 rgba(76,218,255,.62)); transform:translateX(-2px); } 32% { filter:contrast(1.08) saturate(1.28) hue-rotate(18deg); transform:translateX(3px); } 52% { filter:brightness(1.12) saturate(1.4) drop-shadow(2px 0 rgba(255,220,82,.4)); transform:translateX(-1px); } 100% { filter:none; transform:translateX(0); } }
+        @media (max-width:900px) { body.special-difficulty-mode .special-diff-list { grid-template-columns:1fr; } body[data-ui="select"] .special-mode-toggle small { display:none; } body[data-ui="select"] .diff-card-track { grid-template-columns:repeat(var(--diff-card-count, 1), minmax(0,1fr)); } body[data-ui="select"] .diff-card-track[data-diff-count="1"] { grid-template-columns:minmax(0,260px); } body[data-ui="select"] .diff-card { height:80px; } }
+    </style>
+    <style>
+        /* Side information dock: keeps optional data out of the play flow. */
+        body[data-ui="select"] .detail-panel { min-height:0; }
+        body[data-ui="select"] .details-bottom { display:none !important; }
+        .info-side-dock {
+            --dock-bg:#ffffff;
+            --dock-surface:#f7f9fc;
+            --dock-border:#dce4ed;
+            --dock-text:#344253;
+            --dock-muted:#8290a0;
+            --dock-accent:#5e5ce6;
+            position:fixed; z-index:85; top:82px; right:0; width:0; height:0;
+        }
+        .info-side-rail {
+            position:absolute; top:0; right:0; width:54px; display:flex; flex-direction:column;
+            gap:7px; padding:7px 6px; border:1px solid var(--dock-border); border-right:0;
+            border-radius:12px 0 0 12px; background:var(--dock-bg); box-shadow:-6px 8px 22px rgba(31,46,61,.10);
+        }
+        .info-side-tab {
+            width:40px; min-height:62px; padding:7px 2px; border:1px solid transparent; border-radius:8px;
+            background:transparent; color:var(--dock-muted); cursor:pointer; font-family:'Orbitron'; font-size:7px;
+            font-weight:700; letter-spacing:.2px; transition:color .18s, background .18s, border-color .18s, transform .18s;
+        }
+        .info-side-tab:hover { color:var(--dock-text); background:color-mix(in srgb, var(--dock-accent) 8%, transparent); }
+        .info-side-tab.active { color:var(--dock-accent); border-color:color-mix(in srgb, var(--dock-accent) 34%, var(--dock-border)); background:color-mix(in srgb, var(--dock-accent) 10%, transparent); }
+        .info-side-tab-icon { display:block; margin-bottom:4px; font-size:15px; line-height:1; }
+        .info-side-drawer {
+            position:absolute; top:0; right:-390px; width:min(370px,calc(100vw - 74px)); height:min(560px,calc(100dvh - 108px));
+            display:flex; flex-direction:column; overflow:hidden; border:1px solid var(--dock-border); border-radius:13px 0 0 13px;
+            background:var(--dock-bg); color:var(--dock-text); box-shadow:-14px 18px 38px rgba(20,34,50,.18);
+            transition:right .28s cubic-bezier(.2,.8,.2,1); pointer-events:none;
+        }
+        .info-side-dock.open .info-side-drawer { right:54px; pointer-events:auto; }
+        .info-side-drawer-head { display:flex; align-items:center; justify-content:space-between; padding:15px 16px 13px; border-bottom:1px solid var(--dock-border); background:var(--dock-surface); }
+        .info-side-kicker { display:block; margin-bottom:3px; color:var(--dock-muted); font-family:'Orbitron'; font-size:7px; letter-spacing:1.4px; }
+        .info-side-drawer-head strong { font-family:'Orbitron'; font-size:12px; letter-spacing:.6px; }
+        .info-side-close { width:28px; height:28px; border:1px solid var(--dock-border); border-radius:7px; background:transparent; color:var(--dock-muted); font-size:20px; line-height:1; cursor:pointer; }
+        .info-side-close:hover { border-color:var(--dock-accent); color:var(--dock-accent); }
+        .info-side-panel { min-height:0; flex:1; overflow:auto; padding:14px; scrollbar-color:var(--dock-muted) transparent; }
+        .info-panel-caption { margin-bottom:12px; color:var(--dock-muted); font-family:'Orbitron'; font-size:8px; letter-spacing:1px; }
+        .info-side-panel .gimmick-stats-row { margin:0; min-height:0; padding:14px; border:1px solid var(--dock-border); border-radius:9px; background:var(--dock-surface); }
+        .info-side-panel .stats-section-label { color:var(--dock-muted); }
+        .info-side-panel .chart-stats-card { width:100%; min-height:64px; padding-top:10px; border-top:1px solid var(--dock-border); }
+        .info-side-panel .ranking-sidebar { display:flex !important; width:100%; min-width:0; height:100%; min-height:0; border:1px solid var(--dock-border); border-radius:9px; background:var(--dock-surface); box-shadow:none; }
+        body[data-ui="select"] .main.grid-mode .info-side-panel .ranking-sidebar { display:flex !important; }
+        .info-side-panel .rsb-header { padding:12px 14px; background:color-mix(in srgb, var(--dock-surface) 72%, var(--dock-bg)); }
+        .info-side-panel .rsb-list { min-height:0; }
+        .info-side-panel .rsb-item { padding:8px 10px; }
+        .info-side-panel .rsb-my-record { padding:12px 14px; background:var(--dock-bg); border-top-color:var(--dock-border); }
+        body[data-ui="select"][data-theme="dark"] .info-side-dock { --dock-bg:#181f29; --dock-surface:#1d2632; --dock-border:#303c4c; --dock-text:#e6edf4; --dock-muted:#9aabba; --dock-accent:#78a6ff; }
+        body[data-ui="select"][data-theme="dark"] .info-side-rail, body[data-ui="select"][data-theme="dark"] .info-side-drawer { box-shadow:-12px 18px 36px rgba(0,0,0,.34); }
+        body[data-ui="select"][data-theme="dark"] .info-side-panel .rsb-song-name, body[data-ui="select"][data-theme="dark"] .info-side-panel .rsb-name, body[data-ui="select"][data-theme="dark"] .info-side-panel .rsb-score { color:#e3eaf2; }
+        body[data-ui="select"][data-theme="green"] .info-side-dock { --dock-bg:#ffffff; --dock-surface:#f2f8f4; --dock-border:#d2e4d8; --dock-text:#294536; --dock-muted:#748c7d; --dock-accent:#17845c; }
+        body.special-difficulty-mode .info-side-dock { --dock-bg:#211235; --dock-surface:#2a1740; --dock-border:#5a397d; --dock-text:#f1e9fa; --dock-muted:#c6b4da; --dock-accent:#d3a2ff; }
+        body.special-difficulty-mode .info-side-panel .rsb-song-name, body.special-difficulty-mode .info-side-panel .rsb-name, body.special-difficulty-mode .info-side-panel .rsb-score { color:#f1e9fa; }
+        @media (max-width:900px) {
+            .info-side-dock { top:auto; right:8px; bottom:8px; }
+            .info-side-rail { top:auto; bottom:0; right:0; flex-direction:row; width:auto; border:1px solid var(--dock-border); border-radius:10px; }
+            .info-side-tab { width:54px; min-height:38px; }
+            .info-side-tab-icon { display:inline; margin:0 4px 0 0; font-size:12px; }
+            .info-side-drawer { top:auto; bottom:0; right:0; width:min(390px,calc(100vw - 16px)); height:min(520px,calc(100dvh - 80px)); border-radius:13px; transform:translateY(calc(100% + 14px)); transition:transform .28s cubic-bezier(.2,.8,.2,1); }
+            .info-side-dock.open .info-side-drawer { right:0; transform:translateY(0); }
+            .info-side-dock.open .info-side-rail { opacity:0; pointer-events:none; }
+        }
+    </style>
 </head>
-<body>
+<body data-ui="select">
 
 <div id="dynamic-bg"></div>
 <canvas id="bg-canvas"></canvas>
+<div id="special-mode-fx" aria-hidden="true"></div>
 
 <!-- ★ 프로필 카드 (확장) -->
 <div class="profile-card" id="profile-container">
     <div class="pc-main">
-        <div class="lv-label" id="user-lv">LV. 1</div>
+        <div class="lv-label" id="user-lv">레벨 1</div>
         <div class="xp-bar-bg"><div class="xp-bar-fill" id="user-xp-fill"></div></div>
         <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
         <div class="user-name-row">
-            <div class="user-name-disp" id="user-name-display">GUEST</div>
+        <div class="user-name-disp" id="user-name-display">손님</div>
         </div>
         <div class="pc-action-row">
-            <button id="pc-stats-btn" class="pc-btn" onclick="togglePlayerStats()">📊 STATS</button>
-            <button id="main-login-btn" class="pc-btn" onclick="handleAuth()">LOGIN</button>
+            <button id="pc-stats-btn" class="pc-btn" onclick="togglePlayerStats()">📊 통계</button>
+            <button id="main-login-btn" class="pc-btn" onclick="handleAuth()">로그인</button>
         </div>
     </div>
 
@@ -715,36 +1279,36 @@
             <!-- 요약 수치 -->
             <div class="pcs-summary" id="pcs-summary">
                 <div class="pcs-box">
-                    <div class="pcs-box-label">AVG RATING</div>
+                    <div class="pcs-box-label">평균 등급</div>
                     <div class="pcs-box-val accent" id="pcs-avg-rate">—</div>
                 </div>
                 <div class="pcs-box">
-                    <div class="pcs-box-label">SONGS PLAYED</div>
+                    <div class="pcs-box-label">플레이한 곡</div>
                     <div class="pcs-box-val" id="pcs-played">—</div>
                 </div>
                 <div class="pcs-box">
-                    <div class="pcs-box-label">FULL COMBO</div>
+                    <div class="pcs-box-label">풀 콤보</div>
                     <div class="pcs-box-val gold" id="pcs-fc">—</div>
                 </div>
                 <div class="pcs-box">
-                    <div class="pcs-box-label">TROLL BEAT</div>
+                    <div class="pcs-box-label">트롤 비트</div>
                     <div class="pcs-box-val" style="color:#c060ff;" id="pcs-tb">—</div>
                 </div>
             </div>
 
             <!-- 베스트 곡 -->
             <div>
-                <div class="pcs-section-title">HIGHEST RATING</div>
+                <div class="pcs-section-title">최고 등급</div>
                 <div class="pcs-best-list" id="pcs-best-list">
-                    <div style="font-family:'Orbitron';font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">NO RECORDS</div>
+                    <div style="font-family:'Orbitron';font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">기록 없음</div>
                 </div>
             </div>
 
             <!-- 팩별 달성률 -->
             <div>
-                <div class="pcs-section-title">PACK COMPLETION</div>
+                <div class="pcs-section-title">팩 달성률</div>
                 <div class="pcs-pack-list" id="pcs-pack-list">
-                    <div style="font-family:'Orbitron';font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">NO DATA</div>
+                    <div style="font-family:'Orbitron';font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">데이터 없음</div>
                 </div>
             </div>
         </div>
@@ -752,10 +1316,14 @@
 </div>
 
 <div class="topbar">
-    <div class="logo">WEB<em>BEAT</em></div>
+    <div class="brand-block">
+        <div class="logo">WEB<em>BEAT</em></div>
+        <div class="page-caption">곡 선택</div>
+    </div>
     <div class="topbar-center">
-        <div class="pack-hint">◀ L.SHIFT · SONG PACK · R.SHIFT ▶</div>
-        <div class="pack-name" id="pack-name-display">ALL SONGS</div>
+        <div class="pack-label">현재 컬렉션 · 왼쪽/오른쪽 Shift</div>
+        <div class="pack-hint">◀ 왼쪽 Shift · 곡 팩 · 오른쪽 Shift ▶</div>
+        <div class="pack-name" id="pack-name-display">전체 곡</div>
         <div class="pack-dots" id="pack-dots"></div>
     </div>
     <div class="topbar-right">
@@ -765,17 +1333,21 @@
                 <option value="title">사전순 (가나다)</option>
                 <option value="level">난이도순</option>
             </select>
-            <button class="btn-icon sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()" title="정렬 방향 전환">▲</button>
+            <button class="btn-icon sort-dir-btn" id="sort-dir-btn" onclick="toggleSortDir()" title="정렬 방향 전환" aria-label="정렬 방향 전환">▲</button>
         </div>
-        <button class="btn-icon" id="view-toggle-btn" onclick="toggleViewMode()" title="보기 방식 전환 (목록 / 전체보기)">▦</button>
-        <button class="btn-icon" onclick="openSettings()">⚙️</button>
-        <a href="game_editor.html" class="btn-create">🛠 CREATE</a>
-        <button class="btn-icon" onclick="toggleProfile()">👤</button>
+        <button class="btn-icon" id="view-toggle-btn" onclick="toggleViewMode()" title="보기 방식 전환 (목록 / 전체보기)" aria-label="목록과 전체보기 전환">▦</button>
+        <button class="btn-icon" onclick="openSettings()" aria-label="게임 설정 열기">⚙️</button>
+        <a href="game_editor.html" class="btn-create">🛠 제작</a>
+        <button class="btn-icon" onclick="toggleProfile()" aria-label="플레이어 프로필 열기">👤</button>
     </div>
 </div>
 
 <div class="main">
     <div class="list-panel">
+        <div class="library-head">
+            <span>곡 목록</span>
+            <span class="library-diff-key" id="library-diff-key" aria-label="정규 난이도 순서: Normal, Hard, Troll"><i>N</i><i>H</i><i>TR</i></span>
+        </div>
         <div class="list-inner" id="list-inner">
             <div class="list-wrap" id="list-wrap"></div>
         </div>
@@ -784,8 +1356,8 @@
     <!-- ★ 전체보기(그리드) 패널 — 곡/난이도 종류를 한번에 훑어볼 수 있는 뷰 -->
     <div class="grid-panel" id="grid-panel">
         <div class="grid-panel-header">
-            <div class="grid-panel-title" id="grid-panel-title">ALL SONGS</div>
-            <div class="grid-panel-sub" id="grid-panel-sub">— songs</div>
+            <div class="grid-panel-title" id="grid-panel-title">전체 곡</div>
+            <div class="grid-panel-sub" id="grid-panel-sub">—곡</div>
         </div>
         <div class="grid-scroll" id="grid-scroll">
             <div class="grid-cards" id="grid-cards"></div>
@@ -793,12 +1365,13 @@
     </div>
 
     <div class="detail-panel" id="detail-panel">
+        <div class="detail-eyebrow">선택한 곡</div>
         <div class="cover-row">
             <div class="big-cover" id="big-cover">🎵</div>
             <div class="song-meta">
                 <div class="meta-title-row">
                     <div class="meta-title-block">
-                        <div class="meta-title" id="meta-title">SELECT A SONG</div>
+                        <div class="meta-title" id="meta-title">곡을 선택하세요</div>
                         <div class="meta-artist" id="meta-artist">—</div>
                     </div>
                     <div class="meta-quick-stats" id="meta-quick-stats"></div>
@@ -806,7 +1379,7 @@
                 <div class="meta-sep"></div>
                 <div class="np-row" id="np-row">
                     <div class="np-dot" id="np-dot"></div>
-                    NOW PREVIEWING
+                    미리 듣는 중
                 </div>
                 <div class="visualizer" id="visualizer"></div>
                 <div class="score-chips" id="score-chips"></div>
@@ -826,8 +1399,11 @@
 
         <div class="diff-area">
             <div class="diff-indicator-row">
-                <div class="diff-ind-label">DIFFICULTY</div>
+                <div class="diff-ind-label">난이도</div>
                 <div class="diff-indicators" id="diff-indicators"></div>
+                <button type="button" class="special-mode-toggle" id="special-mode-toggle" hidden onclick="toggleSpecialDifficultyMode()" aria-pressed="false" aria-label="특수 난이도 보기">
+                    <span class="special-toggle-control" aria-hidden="true"><i></i></span><span class="special-toggle-label">특수</span><small>꺼짐</small>
+                </button>
                 <div style="flex:1"></div>
                 <div class="diff-nav">
                     <span class="diff-arrow-hint">◀ ▶</span>
@@ -838,46 +1414,74 @@
             <div class="diff-card-viewport" id="diff-card-viewport">
                 <div class="diff-card-track" id="diff-card-track"></div>
             </div>
-            <div class="gimmick-stats-row">
-                <div class="gimmick-col">
-                    <div class="stats-section-label">GIMMICKS</div>
-                    <div class="gimmick-row" id="gimmick-row"></div>
-                </div>
-                <div class="chart-stats-card" id="chart-stats-card"></div>
-            </div>
+            <details class="special-charts" id="special-charts" hidden>
+                <summary><span>특수 채보</span><small id="special-chart-count">0개</small></summary>
+                <div class="special-diff-list" id="special-diff-list"></div>
+            </details>
         </div>
 
         <div class="play-row">
-            <button class="btn-play" id="btn-play" onclick="playSelected()">▶ &nbsp; PLAY</button>
+            <div class="play-ready">플레이 준비<kbd>Enter</kbd></div>
+            <button class="btn-play" id="btn-play" onclick="playSelected()">▶ &nbsp; 플레이</button>
         </div>
     </div>
 
-    <!-- ★ RANKING SIDEBAR -->
-    <div class="ranking-sidebar" id="ranking-sidebar">
-        <div class="rsb-header">
-            <div class="rsb-title-row">
-                <div class="rsb-label">RANKING</div>
-                <div class="rsb-live-dot" id="rsb-live-dot"></div>
+    <aside class="info-side-dock" id="info-side-dock" aria-label="곡 정보 패널">
+        <nav class="info-side-rail" aria-label="곡 정보 탭">
+            <button type="button" class="info-side-tab active" data-info-tab="chart" onclick="openInfoDock('chart')" aria-controls="info-chart-panel" aria-pressed="true">
+                <span class="info-side-tab-icon">◈</span><span>특성</span>
+            </button>
+            <button type="button" class="info-side-tab" data-info-tab="ranking" onclick="openInfoDock('ranking')" aria-controls="info-ranking-panel" aria-pressed="false">
+                <span class="info-side-tab-icon">♜</span><span>순위</span>
+            </button>
+        </nav>
+        <div class="info-side-drawer" role="region" aria-live="polite">
+            <div class="info-side-drawer-head">
+                <div><span class="info-side-kicker">곡 정보</span><strong id="info-side-title">채보 특성</strong></div>
+                <button type="button" class="info-side-close" onclick="closeInfoDock()" aria-label="곡 정보 패널 닫기">×</button>
             </div>
-            <div class="rsb-song-name" id="rsb-song-name">—</div>
-            <div class="rsb-diff-badge" id="rsb-diff-badge">—</div>
-        </div>
+            <section class="info-side-panel active" id="info-chart-panel" data-info-panel="chart">
+                <div class="info-panel-caption">채보 특성 및 통계</div>
+                <div class="gimmick-stats-row">
+                <div class="gimmick-col">
+                    <div class="stats-section-label">채보 특성</div>
+                    <div class="gimmick-row" id="gimmick-row"></div>
+                </div>
+                <div class="chart-stats-card" id="chart-stats-card"></div>
+                </div>
+            </section>
 
-        <div class="rsb-list" id="rsb-list">
-            <div class="rsb-state">
-                <div class="rsb-state-icon">🏆</div>
-                <div>SELECT A SONG</div>
-            </div>
-        </div>
+            <section class="info-side-panel" id="info-ranking-panel" data-info-panel="ranking" hidden>
+                <div class="info-panel-caption">순위표</div>
+                <aside class="ranking-sidebar" id="ranking-sidebar">
+                <div class="rsb-header">
+                    <div class="rsb-title-row">
+                        <div class="rsb-label">순위</div>
+                        <div class="rsb-live-dot" id="rsb-live-dot"></div>
+                    </div>
+                    <div class="rsb-song-name" id="rsb-song-name">—</div>
+                    <div class="rsb-diff-badge" id="rsb-diff-badge">—</div>
+                </div>
 
-        <div class="rsb-my-record" id="rsb-my-record">
-            <div class="rsb-my-label">MY BEST</div>
-            <div class="rsb-my-row">
-                <div class="rsb-my-score" id="rsb-my-score">—</div>
-                <div class="rsb-my-badge no" id="rsb-my-badge">NOT PLAYED</div>
-            </div>
+                <div class="rsb-list" id="rsb-list">
+                    <div class="rsb-state">
+                        <div class="rsb-state-icon">🏆</div>
+                        <div>곡을 선택하세요</div>
+                    </div>
+                </div>
+
+                <div class="rsb-my-record" id="rsb-my-record">
+                    <div class="rsb-my-label">내 최고 기록</div>
+                    <div class="rsb-my-row">
+                        <div class="rsb-my-score" id="rsb-my-score">—</div>
+                        <div class="rsb-my-badge no" id="rsb-my-badge">미플레이</div>
+                    </div>
+                </div>
+                </aside>
+            </section>
         </div>
-    </div>
+    </aside>
+
 </div>
 
 <div class="key-hint-row">
@@ -889,67 +1493,75 @@
 </div>
 
 <div class="bottom-bar">
-    <span class="kh">◀ L.SHIFT &nbsp; PACK</span>
+    <span class="kh">◀ 왼쪽 Shift &nbsp; 팩</span>
     <span style="color:#1a1a2a;font-size:10px;">•</span>
-    <span class="kh">PACK &nbsp; R.SHIFT ▶</span>
+    <span class="kh">팩 &nbsp; 오른쪽 Shift ▶</span>
 </div>
 
 <!-- 설정 모달 -->
 <div id="settings-modal" class="modal-overlay" onclick="if(event.target===this)closeSettings()">
     <div class="modal-box" onclick="event.stopPropagation()">
-        <div class="modal-title">SYSTEM SETTINGS</div>
-        <div class="setting-row"><span>NOTE SPEED</span><input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0"><span class="setting-val" id="speed-display">5.0</span></div>
-        <div class="setting-row"><span>MUSIC VOLUME</span><input type="range" id="music-volume" min="0" max="1" step="0.05" value="0.65"><span class="setting-val" id="music-val">65%</span></div>
-        <div class="setting-row"><span>SFX VOLUME</span><input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7"><span class="setting-val" id="sfx-val">70%</span></div>
-        <div class="setting-row"><span>GEAR OPACITY</span><input type="range" id="opacity-slider" min="0" max="100" step="5" value="70"><span class="setting-val" id="opacity-val">70%</span></div>
-        <div class="setting-row"><span>JUDGE SIZE</span><input type="range" id="judge-size" min="40" max="140" step="5" value="100"><span class="setting-val" id="judge-size-val">100%</span></div>
-        <div class="setting-row"><span>HIT METER SIZE</span><input type="range" id="hit-meter-size" min="50" max="150" step="5" value="100"><span class="setting-val" id="hit-meter-size-val">100%</span></div>
-        <div class="setting-row"><span>JUDGE STYLE</span><select id="judge-style" class="setting-select"><option value="neon">NEON</option><option value="flat">FLAT</option><option value="outline">OUTLINE</option><option value="ripple">RIPPLE</option><option value="linewave">LINE WAVE</option></select><span class="setting-val"></span></div>
-        <div class="setting-row"><span>FEVER</span><div class="setting-toggle"><button type="button" class="toggle-btn" id="fever-on" onclick="setFeverEnabled(true)">ON</button><button type="button" class="toggle-btn" id="fever-off" onclick="setFeverEnabled(false)">OFF</button></div><span class="setting-val"></span></div>
-        <div class="setting-row"><span>VISUAL OFFSET</span><span class="setting-val" id="offset-display" style="width:auto;">0 ms</span></div>
+        <div class="modal-title">환경 설정</div>
+        <div class="setting-row theme-setting">
+            <span>창 테마</span>
+            <div class="theme-picker" role="group" aria-label="화면 테마 선택">
+                <button type="button" class="theme-option" data-theme-option="white" onclick="setSelectTheme('white')"><span class="theme-swatch white"></span>화이트</button>
+                <button type="button" class="theme-option" data-theme-option="dark" onclick="setSelectTheme('dark')"><span class="theme-swatch dark"></span>다크</button>
+                <button type="button" class="theme-option" data-theme-option="green" onclick="setSelectTheme('green')"><span class="theme-swatch green"></span>그린</button>
+            </div>
+        </div>
+        <div class="setting-row"><span>노트 속도</span><input type="range" id="speed-slider" min="1.0" max="20.0" step="0.1" value="5.0"><span class="setting-val" id="speed-display">5.0</span></div>
+        <div class="setting-row"><span>음악 볼륨</span><input type="range" id="music-volume" min="0" max="1" step="0.05" value="0.65"><span class="setting-val" id="music-val">65%</span></div>
+        <div class="setting-row"><span>효과음 볼륨</span><input type="range" id="sfx-volume" min="0" max="1" step="0.1" value="0.7"><span class="setting-val" id="sfx-val">70%</span></div>
+        <div class="setting-row"><span>기어 투명도</span><input type="range" id="opacity-slider" min="0" max="100" step="5" value="70"><span class="setting-val" id="opacity-val">70%</span></div>
+        <div class="setting-row"><span>판정 크기</span><input type="range" id="judge-size" min="40" max="140" step="5" value="100"><span class="setting-val" id="judge-size-val">100%</span></div>
+        <div class="setting-row"><span>히트 미터 크기</span><input type="range" id="hit-meter-size" min="50" max="150" step="5" value="100"><span class="setting-val" id="hit-meter-size-val">100%</span></div>
+        <div class="setting-row"><span>판정 스타일</span><select id="judge-style" class="setting-select"><option value="neon">네온</option><option value="flat">플랫</option><option value="outline">외곽선</option><option value="ripple">물결</option><option value="linewave">라인 웨이브</option></select><span class="setting-val"></span></div>
+        <div class="setting-row"><span>피버</span><div class="setting-toggle"><button type="button" class="toggle-btn" id="fever-on" onclick="setFeverEnabled(true)">켜짐</button><button type="button" class="toggle-btn" id="fever-off" onclick="setFeverEnabled(false)">꺼짐</button></div><span class="setting-val"></span></div>
+        <div class="setting-row"><span>화면 오프셋</span><span class="setting-val" id="offset-display" style="width:auto;">0 ms</span></div>
         <div class="setting-row" style="flex-direction:column;align-items:stretch;">
-            <span style="margin-bottom:8px;">KEY CONFIG (7 LANES)</span>
+            <span style="margin-bottom:8px;">키 설정 (7 레인)</span>
             <div class="key-config-block">
                 <div class="key-config-preset-row" id="key-preset-row"></div>
                 <div class="key-config-lanes" id="key-bind-group"></div>
                 <div class="key-config-hint">칩을 클릭하면 그 키를 바로 바꿀 수 있어요. +는 겸용키 추가, ✕는 제거예요 (라인당 최소 1개).</div>
             </div>
         </div>
-        <button class="btn-full" onclick="location.href='note_skin.html'">NOTE SKIN LAB</button>
-        <button class="btn-full" onclick="location.href='offset.html'" style="margin-top:6px;">SYNC LAB</button>
-        <button class="btn-full" onclick="closeSettings()" style="background:rgba(255,255,255,0.04);color:#888;margin-top:6px;">CLOSE</button>
+        <button class="btn-full" onclick="location.href='note_skin.html'">노트 스킨 설정</button>
+        <button class="btn-full" onclick="location.href='offset.html'" style="margin-top:6px;">싱크 설정</button>
+        <button class="btn-full" onclick="closeSettings()" style="background:rgba(255,255,255,0.04);color:#888;margin-top:6px;">닫기</button>
     </div>
 </div>
 
 <!-- 닉네임 모달 -->
 <div id="name-modal" class="modal-overlay">
     <div class="modal-box">
-        <div class="modal-title">IDENTITY SETUP</div>
+        <div class="modal-title">닉네임 설정</div>
         <p style="color:#555;font-size:12px;">닉네임을 등록하세요 (2~12자)</p>
-        <input type="text" id="nickname-input" class="modal-input" placeholder="ENTER NAME" maxlength="12">
-        <button class="btn-full" onclick="saveNicknameToServer()">CONFIRM</button>
+        <input type="text" id="nickname-input" class="modal-input" placeholder="닉네임 입력" maxlength="12">
+        <button class="btn-full" onclick="saveNicknameToServer()">확인</button>
     </div>
 </div>
 
 <!-- SYNC 모달 -->
 <div id="calib-overlay" class="modal-overlay" style="z-index:3000;">
     <div class="modal-box" style="width:460px;">
-        <h2 style="font-family:'Orbitron';color:var(--accent);margin-bottom:32px;letter-spacing:3px;font-size:18px;">AUDIO SYNC</h2>
-        <div id="calib-circle" class="calib-circle" onclick="handleTap(event)">TAP</div>
-        <div id="calib-msg" style="color:#555;margin-bottom:18px;font-size:12px;">Click the circle to start</div>
+        <h2 style="font-family:'Orbitron';color:var(--accent);margin-bottom:32px;letter-spacing:3px;font-size:18px;">오디오 싱크</h2>
+        <div id="calib-circle" class="calib-circle" onclick="handleTap(event)">탭</div>
+        <div id="calib-msg" style="color:#555;margin-bottom:18px;font-size:12px;">원을 눌러 시작하세요</div>
         <div style="display:flex;justify-content:center;gap:14px;margin-bottom:18px;">
             <button class="btn-icon" onclick="adjustOffset(-1)">−</button>
             <input type="number" id="offset-input" value="0" onchange="manualInput()" style="background:transparent;border:none;color:#fff;font-size:20px;width:65px;text-align:center;font-family:'Orbitron';outline:none;">
             <button class="btn-icon" onclick="adjustOffset(1)">+</button>
         </div>
-        <button class="btn-full" onclick="closeCalib()">SAVE & EXIT</button>
+        <button class="btn-full" onclick="closeCalib()">저장하고 나가기</button>
     </div>
 </div>
 
 <script>
 'use strict';
 
-const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app";
+const API_BASE = "https://webbeat-api.yunhogim528.workers.dev";
 const ITEM_H   = 68;
 const VIS_BARS = 20;
 
@@ -961,7 +1573,7 @@ const GRADE_THRESHOLDS = [
     { min: 880000,  grade: 'A',      hex: '#00cc66', glow: 'rgba(0,204,102,0.7)',     shadow: '0 0 8px #00cc66' },
     { min: 800000,  grade: 'B',      hex: '#3b9eff', glow: 'rgba(59,158,255,0.7)',    shadow: '0 0 8px #3b9eff' },
     { min: 600000,  grade: 'C',      hex: '#ffc832', glow: 'rgba(255,200,50,0.7)',    shadow: '0 0 8px #ffc832' },
-    { min: 0.01,    grade: 'Failed', hex: '#ff4455', glow: 'rgba(255,68,85,0.7)',     shadow: '0 0 8px #ff4455' },
+    { min: 0.01,    grade: '실패',   hex: '#ff4455', glow: 'rgba(255,68,85,0.7)',     shadow: '0 0 8px #ff4455' },
     { min: 0,       grade: '—',      hex: '#2a2a3a', glow: 'transparent',            shadow: 'none' },
 ];
 
@@ -1429,14 +2041,23 @@ function renderRadarChart(stats) {
     </svg>`;
 }
 function renderChartStatsCard(container, stats) {
-    container.innerHTML = `<div class="chart-radar-wrap">${renderRadarChart(stats)}</div>`;
+    const rows = [
+        ['체력', stats.stamina],
+        ['속도', stats.speed],
+        ['리듬', stats.rhythm],
+        ['가독성', stats.readability],
+    ];
+    container.innerHTML = `<div class="chart-stat-list">${rows.map(([label, value]) => {
+        const safeValue = Math.round(clamp01to100(value));
+        return `<div class="chart-stat-row"><span class="chart-stat-name">${label}</span><span class="chart-stat-track"><span class="chart-stat-fill" style="width:${safeValue}%"></span></span><span class="chart-stat-value">${safeValue}</span></div>`;
+    }).join('')}</div>`;
 }
 function renderMetaQuickStats(stats) {
     const el = document.getElementById('meta-quick-stats');
     if (!el) return;
     el.innerHTML = `
         <div class="meta-quick-stat"><span class="meta-quick-stat-label">BPM</span><span class="meta-quick-stat-value">${Math.round(stats.bpm)}</span></div>
-        <div class="meta-quick-stat"><span class="meta-quick-stat-label">LENGTH</span><span class="meta-quick-stat-value">${fmtLength(stats.lengthSec)}</span></div>`;
+        <div class="meta-quick-stat"><span class="meta-quick-stat-label">길이</span><span class="meta-quick-stat-value">${fmtLength(stats.lengthSec)}</span></div>`;
 }
 
 let previewTimer = null;
@@ -1444,6 +2065,46 @@ let previewTimer = null;
 // ═══════════ AUDIO PIPELINE ═══════════
 const previewAudio = new Audio();
 previewAudio.crossOrigin = 'anonymous';
+const SPECIAL_MODE_SFX_PATH = 'sfx/full_combo.wav';
+const ABSOLUTE_SYNC_SFX_PATH = 'sfx/glitch.wav';
+const DRAWER_SFX_PATH = 'sfx/drawer.wav';
+
+function playDrawerSfx() {
+    const sfx = new Audio(DRAWER_SFX_PATH);
+    sfx.preload = 'auto';
+    sfx.volume = Math.min(1, Math.max(0, parseFloat(localStorage.getItem('wb_sfx_volume') || '0.7')));
+    sfx.play().catch(() => {});
+}
+
+function playSpecialModeSfx() {
+    const sfx = new Audio(SPECIAL_MODE_SFX_PATH);
+    sfx.preload = 'auto';
+    sfx.currentTime = 0;
+    sfx.volume = Math.min(1, Math.max(0, parseFloat(localStorage.getItem('wb_sfx_volume') || '0.7')));
+    sfx.play().then(() => {
+        // 특수 난이도 전환은 full_combo.wav의 첫 0.3초만 사용한다.
+        setTimeout(() => {
+            sfx.pause();
+            sfx.currentTime = 0;
+        }, 300);
+    }).catch(() => {});
+}
+
+function playAbsoluteSyncSfx() {
+    const sfx = new Audio(ABSOLUTE_SYNC_SFX_PATH);
+    sfx.preload = 'auto';
+    let started = false;
+    const playTail = () => {
+        if (started) return;
+        started = true;
+        sfx.currentTime = Math.max(0, (Number.isFinite(sfx.duration) ? sfx.duration : 0) - 0.85);
+        sfx.volume = Math.min(1, Math.max(0, parseFloat(localStorage.getItem('wb_sfx_volume') || '0.7')));
+        sfx.play().catch(() => {});
+    };
+    sfx.addEventListener('loadedmetadata', playTail, { once: true });
+    sfx.load();
+    if (sfx.readyState >= 1) playTail();
+}
 
 let audioCtx    = null, analyser = null, dataArray = null, mediaSource = null, visAnimId = null;
 let _previewStart = 0, _previewStopTimer = null;
@@ -1588,7 +2249,7 @@ function updateScoreBar(scoreStr) {
 
 // ═══════════ INIT ═══════════
 window.addEventListener('DOMContentLoaded', () => {
-    initSettings(); initKeyBindings(); checkLoginStatus(); buildVisualizer();
+    initSelectTheme(); initSettings(); initKeyBindings(); checkLoginStatus(); buildVisualizer();
     const sortSel = document.getElementById('sort-select'); if (sortSel) sortSel.value = sortMode;
     const sortDirBtn = document.getElementById('sort-dir-btn'); if (sortDirBtn) sortDirBtn.textContent = sortDir > 0 ? '▲' : '▼';
     applyViewMode();
@@ -1604,7 +2265,7 @@ async function loadSongs() {
         buildPacks(); refreshCurrentView(); selectSong(0, true);
         prefetchAllGimmickWarnings(); // ★ 백그라운드로 전체 곡의 "주의할 기믹" 여부를 미리 분석
     } catch(e) {
-        document.getElementById('list-wrap').innerHTML='<div style="padding:40px;text-align:center;color:#f55;font-family:Orbitron;font-size:13px;">LOAD FAILED</div>';
+        document.getElementById('list-wrap').innerHTML='<div style="padding:40px;text-align:center;color:#f55;font-family:Orbitron;font-size:13px;">불러오기에 실패했습니다</div>';
     }
 }
 
@@ -1612,7 +2273,7 @@ async function loadSongs() {
 function buildPacks() {
     const map={};
     allSongs.forEach(s=>{ const p=s.pack; if(!p||p==='ALL SONGS')return; if(!map[p])map[p]=[]; map[p].push(s); });
-    packs=[{name:'ALL SONGS',songs:allSongs}];
+    packs=[{name:'전체 곡',songs:allSongs}];
     Object.keys(map).sort().forEach(k=>packs.push({name:k,songs:map[k]}));
     buildPackDots();
 }
@@ -1669,6 +2330,7 @@ function refreshCurrentView() { renderList(); renderGrid(); }
 
 function renderList() {
     const wrap = document.getElementById('list-wrap'); 
+    const difficultySlots = updateLibraryDifficultyHeader();
     wrap.innerHTML = '';
     const frag = document.createDocumentFragment();
     
@@ -1681,12 +2343,14 @@ function renderList() {
         
         // [핵심 수정] d.type 클래스 매칭 대신, 함수를 돌려 hex 컬러를 추출한 뒤 인라인 style로 주입
         const diffs = getDiffs(song);
-        const dots = diffs.map(d => {
-            const col = getLevelColor(d.level, d.customColor);
-            return `<div class="idot" style="background: ${col.hex}"></div>`;
+        const difficultyGrid = difficultySlots.map(slot => {
+            const diff = diffs.find(d => d.type === slot.id);
+            if (!diff) return `<span class="diff-slot empty" aria-label="${slot.label}: 채보 없음"></span>`;
+            const color = getLevelColor(diff.level, diff.customColor);
+            return `<span class="diff-slot" style="--slot-color:${color.hex}" aria-label="${slot.label} 레벨 ${diff.levelRaw}">${diff.levelRaw}</span>`;
         }).join('');
         
-        el.innerHTML = `<div class="item-num">${idx+1}</div><div class="item-cover" data-folder="${song.folder}">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div><div class="item-diffs">${dots}</div></div>`;
+        el.innerHTML = `<div class="item-num">${idx+1}</div><div class="item-cover" data-folder="${song.folder}">🎵</div><div class="item-info"><div class="item-title">${song.title}</div><div class="item-artist">${song.artist||''}</div></div><div class="item-difficulty-grid">${difficultyGrid}</div>`;
         
         const cover = el.querySelector('.item-cover'), img = new Image(); 
         img.src = `songs/${song.folder}/image.png`;
@@ -1704,15 +2368,15 @@ function renderList() {
 }
 function scrollList(instant) {
     const wrap=document.getElementById('list-wrap'), inner=document.getElementById('list-inner');
-    const center=Math.floor(inner.clientHeight/2)-ITEM_H/2, offset=center-currentSongIdx*ITEM_H;
-    if(instant){ wrap.style.transition='none'; wrap.style.transform=`translateY(${offset}px)`; requestAnimationFrame(()=>{ wrap.style.transition=''; }); }
-    else wrap.style.transform=`translateY(${offset}px)`;
     wrap.querySelectorAll('.song-item').forEach((item,i)=>{
         item.classList.toggle('active',i===currentSongIdx);
-        const dist=Math.abs(i-currentSongIdx);
-        item.style.opacity=Math.max(0.15,1-dist*0.2);
-        item.style.transform=i===currentSongIdx?'scale(1.04)':`scale(${Math.max(0.85,1-dist*0.05)})`;
+        item.style.opacity='';
+        item.style.transform='';
     });
+    const selected=wrap.querySelector(`.song-item[data-idx="${currentSongIdx}"]`);
+    if (!selected || !inner) return;
+    const targetTop = Math.max(0, selected.offsetTop - (inner.clientHeight - selected.offsetHeight) / 2);
+    inner.scrollTo({ top: targetTop, behavior: instant ? 'auto' : 'smooth' });
 }
 
 // ═══════════ 전체보기(그리드) 뷰 — 곡/난이도 종류를 한 화면에서 훑어보기 ═══════════
@@ -1723,8 +2387,8 @@ function renderGrid() {
     const songs = currentSongs();
 
     const titleEl = document.getElementById('grid-panel-title'), subEl = document.getElementById('grid-panel-sub');
-    if (titleEl) titleEl.textContent = packs[currentPackIdx]?.name || 'ALL SONGS';
-    if (subEl) subEl.textContent = `${songs.length} SONGS`;
+    if (titleEl) titleEl.textContent = packs[currentPackIdx]?.name || '전체 곡';
+    if (subEl) subEl.textContent = `${songs.length}곡`;
 
     const frag = document.createDocumentFragment();
     songs.forEach((song, idx) => {
@@ -1863,7 +2527,7 @@ function getDiffs(song) {
                 lvRaw = match[1] + (hasPlus ? '+' : '');
             }
             const fileKey = c.replace(/\.json$/i, '');
-            diffs.push({ type, level: lv, levelRaw: lvRaw, fileKey, customColor: null });
+            diffs.push({ type, displayName: type, level: lv, levelRaw: lvRaw, fileKey, customColor: null });
         } else {
             // 2. 새로운 오브젝트 형태([ { "name": "Glitch", "level": "14+" } ])인 경우
             let lvRaw = String(c.level || '?'); // UI 표시용 문자열 ("14+")
@@ -1878,8 +2542,10 @@ function getDiffs(song) {
                 lv = parseFloat(lvRaw) || 0;
             }
 
+            const displayName = String(c.name || c.type || 'custom');
             diffs.push({
-                type: (c.name || 'custom').toLowerCase(),
+                type: displayName.toLowerCase(),
+                displayName,
                 level: lv,        // 내부 정렬용 (14.5)
                 levelRaw: lvRaw,  // UI 텍스트 출력용 ("14+")
                 fileKey: c.file ? c.file.replace(/\.json$/i, '') : '',
@@ -1919,15 +2585,271 @@ function applyDiffColor(hex, glow) {
     // 사이드바 배지 색도 갱신
     const badge=document.getElementById('rsb-diff-badge'); if(badge){ badge.style.color=hex; badge.style.borderColor=hex; badge.style.textShadow=`0 0 6px ${hex}`; }
 }
-function buildDiffUI() { const song=currentSongs()[currentSongIdx]; if(!song)return; _cachedDiffs=getDiffs(song); buildDiffIndicators(); buildDiffCards(); applyDiffSelection(false); }
+const REGULAR_DIFF_TYPES = new Set(['normal', 'hard', 'troll']);
+let specialDifficultyMode = false;
+let precisionPlayMode = false;
+let specialModeFxTimer = null;
+let absoluteSyncFxTimer = null;
+function isRegularDifficulty(diff) { return REGULAR_DIFF_TYPES.has(diff.type); }
+function isPrecisionEligibleDifficulty(diff) { return !!diff && (diff.type === 'troll' || !isRegularDifficulty(diff)); }
+function getRecordKeys(song, diff, precision = precisionPlayMode) {
+    const prefix = precision ? 'wb_precision' : 'wb';
+    return {
+        score: `${prefix}_score_${song.folder}_${diff.fileKey}`,
+        badge: `${prefix}_badge_${song.folder}_${diff.fileKey}`,
+        detail: `${prefix}_detail_${song.folder}_${diff.fileKey}`,
+    };
+}
+function updatePrecisionModeUI() {
+    const diff = _cachedDiffs[currentDiffIdx];
+    const eligible = isPrecisionEligibleDifficulty(diff);
+    if (!eligible) precisionPlayMode = false;
+    document.body.classList.toggle('absolute-sync-mode', precisionPlayMode);
+    document.querySelectorAll('.diff-card[data-idx], [data-special-diff-idx]').forEach(control => {
+        const index = Number(control.dataset.idx ?? control.dataset.specialDiffIdx);
+        control.classList.toggle('absolute-sync-ready', precisionPlayMode && index === currentDiffIdx && isPrecisionEligibleDifficulty(_cachedDiffs[index]));
+    });
+}
+function triggerAbsoluteSyncFx() {
+    const body = document.body;
+    body.classList.remove('absolute-sync-entering');
+    void body.offsetWidth;
+    body.classList.add('absolute-sync-entering');
+    clearTimeout(absoluteSyncFxTimer);
+    absoluteSyncFxTimer = setTimeout(() => body.classList.remove('absolute-sync-entering'), 760);
+}
+function activateAbsoluteSyncFromHold(index) {
+    const diff = _cachedDiffs[index];
+    if (!isPrecisionEligibleDifficulty(diff)) return;
+    const wasSelected = currentDiffIdx === index;
+    selectDiff(index);
+    precisionPlayMode = wasSelected ? !precisionPlayMode : true;
+    updatePrecisionModeUI();
+    if (precisionPlayMode) {
+        playAbsoluteSyncSfx();
+        triggerAbsoluteSyncFx();
+    }
+    updateScoreChips();
+    updateScoreVisualizer();
+    clearTimeout(_rsbLoadTimer);
+    _rsbLoadTimer = setTimeout(loadRankingSidebar, 120);
+}
+function attachDifficultyCardInput(control, index) {
+    let holdTimer = null;
+    let holdTriggered = false;
+    const clearHold = () => {
+        if (holdTimer) clearTimeout(holdTimer);
+        holdTimer = null;
+    };
+    control.addEventListener('pointerdown', event => {
+        if (!isPrecisionEligibleDifficulty(_cachedDiffs[index])) return;
+        if (event.pointerType === 'mouse' && event.button !== 0) return;
+        holdTriggered = false;
+        holdTimer = setTimeout(() => {
+            holdTimer = null;
+            holdTriggered = true;
+            activateAbsoluteSyncFromHold(index);
+        }, 520);
+    });
+    control.addEventListener('pointerup', clearHold);
+    control.addEventListener('pointercancel', clearHold);
+    control.addEventListener('pointerleave', clearHold);
+    control.addEventListener('click', event => {
+        if (holdTriggered) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+            holdTriggered = false;
+            return;
+        }
+        selectDiff(index);
+    });
+}
+function regularDifficultyIndexes() {
+    return _cachedDiffs.map((diff, index) => ({ diff, index })).filter(({ diff }) => isRegularDifficulty(diff));
+}
+function specialDifficultyIndexes() {
+    return _cachedDiffs.map((diff, index) => ({ diff, index })).filter(({ diff }) => !isRegularDifficulty(diff));
+}
+function getDifficultyDisplayName(diff) {
+    return diff?.displayName || diff?.type || '';
+}
+function getSpecialDifficultyShortLabel(diff) {
+    return getDifficultyDisplayName(diff);
+}
+function getLibraryDifficultySlots() {
+    const song = currentSongs()[currentSongIdx];
+    const currentDiffs = song ? getDiffs(song) : [];
+    const regularSlots = [
+        { id: 'normal', label: currentDiffs.find(diff => diff.type === 'normal')?.displayName || 'normal', shortLabel: 'N' },
+        { id: 'hard', label: currentDiffs.find(diff => diff.type === 'hard')?.displayName || 'hard', shortLabel: 'H' },
+        { id: 'troll', label: currentDiffs.find(diff => diff.type === 'troll')?.displayName || 'troll', shortLabel: 'TR' },
+    ];
+    if (!specialDifficultyMode) return regularSlots;
+
+    if (!song) return regularSlots;
+    const seen = new Set();
+    return getDiffs(song)
+        .filter(diff => !isRegularDifficulty(diff))
+        .filter(diff => !seen.has(diff.type) && seen.add(diff.type))
+        .map(diff => ({ id: diff.type, label: getDifficultyDisplayName(diff), shortLabel: getSpecialDifficultyShortLabel(diff) }));
+}
+function updateLibraryDifficultyHeader() {
+    const slots = getLibraryDifficultySlots();
+    const key = document.getElementById('library-diff-key');
+    const panel = document.querySelector('.list-panel');
+    if (panel) {
+        panel.style.setProperty('--library-slot-count', Math.max(1, slots.length));
+        panel.classList.toggle('special-library-mode', specialDifficultyMode);
+    }
+    if (key) {
+        key.innerHTML = slots.map(slot => `<i title="${slot.label}">${slot.shortLabel}</i>`).join('');
+        key.setAttribute('aria-label', specialDifficultyMode
+            ? `특수 난이도 순서: ${slots.map(slot => slot.label).join(', ')}`
+            : `정규 난이도 순서: ${slots.map(slot => slot.label).join(', ')}`);
+    }
+    return slots;
+}
+function updateSpecialModeUI(animate = false) {
+    const specials = specialDifficultyIndexes();
+    const regulars = regularDifficultyIndexes();
+    if (!specials.length) specialDifficultyMode = false;
+    if (!regulars.length && specials.length) specialDifficultyMode = true;
+
+    const body = document.body;
+    const toggle = document.getElementById('special-mode-toggle');
+    const details = document.getElementById('special-charts');
+    const label = document.querySelector('.diff-ind-label');
+    body.classList.toggle('special-difficulty-mode', specialDifficultyMode);
+    if (label) label.textContent = specialDifficultyMode ? '특수 난이도' : '난이도';
+    if (toggle) {
+        toggle.hidden = !specials.length || !regulars.length;
+        toggle.classList.toggle('active', specialDifficultyMode);
+        toggle.setAttribute('aria-pressed', String(specialDifficultyMode));
+        toggle.querySelector('.special-toggle-label').textContent = '특수';
+        toggle.querySelector('small').textContent = specialDifficultyMode ? '켜짐' : '꺼짐';
+        toggle.setAttribute('aria-label', specialDifficultyMode ? '특수 난이도 끄기' : '특수 난이도 보기');
+    }
+    if (details) {
+        details.hidden = !specialDifficultyMode || !specials.length;
+        details.open = specialDifficultyMode;
+    }
+    if (animate && specialDifficultyMode) {
+        body.classList.remove('special-mode-entering');
+        void body.offsetWidth;
+        body.classList.add('special-mode-entering');
+        clearTimeout(specialModeFxTimer);
+        specialModeFxTimer = setTimeout(() => body.classList.remove('special-mode-entering'), 700);
+    }
+}
+function toggleSpecialDifficultyMode() {
+    const specials = specialDifficultyIndexes();
+    const regulars = regularDifficultyIndexes();
+    if (!specials.length) return;
+    const enteringSpecialMode = !specialDifficultyMode;
+    if (specialDifficultyMode) {
+        if (!regulars.length) return;
+        specialDifficultyMode = false;
+        currentDiffIdx = regulars[0].index;
+    } else {
+        specialDifficultyMode = true;
+        currentDiffIdx = specials[0].index;
+    }
+    if (enteringSpecialMode) playSpecialModeSfx();
+    updateSpecialModeUI(true);
+    buildDiffIndicators();
+    renderList();
+    applyDiffSelection();
+    updateScoreVisualizer();
+}
+function buildDiffUI() {
+    const song=currentSongs()[currentSongIdx];
+    if(!song)return;
+    const wasSpecialMode = specialDifficultyMode;
+    _cachedDiffs=getDiffs(song);
+    const regulars = regularDifficultyIndexes();
+    const specials = specialDifficultyIndexes();
+    if (!specials.length) {
+        specialDifficultyMode = false;
+        currentDiffIdx = regulars[0]?.index ?? 0;
+    } else if (wasSpecialMode || !regulars.length) {
+        specialDifficultyMode = true;
+        if (!specials.some(({ index }) => index === currentDiffIdx)) currentDiffIdx = specials[0].index;
+    } else {
+        specialDifficultyMode = false;
+        if (!regulars.some(({ index }) => index === currentDiffIdx)) currentDiffIdx = regulars[0]?.index ?? specials[0].index;
+    }
+    buildDiffIndicators();
+    buildDiffCards();
+    buildSpecialDifficultyUI();
+    updateSpecialModeUI(false);
+    if (specialDifficultyMode || wasSpecialMode !== specialDifficultyMode) renderList();
+    else updateLibraryDifficultyHeader();
+    applyDiffSelection(false);
+}
 function buildDiffIndicators() {
-    const container=document.getElementById('diff-indicators'); container.innerHTML='';
-    _cachedDiffs.forEach((d,i)=>{ const col = getLevelColor(d.level, d.customColor); const chip=document.createElement('div'); chip.className='diff-ind-chip'+(i===currentDiffIdx?' active':''); chip.dataset.label=d.type.toUpperCase(); chip.setAttribute('data-label',d.type.toUpperCase()); chip.style.background=i===currentDiffIdx?col.hex:'rgba(255,255,255,0.12)'; if(i===currentDiffIdx)chip.style.boxShadow=`0 0 6px ${col.glow}`; chip.addEventListener('click',()=>selectDiff(i)); container.appendChild(chip); });
+    const container=document.getElementById('diff-indicators');
+    container.innerHTML='';
+    const visibleDifficulties = specialDifficultyMode ? specialDifficultyIndexes() : regularDifficultyIndexes();
+    visibleDifficulties.forEach(({ diff, index }) => {
+        const col = getLevelColor(diff.level, diff.customColor);
+        const chip=document.createElement('div');
+        chip.className='diff-ind-chip'+(index===currentDiffIdx?' active':'');
+        chip.dataset.idx=index;
+        chip.dataset.label=getDifficultyDisplayName(diff);
+        chip.setAttribute('data-label',getDifficultyDisplayName(diff));
+        chip.style.background=index===currentDiffIdx?col.hex:'rgba(255,255,255,0.12)';
+        chip.addEventListener('click',()=>selectDiff(index));
+        container.appendChild(chip);
+    });
 }
 function buildDiffCards() {
-    const viewport=document.getElementById('diff-card-viewport'), track=document.getElementById('diff-card-track'); track.innerHTML=''; _cardWidth=viewport.offsetWidth;
+    const viewport=document.getElementById('diff-card-viewport'), track=document.getElementById('diff-card-track');
+    track.innerHTML='';
+    _cardWidth=viewport.offsetWidth;
     const song=currentSongs()[currentSongIdx];
-    _cachedDiffs.forEach((d,i)=>{ const col = getLevelColor(d.level, d.customColor); const pct=Math.min(100,(d.level/20)*100); const score=localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`)||'000000'; const badge=localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`); const badgeHtml=badge==='TB'?'👑':badge==='FC'?'⭐':''; const card=document.createElement('div'); card.className='diff-card'; card.dataset.idx=i; card.style.width=_cardWidth+'px'; card.innerHTML=`<div class="diff-card-slab" style="background:${col.hex}"></div><div class="diff-card-body"><div class="diff-card-top"><div class="diff-card-type" style="color:${col.hex}">${d.type.toUpperCase()}</div><div class="diff-card-lv-label">Lv.</div><div class="diff-card-lv">${d.levelRaw}</div></div><div class="diff-card-bar-wrap"><div class="diff-card-bar-fill" data-pct="${pct}" style="width:0%;background:${col.hex}"></div></div></div><div class="diff-card-right"><div class="diff-card-badge">${badgeHtml}</div><div class="diff-card-score">🏆 ${score}</div></div>`; card.addEventListener('click',()=>selectDiff(i)); track.appendChild(card); });
+    const regularDiffs = regularDifficultyIndexes();
+    track.style.setProperty('--diff-card-count', Math.max(1, regularDiffs.length));
+    track.dataset.diffCount = String(regularDiffs.length);
+    regularDiffs.forEach(({ diff:d, index:i }) => {
+        const col = getLevelColor(d.level, d.customColor);
+        const pct=Math.min(100,(d.level/20)*100);
+        const score=localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`)||'000000';
+        const badge=localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`);
+        const badgeHtml=badge==='TB'?'👑':badge==='FC'?'⭐':'';
+        const scoreText=score==='000000' ? '기록 없음' : score;
+        const card=document.createElement('div');
+        card.className='diff-card';
+        card.dataset.idx=i;
+        card.style.setProperty('--diff-color',col.hex);
+        card.style.setProperty('--diff-glow',col.glow);
+        card.innerHTML=`<div class="diff-card-main"><div class="diff-card-type">${getDifficultyDisplayName(d)}</div><div class="diff-card-level"><span>레벨</span><strong>${d.levelRaw}</strong></div></div><div class="diff-card-footer"><span class="diff-card-score">${scoreText}</span><span class="diff-card-badge">${badgeHtml}</span></div>`;
+        if (isPrecisionEligibleDifficulty(d)) card.title = '길게 눌러 |SYNC|';
+        attachDifficultyCardInput(card, i);
+        track.appendChild(card);
+    });
+}
+function buildSpecialDifficultyUI() {
+    const details=document.getElementById('special-charts');
+    const list=document.getElementById('special-diff-list');
+    const count=document.getElementById('special-chart-count');
+    if (!details || !list || !count) return;
+    const specials=specialDifficultyIndexes();
+    details.hidden=!specialDifficultyMode || specials.length===0;
+    list.innerHTML='';
+    count.textContent=`${specials.length}개`;
+    details.open=specialDifficultyMode;
+    specials.forEach(({diff,index})=>{
+        const col=getLevelColor(diff.level,diff.customColor);
+        const button=document.createElement('button');
+        button.type='button';
+        button.className='special-diff-button';
+        button.dataset.specialDiffIdx=index;
+        button.style.setProperty('--special-color',col.hex);
+        button.innerHTML=`<span>${getDifficultyDisplayName(diff)}</span><strong>레벨 ${diff.levelRaw}</strong>`;
+        if (isPrecisionEligibleDifficulty(diff)) button.title = '길게 눌러 |SYNC|';
+        attachDifficultyCardInput(button, index);
+        list.appendChild(button);
+    });
 }
 function applyDiffSelection() {
     const diffs = _cachedDiffs; 
@@ -1935,36 +2857,44 @@ function applyDiffSelection() {
 
     // 1. 디피컬티 카드 트랙 이동 처리 
     const track = document.getElementById('diff-card-track');
-    const offset = currentDiffIdx * (_cardWidth + 10); 
-    track.style.transform = `translateX(-${offset}px)`; 
+    track.style.transform = 'none';
 
     // 2. 상단 인디케이터 칩(점 모양) 스타일 업데이트 (커스텀 색상 대응) 
-    document.querySelectorAll('.diff-ind-chip').forEach((chip, i) => { 
-        const col = getLevelColor(diffs[i].level, diffs[i].customColor); 
-        chip.classList.toggle('active', i === currentDiffIdx); 
-        chip.style.background = i === currentDiffIdx ? col.hex : 'rgba(255,255,255,0.12)'; 
-        chip.style.boxShadow = i === currentDiffIdx ? `0 0 6px ${col.glow}` : 'none'; 
+    document.querySelectorAll('.diff-ind-chip').forEach(chip => { 
+        const index=Number(chip.dataset.idx), diff=diffs[index];
+        if (!diff) return;
+        const col = getLevelColor(diff.level, diff.customColor); 
+        chip.classList.toggle('active', index === currentDiffIdx); 
+        chip.style.background = index === currentDiffIdx ? col.hex : 'rgba(255,255,255,0.12)'; 
+        chip.style.boxShadow = index === currentDiffIdx ? `0 0 6px ${col.glow}` : 'none'; 
     });
 
     // 3. 메인 디피컬티 카드 스타일 업데이트 (커스텀 색상 대응) 
-    document.querySelectorAll('.diff-card').forEach((card, i) => { 
-        const col = getLevelColor(diffs[i].level, diffs[i].customColor); 
-        const fill = card.querySelector('.diff-card-bar-fill'); 
-        const sel = i === currentDiffIdx; 
-        
-        if (fill) fill.style.width = sel ? fill.dataset.pct + '%' : '0%'; 
-        card.style.borderColor = sel ? `rgba(${hexToRgb(col.hex)},0.4)` : 'rgba(255,255,255,0.07)'; 
-        card.style.boxShadow = sel ? `0 0 20px ${col.glow}` : 'none'; 
+    document.querySelectorAll('.diff-card').forEach(card => { 
+        const index=Number(card.dataset.idx), diff=diffs[index];
+        if (!diff) return;
+        const col = getLevelColor(diff.level, diff.customColor); 
+        const sel = index === currentDiffIdx; 
+        card.classList.toggle('selected', sel);
+        card.style.borderColor = sel ? col.hex : '';
+        card.style.boxShadow = sel ? `0 10px 24px ${col.glow}` : '';
+    });
+    document.querySelectorAll('[data-special-diff-idx]').forEach(button => {
+        const index=Number(button.dataset.specialDiffIdx);
+        button.classList.toggle('active', index===currentDiffIdx);
     });
 
     // 4. [버그 수정] 현재 선택된 차트 오브젝트를 명시적으로 선언 후 메인 네온 컬러 테마 적용
     const currentChart = diffs[currentDiffIdx];
+    updatePrecisionModeUI();
     const col = getLevelColor(currentChart.level, currentChart.customColor); 
     applyDiffColor(col.hex, col.glow); 
 
     // 5. 내비게이션 버튼 활성화/비활성화 처리 및 스코어 갱신 
-    document.getElementById('diff-prev').disabled = currentDiffIdx <= 0; 
-    document.getElementById('diff-next').disabled = currentDiffIdx >= diffs.length - 1; 
+    const regularIndexes=regularDifficultyIndexes().map(({index})=>index);
+    const regularPosition=regularIndexes.indexOf(currentDiffIdx);
+    document.getElementById('diff-prev').disabled = specialDifficultyMode || regularPosition <= 0;
+    document.getElementById('diff-next').disabled = specialDifficultyMode || regularPosition < 0 || regularPosition >= regularIndexes.length - 1;
     updateScoreChips(); 
 
     // ★ 난이도 변경 시 랭킹 사이드바 디바운스 갱신 
@@ -1974,28 +2904,47 @@ function applyDiffSelection() {
     // ★ 기믹 아이콘 갱신
     loadGimmicksForCurrentDiff();
 }
-function selectDiff(idx) { currentDiffIdx=idx; applyDiffSelection(); updateScoreVisualizer(); }
-function changeDiff(dir) { const next=currentDiffIdx+dir; if(next<0||next>=_cachedDiffs.length)return; selectDiff(next); }
+function selectDiff(idx) {
+    currentDiffIdx=idx;
+    if (!isRegularDifficulty(_cachedDiffs[idx]) && !specialDifficultyMode) {
+        specialDifficultyMode=true;
+        updateSpecialModeUI(true);
+    }
+    applyDiffSelection();
+    updateScoreVisualizer();
+}
+function changeDiff(dir) {
+    if (specialDifficultyMode) return;
+    const indexes=regularDifficultyIndexes().map(({index})=>index);
+    const position=indexes.indexOf(currentDiffIdx);
+    const nextPosition=position<0 ? (dir>0 ? 0 : indexes.length-1) : position+dir;
+    if(nextPosition<0||nextPosition>=indexes.length)return;
+    selectDiff(indexes[nextPosition]);
+}
 
 function updateScoreChips() {
     const song=currentSongs()[currentSongIdx], d=_cachedDiffs[currentDiffIdx], el=document.getElementById('score-chips');
     if(!d){el.innerHTML='';updateScoreBar('0');return;}
-    const score=localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`)||'0', badge=localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`)||'';
-    const displayScore=score==='0'?'000000':score;
+    const keys=getRecordKeys(song,d);
+    const score=localStorage.getItem(keys.score)||'0', badge=localStorage.getItem(keys.badge)||'';
+    const displayScore=precisionPlayMode ? (score==='0' ? '기록 없음' : `${(parseInt(score,10)/10000).toFixed(2)}%`) : (score==='0'?'000000':score);
     let rankCls,rankLabel;
-    if(badge==='TB'){rankCls='tb';rankLabel='TB';}
+    if (precisionPlayMode) {
+        rankCls = badge === 'SYNC' ? 'tb' : (parseInt(score) > 0 ? 'clear' : 'none');
+        rankLabel = parseInt(score) > 0 ? '|SYNC|' : '—';
+    } else if(badge==='TB'){rankCls='tb';rankLabel='TB';}
     else if(badge==='FC'){rankCls='fc';rankLabel='FC';}
-    else if(parseInt(score)>=600000){rankCls='clear';rankLabel='CLEAR';}
-    else if(parseInt(score)>0){rankCls='failed';rankLabel='FAILED';}
+    else if(parseInt(score)>=600000){rankCls='clear';rankLabel='클리어';}
+    else if(parseInt(score)>0){rankCls='failed';rankLabel='실패';}
     else{rankCls='none';rankLabel='—';}
-    el.innerHTML=`<div class="score-chip"><div class="chip-label">BEST SCORE</div><div class="chip-val">${displayScore}</div></div><div class="rank-chip ${rankCls}"><div class="chip-label">RANK</div><div class="chip-val">${rankLabel}</div></div>`;
+    el.innerHTML=`<div class="score-chip"><div class="chip-label">${precisionPlayMode?'최고 SYNC':'최고 점수'}</div><div class="chip-val">${displayScore}</div></div><div class="rank-chip ${rankCls}"><div class="chip-label">${precisionPlayMode?'모드':'등급'}</div><div class="chip-val">${rankLabel}</div></div>`;
     updateScoreBar(score);
 }
 function updateScoreVisualizer() {
     if(visAnimId)return;
     const song=currentSongs()[currentSongIdx]; if(!song)return;
     const diffs=getDiffs(song), d=diffs[currentDiffIdx]; if(!d)return;
-    const scoreStr=localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`)||'0', score=parseInt(scoreStr,10), pct=Math.min(1,score/1000000);
+    const scoreStr=localStorage.getItem(getRecordKeys(song,d).score)||'0', score=parseInt(scoreStr,10), pct=Math.min(1,score/1000000);
     let color='#444',glow='none';
     if(score>=950000){color='#00ffff';glow='0 0 10px #00ffff';} else if(score>=900000){color='#00ff00';glow='0 0 10px #00ff00';} else if(score>=800000){color='#3b9eff';glow='0 0 10px #3b9eff';} else if(score>=700000){color='#ffc832';glow='0 0 10px #ffc832';} else if(score>0){color='#ff4455';glow='0 0 10px #ff4455';}
     const bars=getVisBars(), fillCount=Math.floor(bars.length*pct);
@@ -2012,28 +2961,31 @@ async function loadRankingSidebar() {
     const d    = _cachedDiffs[currentDiffIdx];
     if (!song || !d) return;
 
-    const key = `${song.folder}__${d.fileKey}`;
+    const leaderboardDiff = precisionPlayMode ? `${d.fileKey}__precision` : d.fileKey;
+    const key = `${song.folder}__${leaderboardDiff}`;
     // 같은 곡/난이도면 재로드 스킵
     // if (key === _rsbCurrentKey) return;
     _rsbCurrentKey = key;
 
     // 헤더 업데이트
     document.getElementById('rsb-song-name').textContent  = song.title;
-    document.getElementById('rsb-diff-badge').textContent = d.type.toUpperCase() + ' Lv.' + d.levelRaw;
+    document.getElementById('rsb-diff-badge').textContent = getDifficultyDisplayName(d) + ' 레벨 ' + d.levelRaw + (precisionPlayMode ? ' · |SYNC|' : '');
 
     // 내 기록
-    const myScore = localStorage.getItem(`wb_score_${song.folder}_${d.fileKey}`) || '0';
-    const myBadge = localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`) || '';
+    const recordKeys = getRecordKeys(song, d);
+    const myScore = localStorage.getItem(recordKeys.score) || '0';
+    const myBadge = localStorage.getItem(recordKeys.badge) || '';
     const myScoreEl = document.getElementById('rsb-my-score');
     const myBadgeEl = document.getElementById('rsb-my-badge');
     if (parseInt(myScore) > 0) {
-        myScoreEl.textContent = myScore; myScoreEl.className = 'rsb-my-score has-score';
-        if      (myBadge === 'TB') { myBadgeEl.textContent = '👑 TROLL BEAT'; myBadgeEl.className = 'rsb-my-badge tb'; }
-        else if (myBadge === 'FC') { myBadgeEl.textContent = '⭐ FULL COMBO'; myBadgeEl.className = 'rsb-my-badge fc'; }
-        else { myBadgeEl.textContent = 'CLEARED'; myBadgeEl.className = 'rsb-my-badge cl'; }
+        myScoreEl.textContent = precisionPlayMode ? `${(parseInt(myScore,10) / 10000).toFixed(2)}%` : myScore; myScoreEl.className = 'rsb-my-score has-score';
+        if      (precisionPlayMode && myBadge === 'SYNC') { myBadgeEl.textContent = '✦ |SYNC|'; myBadgeEl.className = 'rsb-my-badge tb'; }
+        else if (myBadge === 'TB') { myBadgeEl.textContent = '👑 트롤 비트'; myBadgeEl.className = 'rsb-my-badge tb'; }
+        else if (myBadge === 'FC') { myBadgeEl.textContent = '⭐ 풀 콤보'; myBadgeEl.className = 'rsb-my-badge fc'; }
+        else { myBadgeEl.textContent = '클리어'; myBadgeEl.className = 'rsb-my-badge cl'; }
     } else {
         myScoreEl.textContent = '—'; myScoreEl.className = 'rsb-my-score';
-        myBadgeEl.textContent = 'NOT PLAYED'; myBadgeEl.className = 'rsb-my-badge no';
+        myBadgeEl.textContent = '미플레이'; myBadgeEl.className = 'rsb-my-badge no';
     }
 
     // 로딩 스켈레톤
@@ -2046,11 +2998,11 @@ async function loadRankingSidebar() {
         <div class="rsb-skeleton"></div>`;
 
     try {
-        const res  = await fetch(`${API_BASE}/api/ranking/${encodeURIComponent(song.folder)}/${encodeURIComponent(d.fileKey)}`);
+        const res  = await fetch(`${API_BASE}/api/ranking/${encodeURIComponent(song.folder)}/${encodeURIComponent(leaderboardDiff)}`);
         const data = await res.json();
 
         if (!Array.isArray(data) || data.length === 0) {
-            listEl.innerHTML = `<div class="rsb-state"><div class="rsb-state-icon">🎯</div><div>기록이 없습니다</div><div style="font-size:8px;color:#1a1a2a;margin-top:4px;letter-spacing:1px;">BE THE FIRST!</div></div>`;
+            listEl.innerHTML = `<div class="rsb-state"><div class="rsb-state-icon">🎯</div><div>기록이 없습니다</div><div style="font-size:8px;color:#1a1a2a;margin-top:4px;letter-spacing:1px;">첫 기록에 도전하세요</div></div>`;
             return;
         }
 
@@ -2064,26 +3016,28 @@ async function loadRankingSidebar() {
             const nClass = rank === 1 ? 'n1' : rank === 2 ? 'n2' : rank === 3 ? 'n3' : 'nx';
             const nText  = rank <= 3 ? rank : rank;
             const isMe   = myId && r.userId === myId;
-            const lv     = r.level ? `LV.${r.level}` : '';
+            const lv     = r.level ? `레벨 ${r.level}` : '';
 
             // 점수에 따른 등급 색
             const gi     = GRADE_THRESHOLDS.find(t => (parseInt(r.score)||0) >= t.min) || GRADE_THRESHOLDS[GRADE_THRESHOLDS.length-1];
+            const scoreText = precisionPlayMode ? `${((parseInt(r.score)||0) / 10000).toFixed(2)}%` : (parseInt(r.score)||0).toLocaleString();
+            const scoreColor = precisionPlayMode ? '#5b8ae0' : gi.hex;
 
             const item = document.createElement('div');
             item.className = 'rsb-item' + (isMe ? ' rsb-me' : '');
             item.innerHTML = `
                 <div class="rsb-num-badge ${nClass}">${nText}</div>
                 <div class="rsb-info">
-                    <div class="rsb-name">${r.userName || 'PLAYER'}</div>
+                    <div class="rsb-name">${r.userName || '플레이어'}</div>
                     <div class="rsb-lv">${lv}</div>
                 </div>
-                <div class="rsb-score" style="${isMe?'color:var(--gold)':'color:'+gi.hex}">${(parseInt(r.score)||0).toLocaleString()}</div>`;
+                <div class="rsb-score" style="${isMe?'color:var(--gold)':'color:'+scoreColor}">${scoreText}</div>`;
             listEl.appendChild(item);
         });
 
     } catch(e) {
         console.warn('RSB load fail', e);
-        listEl.innerHTML = `<div class="rsb-state"><div class="rsb-state-icon">📡</div><div>NETWORK ERROR</div></div>`;
+        listEl.innerHTML = `<div class="rsb-state"><div class="rsb-state-icon">📡</div><div>연결 오류</div></div>`;
     }
 }
 
@@ -2113,7 +3067,7 @@ function renderPlayerStats() {
             const badge    = localStorage.getItem(`wb_badge_${song.folder}_${d.fileKey}`) || '';
             const score    = parseInt(scoreStr) || 0;
             if (score > 0) {
-                records.push({ title: song.title, folder: song.folder, pack: song.pack || 'ALL SONGS', diffType: d.type, fileKey: d.fileKey, score, badge });
+                records.push({ title: song.title, folder: song.folder, pack: song.pack || 'ALL SONGS', diffName: getDifficultyDisplayName(d), fileKey: d.fileKey, score, badge });
             }
         });
     });
@@ -2134,7 +3088,7 @@ function renderPlayerStats() {
     // ── 베스트 곡 (점수 상위 5개) ──
     const bestEl = document.getElementById('pcs-best-list');
     if (records.length === 0) {
-        bestEl.innerHTML = '<div style="font-family:Orbitron;font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">NO RECORDS</div>';
+        bestEl.innerHTML = '<div style="font-family:Orbitron;font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">기록 없음</div>';
     } else {
         const sorted = [...records].sort((a, b) => b.score - a.score).slice(0, 5);
         const rankClasses = ['b1','b2','b3','bx','bx'];
@@ -2145,7 +3099,7 @@ function renderPlayerStats() {
                 <div class="pcs-best-rank ${rankClasses[i]}">${rankIcons[i]}</div>
                 <div class="pcs-best-info">
                     <div class="pcs-best-title">${r.title}</div>
-                    <div class="pcs-best-diff">${r.diffType.toUpperCase()}</div>
+                    <div class="pcs-best-diff">${r.diffName}</div>
                 </div>
                 <div class="pcs-best-score hi" style="color:${gi.hex}">${r.score.toLocaleString()}</div>
             </div>`;
@@ -2158,7 +3112,7 @@ function renderPlayerStats() {
 
     // 팩 목록 구성 (ALL SONGS 제외한 개별 팩, + 팩 없는 곡은 MISC)
     allSongs.forEach(song => {
-        const packName = (song.pack && song.pack !== 'ALL SONGS') ? song.pack : 'MISC';
+        const packName = (song.pack && song.pack !== 'ALL SONGS') ? song.pack : '기타';
         if (!packStats[packName]) packStats[packName] = { total: 0, played: 0, scoreSum: 0 };
         const diffs = getDiffs(song);
         diffs.forEach(d => {
@@ -2170,7 +3124,7 @@ function renderPlayerStats() {
 
     const packNames = Object.keys(packStats).sort();
     if (packNames.length === 0) {
-        packEl.innerHTML = '<div style="font-family:Orbitron;font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">NO DATA</div>';
+        packEl.innerHTML = '<div style="font-family:Orbitron;font-size:9px;color:#2a2a3a;text-align:center;padding:10px;">데이터 없음</div>';
     } else {
         const PACK_COLORS = ['#00f2ff','#c060ff','#00ff88','#ffc832','#ff4455','#3b9eff','#ff7733'];
         packEl.innerHTML = packNames.map((name, i) => {
@@ -2203,7 +3157,8 @@ function playSelected() {
     const d=_cachedDiffs[currentDiffIdx]; if(!d)return;
     stopPreview();
     const spd=document.getElementById('speed-slider').value;
-    window.location.href=`game.html?song=${encodeURIComponent(song.folder)}&diff=${d.fileKey}&speed=${spd}`;
+    const precision = precisionPlayMode && isPrecisionEligibleDifficulty(d) ? '&precision=1' : '';
+    window.location.href=`game.html?song=${encodeURIComponent(song.folder)}&diff=${d.fileKey}&speed=${spd}${precision}`;
 }
 
 // ═══════════ KEYBOARD ═══════════
@@ -2228,6 +3183,21 @@ document.addEventListener('keydown', e => {
 // ═══════════ SETTINGS ═══════════
 function openSettings()  { document.getElementById('settings-modal').style.display='flex'; document.getElementById('offset-display').textContent=(localStorage.getItem('wb_visual_offset')||localStorage.getItem('wb_start_offset')||localStorage.getItem('wb_global_offset')||0)+' ms'; }
 function closeSettings() { document.getElementById('settings-modal').style.display='none'; }
+const SELECT_THEME_KEY = 'wb_select_theme';
+const SELECT_THEMES = new Set(['white', 'dark', 'green']);
+function setSelectTheme(theme) {
+    const safeTheme = SELECT_THEMES.has(theme) ? theme : 'white';
+    document.body.dataset.theme = safeTheme;
+    localStorage.setItem(SELECT_THEME_KEY, safeTheme);
+    document.querySelectorAll('[data-theme-option]').forEach(button => {
+        const selected = button.dataset.themeOption === safeTheme;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+    });
+}
+function initSelectTheme() {
+    setSelectTheme(localStorage.getItem(SELECT_THEME_KEY) || 'white');
+}
 function getMusicVolume() { const value=parseFloat(localStorage.getItem('wb_bgm_volume') || localStorage.getItem('wb_music_volume') || '0.65'); return Math.max(0, Math.min(1, Number.isFinite(value) ? value : 0.65)); }
 function setFeverEnabled(enabled) {
     localStorage.setItem('wb_fever_enabled', enabled ? '1' : '0');
@@ -2394,18 +3364,65 @@ window.addEventListener('keydown', e => {
     }
 });
 
+// ═══════════ SIDE INFORMATION DOCK ═══════════
+const INFO_DOCK_TITLES = { chart: '채보 특성', ranking: '순위표' };
+function openInfoDock(panel) {
+    const dock = document.getElementById('info-side-dock');
+    if (!dock || !INFO_DOCK_TITLES[panel]) return;
+    const wasOpen = dock.classList.contains('open');
+    const current = dock.dataset.panel || 'chart';
+    if (wasOpen && current === panel) { closeInfoDock(); return; }
+
+    dock.dataset.panel = panel;
+    dock.classList.add('open');
+    if (!wasOpen) playDrawerSfx();
+    document.getElementById('info-side-title').textContent = INFO_DOCK_TITLES[panel];
+    document.querySelectorAll('[data-info-tab]').forEach(button => {
+        const selected = button.dataset.infoTab === panel;
+        button.classList.toggle('active', selected);
+        button.setAttribute('aria-pressed', String(selected));
+    });
+    document.querySelectorAll('[data-info-panel]').forEach(section => {
+        const selected = section.dataset.infoPanel === panel;
+        section.classList.toggle('active', selected);
+        section.hidden = !selected;
+    });
+}
+function closeInfoDock() {
+    const dock = document.getElementById('info-side-dock');
+    if (!dock) return;
+    const wasOpen = dock.classList.contains('open');
+    dock.classList.remove('open');
+    dock.querySelectorAll('[data-info-tab]').forEach(button => {
+        button.classList.remove('active');
+        button.setAttribute('aria-pressed', 'false');
+    });
+    if (wasOpen) playDrawerSfx();
+}
+window.addEventListener('keydown', e => {
+    const dock = document.getElementById('info-side-dock');
+    if (e.key === 'Escape' && dock?.classList.contains('open')) {
+        e.preventDefault();
+        closeInfoDock();
+    }
+});
+window.addEventListener('pointerdown', e => {
+    const dock = document.getElementById('info-side-dock');
+    if (dock?.classList.contains('open') && !dock.contains(e.target)) closeInfoDock();
+});
+
 
 // ═══════════ SYNC ═══════════
 const BPM=120,INT_SEC=60/BPM;
 let tapDiffs=[],isCalibrating=false,nextBeatTime=0,calibInterval=null;
-function openCalib(){closeSettings();document.getElementById('calib-overlay').style.display='flex';document.getElementById('offset-input').value=localStorage.getItem('wb_global_offset')||0;document.getElementById('calib-msg').textContent='Click the circle to start';tapDiffs=[];isCalibrating=false;}
+function openCalib(){closeSettings();document.getElementById('calib-overlay').style.display='flex';document.getElementById('offset-input').value=localStorage.getItem('wb_global_offset')||0;document.getElementById('calib-msg').textContent='원을 눌러 시작하세요';tapDiffs=[];isCalibrating=false;}
 function closeCalib(){document.getElementById('calib-overlay').style.display='none';stopCalib();openSettings();}
 function manualInput(){const v=document.getElementById('offset-input').value;localStorage.setItem('wb_global_offset',v);document.getElementById('offset-display').textContent=v+' ms';}
 function adjustOffset(a){const inp=document.getElementById('offset-input');inp.value=parseInt(inp.value)+a;manualInput();}
-function startCalib(){if(isCalibrating)return;isCalibrating=true;tapDiffs=[];document.getElementById('calib-msg').textContent='Listen & Tap!';ensureAudioPipeline();if(audioCtx.state==='suspended')audioCtx.resume();nextBeatTime=audioCtx.currentTime+0.5;scheduleBeep();}
+function startCalib(){if(isCalibrating)return;isCalibrating=true;tapDiffs=[];document.getElementById('calib-msg').textContent='소리를 듣고 탭하세요';ensureAudioPipeline();if(audioCtx.state==='suspended')audioCtx.resume();nextBeatTime=audioCtx.currentTime+0.5;scheduleBeep();}
 function stopCalib(){clearTimeout(calibInterval);isCalibrating=false;}
 function scheduleBeep(){if(!isCalibrating)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=1000;g.gain.value=0.07;o.start(nextBeatTime);o.stop(nextBeatTime+0.05);const d=(nextBeatTime-audioCtx.currentTime)*1000;setTimeout(()=>{const c=document.getElementById('calib-circle');c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),50);},d);nextBeatTime+=INT_SEC;calibInterval=setTimeout(scheduleBeep,d+200);}
-function handleTap(e){if(e&&(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON'))return;if(!isCalibrating){startCalib();return;}const t=audioCtx.currentTime,fp=t-(nextBeatTime-INT_SEC),tn=nextBeatTime-t,diff=Math.abs(fp)<Math.abs(tn)?fp:-tn;if(Math.abs(diff)<0.2){tapDiffs.push(diff*1000);const c=document.getElementById('calib-circle');c.style.transform='scale(0.9)';setTimeout(()=>c.style.transform='scale(1)',100);const avg=Math.round(tapDiffs.reduce((a,b)=>a+b,0)/tapDiffs.length);document.getElementById('offset-input').value=avg;manualInput();if(tapDiffs.length>=8){stopCalib();document.getElementById('calib-msg').innerHTML='<span style="color:#00e5ff;font-weight:bold;">SYNC COMPLETE!</span>';}}}
+function handleTap(e){if(e&&(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON'))return;if(!isCalibrating){startCalib();return;}const t=audioCtx.currentTime,fp=t-(nextBeatTime-INT_SEC),tn=nextBeatTime-t,diff=Math.abs(fp)<Math.abs(tn)?fp:-tn;if(Math.abs(diff)<0.2){tapDiffs.push(diff*1000);const c=document.getElementById('calib-circle');c.style.transform='scale(0.9)';setTimeout(()=>c.style.transform='scale(1)',100);const avg=Math.round(tapDiffs.reduce((a,b)=>a+b,0)/tapDiffs.length);document.getElementById('offset-input').value=avg;manualInput();if(tapDiffs.length>=8){stopCalib();document.getElementById('calib-msg').innerHTML='<span style="color:#00e5ff;font-weight:bold;">동기화 완료</span>';}}}
 
 // ═══════════ AUTH ═══════════
 function openNicknameModal(force){if(!force&&localStorage.getItem('wb_nickname'))return;const inp=document.getElementById('nickname-input');const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');inp.value=localStorage.getItem('wb_nickname')||p.name||'';document.getElementById('name-modal').style.display='flex';}
@@ -2414,11 +3431,11 @@ function checkLoginStatus(){
     const isIn=localStorage.getItem('wb_logged_in')==='true';
     const btn=document.getElementById('main-login-btn');
     const nd=document.getElementById('user-name-display');
-    if(isIn){btn.textContent='LOGOUT';btn.classList.add('logout');btn.onclick=handleAuth;nd.textContent=localStorage.getItem('wb_nickname')||'PLAYER';nd.style.color='#00e5ff';updateProfile();}
-    else{btn.textContent='LOGIN';btn.classList.remove('logout');btn.onclick=handleAuth;nd.textContent='GUEST';nd.style.color='#444';}
+    if(isIn){btn.textContent='로그아웃';btn.classList.add('logout');btn.onclick=handleAuth;nd.textContent=localStorage.getItem('wb_nickname')||'플레이어';nd.style.color='#00e5ff';updateProfile();}
+    else{btn.textContent='로그인';btn.classList.remove('logout');btn.onclick=handleAuth;nd.textContent='손님';nd.style.color='#444';}
 }
 function handleAuth(){if(localStorage.getItem('wb_logged_in')==='true'){if(confirm('로그아웃?')){localStorage.clear();location.reload();}}else{location.href='login.html';}}
-function updateProfile(){const lv=parseInt(localStorage.getItem('wb_user_lv')||1),xp=parseInt(localStorage.getItem('wb_user_xp')||0),nxp=lv*500;document.getElementById('user-lv').textContent=`LV. ${lv}`;document.getElementById('user-xp-fill').style.width=`${Math.min(100,xp/nxp*100)}%`;document.getElementById('user-xp-text').textContent=`${xp} / ${nxp} XP`;}
+function updateProfile(){const lv=parseInt(localStorage.getItem('wb_user_lv')||1),xp=parseInt(localStorage.getItem('wb_user_xp')||0),nxp=lv*500;document.getElementById('user-lv').textContent=`레벨 ${lv}`;document.getElementById('user-xp-fill').style.width=`${Math.min(100,xp/nxp*100)}%`;document.getElementById('user-xp-text').textContent=`${xp} / ${nxp} 경험치`;}
 function toggleProfile(){const pc=document.getElementById('profile-container');pc.style.display=pc.style.display==='flex'?'none':'flex';}
 </script>
 </body>

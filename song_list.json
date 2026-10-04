@@ -108,16 +108,6 @@
     ]
   },
   {
-    "folder": "Stroll",
-    "title": "Stroll",
-    "artist": "Cansol",
-    "pack": "Core2",
-    "previewStart": 0,
-    "charts": [
-      { "name": "Normal", "level": 3, "file": "normal_3.json", "stats": { "stamina": 2, "speed": 6, "pattern": 2, "rhythm": 3, "readability": 45 } }
-    ]
-  },
-  {
     "folder": "GetDat",
     "title": "Get Dat",
     "artist": "Righten",

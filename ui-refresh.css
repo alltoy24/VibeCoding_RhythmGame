@@ -1,0 +1,131 @@
+/* WEB BEAT UI refresh — shared usability layer */
+:root {
+  --ui-surface: rgba(13, 17, 31, .86);
+  --ui-surface-strong: rgba(8, 11, 22, .96);
+  --ui-line: rgba(160, 224, 255, .18);
+  --ui-muted: #aeb9ca;
+  --ui-focus: #ffffff;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+button, a, input, select { -webkit-tap-highlight-color: transparent; }
+button, a[href], select, input[type="range"] { touch-action: manipulation; }
+button { min-height: 38px; }
+button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 3px solid var(--ui-focus) !important;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px rgba(0, 229, 255, .36) !important;
+  position: relative;
+  z-index: 10000;
+}
+
+/* Menus and control panels share a calmer, higher-contrast surface. */
+body .modal-box, body .panel, body .login-box, body .stat-card, body .right-panel, body .shell .panel {
+  background: linear-gradient(145deg, var(--ui-surface), var(--ui-surface-strong)) !important;
+  border-color: var(--ui-line) !important;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255,255,255,.05) !important;
+}
+body .modal-box { max-height: min(88vh, 800px); overflow: auto; scrollbar-gutter: stable; }
+body .modal-title, body .section-title, body .panel-title { letter-spacing: 1.5px; }
+body .btn-full, body .tool-button, body .back-btn, body .archive-btn, body .btn-create, body .res-btn, body .pause-btn {
+  min-height: 42px;
+  border-radius: 10px !important;
+}
+body .btn-full, body .tool-button, body .back-btn, body .archive-btn, body .btn-create, body .res-btn, body .pause-btn, body .btn-icon {
+  transition: transform .16s ease, border-color .16s ease, background-color .16s ease, box-shadow .16s ease !important;
+}
+body .btn-full:hover, body .tool-button:hover, body .back-btn:hover, body .archive-btn:hover, body .btn-create:hover, body .res-btn:hover, body .pause-btn:hover, body .btn-icon:hover {
+  transform: translateY(-2px);
+}
+
+/* Main menu: one clear hierarchy, no skewed cards that hide content. */
+body[data-ui="menu"] #main-ui { padding: 96px 28px 32px; justify-content: center; }
+body[data-ui="menu"] .title-logo { font-size: clamp(52px, 9vw, 112px); margin: 0 0 28px; letter-spacing: -3px; }
+body[data-ui="menu"] .mode-wrapper { gap: 22px; width: min(920px, 100%); }
+body[data-ui="menu"] .mode-card { width: 100%; height: 330px; border-radius: 18px; transform: none !important; }
+body[data-ui="menu"] .mode-card:hover { transform: translateY(-8px) !important; }
+body[data-ui="menu"] .card-content { align-items: flex-start; text-align: left; padding: 38px; }
+body[data-ui="menu"] .mode-icon { font-size: 50px; margin: 0 0 16px; }
+body[data-ui="menu"] .mode-name { font-size: clamp(25px, 3vw, 36px); margin-bottom: 10px; }
+body[data-ui="menu"] .mode-desc { max-width: 30ch; color: #d0d8e7; }
+body[data-ui="menu"] .profile-card { top: 20px; left: 24px; min-width: 220px; padding: 14px 16px; }
+
+/* Selection view: maintain persistent context and make the primary action unmistakable. */
+body[data-ui="select"] .topbar { min-height: 68px; }
+body[data-ui="select"] .list-panel { background: rgba(6, 9, 20, .7); }
+body[data-ui="select"] .song-item { border-radius: 0 10px 10px 0; }
+body[data-ui="select"] .song-item:not(.active) .item-title { color: #c9d2e0; }
+body[data-ui="select"] .song-item:not(.active) .item-artist { color: #8490a4; }
+body[data-ui="select"] .ranking-sidebar { background: rgba(6, 9, 20, .64); }
+body[data-ui="select"] .btn-play { min-height: 54px; border-radius: 12px; letter-spacing: 2px; }
+body[data-ui="select"] .key-hint-row { color: #aeb9ca; }
+
+/* Gameplay: reserve contrast for information that must be read in a split second. */
+body[data-ui="game"] .hud-rate, body[data-ui="game"] .hud-score {
+  padding: 8px 12px; border-radius: 9px;
+  background: rgba(2, 5, 14, .5); border: 1px solid rgba(255,255,255,.1);
+}
+body[data-ui="game"] .hud-sub { color: #d6deea; }
+body[data-ui="game"] .overlay-screen { background: rgba(3, 6, 15, .88); }
+
+/* Utility pages: keep dense tools pleasant without changing their workflows. */
+body[data-ui="login"] .login-box { width: min(420px, calc(100vw - 32px)); padding: 36px 32px; }
+body[data-ui="login"] .btn-container { gap: 12px; }
+body[data-ui="multi"] .container { max-width: 1440px; margin: 0 auto; }
+body[data-ui="multi"] .room-item { min-height: 64px; border-radius: 10px; }
+body[data-ui="archive"] .metric { min-height: 84px; display: flex; flex-direction: column; justify-content: center; }
+body[data-ui="archive"] .record { min-height: 62px; }
+body[data-ui="skin"] .toolbar { background: rgba(6, 9, 18, .7); border-bottom: 1px solid var(--ui-line); }
+body[data-ui="skin"] .tool-button { min-height: 36px; }
+body[data-ui="offset"] .back { min-height: 38px; }
+
+@media (max-width: 900px) {
+  body[data-ui="menu"] { overflow: auto; }
+  body[data-ui="menu"] #main-ui { min-height: 100vh; height: auto; padding-top: 112px; }
+  body[data-ui="menu"] .mode-wrapper { flex-direction: column; padding-bottom: 20px; }
+  body[data-ui="menu"] .mode-card { flex: none; height: 250px; }
+  body[data-ui="menu"] .profile-card { right: 16px; left: 16px; top: 14px; min-width: 0; flex-direction: row; align-items: center; justify-content: space-between; }
+  body[data-ui="menu"] .xp-bar-bg, body[data-ui="menu"] .xp-text { display: none; }
+  body[data-ui="select"] { overflow: auto; }
+  body[data-ui="select"] .topbar { padding: 10px 14px; gap: 10px; flex-wrap: wrap; }
+  body[data-ui="select"] .topbar-center { order: 3; width: 100%; }
+  body[data-ui="select"] .topbar-right { gap: 6px; margin-left: auto; }
+  body[data-ui="select"] .sort-control, body[data-ui="select"] .pack-hint, body[data-ui="select"] .btn-create { display: none; }
+  body[data-ui="select"] .main { min-height: calc(100vh - 160px); flex-direction: column; overflow: visible; }
+  body[data-ui="select"] .list-panel { width: 100%; height: 290px; border-right: 0; border-bottom: 1px solid var(--ui-line); }
+  body[data-ui="select"] .detail-panel { min-height: 520px; padding: 16px; }
+  body[data-ui="select"] .ranking-sidebar { display: none; }
+  body[data-ui="select"] .big-cover { width: 108px; height: 108px; }
+  body[data-ui="select"] .meta-title { font-size: 17px; }
+  body[data-ui="select"] .meta-quick-stats { gap: 10px; }
+  body[data-ui="select"] .key-hint-row, body[data-ui="select"] .bottom-bar { display: none; }
+  body[data-ui="game"] .hud-rate { top: 10px; left: 10px; }
+  body[data-ui="game"] .hud-score { top: 10px; right: 10px; }
+  body[data-ui="game"] .hud-text { font-size: 20px; }
+  body[data-ui="game"] .hud-combo .hud-text { font-size: 94px; }
+  body[data-ui="multi"] { overflow: auto; }
+  body[data-ui="multi"] header { height: auto; min-height: 70px; padding: 14px 18px; }
+  body[data-ui="multi"] .page-title { font-size: 19px; }
+  body[data-ui="multi"] .container { height: auto; min-height: calc(100vh - 70px); padding: 18px; gap: 18px; flex-direction: column; }
+  body[data-ui="multi"] .left-panel { max-width: none; }
+  body[data-ui="multi"] .btn-match { height: 76px; font-size: 22px; }
+  body[data-ui="multi"] .right-panel { min-height: 340px; }
+  body[data-ui="multi"] .arena-container { gap: 14px; padding: 0 14px; }
+  body[data-ui="multi"] .player-slot { width: min(38vw, 190px); height: 270px; }
+  body[data-ui="multi"] .p-avatar { width: 80px; height: 80px; font-size: 36px; }
+  body[data-ui="multi"] .p-name { font-size: 16px; }
+  body[data-ui="multi"] .vs-text { font-size: 42px; }
+  body[data-ui="archive"] .shell { width: min(100% - 28px, 1220px); padding-top: 16px; }
+  body[data-ui="archive"] .hero { padding: 18px; }
+  body[data-ui="archive"] .metric-grid { gap: 8px; }
+  body[data-ui="archive"] .metric { padding: 12px; min-height: 72px; }
+  body[data-ui="archive"] .bar-row { grid-template-columns: 72px 1fr 60px; gap: 8px; }
+  body[data-ui="archive"] .record { grid-template-columns: 1fr 90px 52px; gap: 8px; padding: 10px; }
+  body[data-ui="offset"] .app { width: min(100vw - 18px, 520px); height: min(100vh - 18px, 760px); }
+  body[data-ui="offset"] .main { font-size: 30px; }
+  body .modal-box { width: calc(100vw - 28px) !important; min-width: 0 !important; padding: 24px !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
+}

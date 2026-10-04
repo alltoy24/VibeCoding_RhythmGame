@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="ui-refresh.css">
     <title>WEB BEAT : TITLE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600&display=swap');
@@ -225,7 +227,7 @@
         @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
     </style>
 </head>
-<body>
+<body data-ui="menu">
 
     <div id="bg-container"></div>
 
@@ -250,7 +252,7 @@
         <div class="title-logo">WEB BEAT</div>
 
         <div class="mode-wrapper">
-            <div class="mode-card single" onclick="location.href='select.html'">
+            <div class="mode-card single" role="button" tabindex="0" aria-label="싱글 플레이 시작" onclick="location.href='select.html'" onkeydown="if(event.key==='Enter'||event.key===' ')location.href='select.html'">
                 <div class="scanline"></div>
                 <div class="card-bg-text">01</div>
                 <div class="card-content">
@@ -260,7 +262,7 @@
                 </div>
             </div>
 
-            <div class="mode-card multi" onclick="location.href='multi.html'">
+            <div class="mode-card multi" role="button" tabindex="0" aria-label="멀티 플레이 시작" onclick="location.href='multi.html'" onkeydown="if(event.key==='Enter'||event.key===' ')location.href='multi.html'">
                 <div class="scanline"></div>
                 <div class="card-bg-text">02</div>
                 <div class="card-content">
@@ -284,7 +286,7 @@
 
 
     <script>
-        const API_BASE = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app";
+        const API_BASE = "https://webbeat-api.yunhogim528.workers.dev";
 
         // --- 諛곌꼍 蹂??앹꽦 ---
         const bg = document.getElementById('bg-container');

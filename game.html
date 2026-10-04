@@ -2,6 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="ui-refresh.css">
     <title>WEB BEAT : SECURE</title>
     <script src="https://accounts.google.com/gsi/client" async defer></script>
     <style>
@@ -127,6 +129,9 @@
         .hud-combo { left: 50%; top: 48%; transform: translate(-50%,-50%); text-align: center; opacity: 0.12; }
         .hud-text { font-family: var(--ui-font); font-weight: 900; font-size: 30px; color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.4); transition: color 0.2s, text-shadow 0.2s; }
         .hud-sub { font-family: 'Segoe UI', sans-serif; font-size: 10px; color: #666; font-weight: 700; letter-spacing: 1px; }
+        body.precision-play .hud-rate { display: none; }
+        body.precision-play .hud-score .hud-sub { color: rgba(173,205,255,.82); }
+        body.precision-play .hud-score .hud-text { color: #d9e9ff; text-shadow: 0 0 9px rgba(103,161,255,.82), 0 0 22px rgba(72,112,203,.36); }
         .hud-combo .hud-sub { display: none; }
         .hud-combo .hud-text { font-size: 150px; line-height: 1; text-shadow: 0 0 30px rgba(255,255,255,0.25); }
         .hud-item[data-custom-pos="1"] { right: auto !important; bottom: auto !important; }
@@ -285,6 +290,10 @@
             text-shadow: 0 0 24px rgba(0,229,255,0.5);
             letter-spacing: 2px;
         }
+        .res-precision-status {
+            font-family: var(--ui-font); font-size: 13px; font-weight: 800; letter-spacing: 3px;
+            color: #9fc4ff; text-shadow: 0 0 16px rgba(93,145,238,.52); padding-bottom: 14px;
+        }
 
         /* ── NEW RECORD ── */
         .res-new-record {
@@ -368,7 +377,7 @@
         }
         .res-judge-grid {
             display: flex; flex-direction: column; gap: 5px;
-            margin-bottom: 20px;
+            margin-bottom: 12px;
         }
         .res-judge-row {
             display: flex; align-items: center; gap: 10px;
@@ -385,7 +394,18 @@
         @keyframes resSlideR { to { opacity: 1; transform: translateX(0); } }
         .res-judge-name {
             font-family: var(--ui-font); font-size: 10px; font-weight: 700;
-            width: 68px; flex-shrink: 0;
+            /* 모든 행이 같은 기준선에서 시작하도록 라벨 칼럼을 고정한다. */
+            width: 104px; flex-shrink: 0;
+        }
+        .res-judge-name.res-judge-absolute {
+            background: linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff,#ff4a91);
+            background-size: 300% 100%; background-clip:text; -webkit-background-clip:text;
+            color:transparent !important; -webkit-text-fill-color:transparent;
+            animation: rainbow-shift 1.2s linear infinite;
+        }
+        /* TP Perfect는 표기는 Perfect로 통일하고, 은은한 후광만 남긴다. */
+        .res-judge-name.res-judge-tp {
+            text-shadow: 0 0 3px #fff8da, 0 0 9px rgba(255,224,139,.64), 0 0 18px rgba(242,188,67,.30);
         }
         .res-judge-bar-wrap {
             flex: 1; height: 5px; background: rgba(255,255,255,0.07);
@@ -573,11 +593,19 @@
             filter: none !important;
             letter-spacing: 1px;
         }
+        .judge-popup.judge-style-flat.judge-tp-perfect {
+            color: #fff0bd !important;
+            text-shadow: 0 0 8px rgba(255,237,176,.60), 0 0 17px rgba(242,188,67,.34) !important;
+        }
         .judge-popup.judge-style-outline {
             color: #fff !important;
             text-shadow: 0 0 16px var(--judge-color), 0 0 34px var(--judge-color) !important;
             -webkit-text-stroke: 1.2px var(--judge-color);
             filter: none !important;
+        }
+        .judge-popup.judge-style-outline.judge-tp-perfect {
+            -webkit-text-stroke-color: #ffe5a0;
+            text-shadow: 0 0 9px rgba(255,237,176,.68), 0 0 22px rgba(242,188,67,.42) !important;
         }
         .judge-effect {
             position: absolute;
@@ -639,6 +667,16 @@
             background: linear-gradient(90deg, transparent, #ff0080, #ff8c00, #ffe000, #00ff88, #00e5ff, #7b2fff, #ff0080, transparent);
             box-shadow: 0 0 12px #fff, 0 0 22px #ff0080, 0 0 34px #00e5ff;
         }
+        .judge-effect-ripple.judge-effect-tp::before,
+        .judge-effect-ripple.judge-effect-tp::after {
+            border-color: #ffe7a0;
+            box-shadow: 0 0 13px #ffe7a0, 0 0 25px rgba(245, 190, 70, 0.58), inset 0 0 12px rgba(255,255,255,.34);
+        }
+        .judge-effect-linewave.judge-effect-tp::before,
+        .judge-effect-linewave.judge-effect-tp::after {
+            background: linear-gradient(90deg, transparent, #d7a942, #fff3bd, #d7a942, transparent);
+            box-shadow: 0 0 12px #ffe7a0, 0 0 24px rgba(245, 190, 70, 0.45);
+        }
         .judge-effect-linewave::before {
             top: 0;
             animation: judgeLineWaveUp 0.48s ease-out forwards;
@@ -664,8 +702,16 @@
             60%  { opacity: 1; transform: translate(-50%, calc(-50% - 15px)) scale(1.0); }
             100% { opacity: 0; transform: translate(-50%, calc(-50% - 30px)) scale(0.9); }
         }
-        /* Perfect! 레인보우 */
-        .judge-perfect-ex {
+        /* TP Perfect: 같은 Perfect 표기지만, 부드러운 금색 광채로 정확한 입력을 구분한다. */
+        .judge-tp-perfect {
+            color: #fff0bd;
+            text-shadow: 0 0 3px #fff8da, 0 0 11px rgba(255,224,139,.72), 0 0 23px rgba(242,188,67,.40);
+            animation: judgeAnim 0.5s forwards;
+            font-size: 38px;
+        }
+        /* 동기화 연주의 최상위 판정에서만 사용하는 무지개 반짝임 효과. */
+        .judge-tp-perfect.rainbow-effect,
+        .judge-popup.judge-absolute-sync.rainbow-effect {
             background: linear-gradient(90deg, #ff0080, #ff8c00, #ffe000, #00ff88, #00e5ff, #7b2fff, #ff0080);
             background-size: 300% 100%;
             -webkit-background-clip: text;
@@ -673,22 +719,50 @@
             background-clip: text;
             animation: judgeAnim 0.5s forwards, rainbow-shift 0.8s linear infinite;
             filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 6px #ff0080);
-            font-size: 38px;
         }
-        .judge-perfect-ex.judge-style-flat {
+        .judge-tp-perfect.rainbow-effect.judge-style-flat,
+        .judge-popup.judge-absolute-sync.rainbow-effect.judge-style-flat {
             background: none;
             -webkit-text-fill-color: var(--judge-color);
             color: var(--judge-color);
         }
-        .judge-perfect-ex.judge-style-outline {
+        .judge-tp-perfect.rainbow-effect.judge-style-outline,
+        .judge-popup.judge-absolute-sync.rainbow-effect.judge-style-outline {
             background: none;
             -webkit-text-fill-color: #fff;
             color: #fff !important;
         }
+        body.precision-play .judge-tp-perfect.rainbow-effect.judge-style-flat,
+        body.precision-play .judge-tp-perfect.rainbow-effect.judge-style-outline,
+        body.precision-play .judge-popup.judge-absolute-sync.rainbow-effect.judge-style-flat,
+        body.precision-play .judge-popup.judge-absolute-sync.rainbow-effect.judge-style-outline {
+            background: linear-gradient(90deg, #ff4a91, #ffb347, #fff36b, #58eea7, #63d6ff, #b78bff, #ff4a91) !important;
+            background-size: 300% 100% !important;
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent !important;
+            color: transparent !important;
+            -webkit-text-stroke: 0;
+            text-shadow: 0 0 10px rgba(255,255,255,.72), 0 0 20px rgba(124,167,255,.44) !important;
+            animation: judgeAnim 0.5s forwards, rainbow-shift 0.8s linear infinite;
+        }
+        .judge-effect-ripple.judge-effect-sync::before,
+        .judge-effect-ripple.judge-effect-sync::after {
+            border: 0;
+            background: conic-gradient(from 90deg, #ff4a91, #ffb347, #fff36b, #58eea7, #63d6ff, #b78bff, #ff4a91);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 2px));
+            box-shadow: 0 0 14px #fff, 0 0 27px rgba(116,166,255,.72);
+        }
+        .judge-effect-linewave.judge-effect-sync::before,
+        .judge-effect-linewave.judge-effect-sync::after {
+            background: linear-gradient(90deg, transparent, #ff4a91, #ffb347, #fff36b, #58eea7, #63d6ff, #b78bff, #ff4a91, transparent);
+            box-shadow: 0 0 13px #fff, 0 0 27px rgba(116,166,255,.64);
+        }
         @keyframes rainbow-shift { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
     </style>
 </head>
-<body>
+<body data-ui="game">
     <div id="loading-screen" class="overlay-screen" style="display:flex;">
         <div class="loading-text" id="loading-msg">SYSTEM INITIALIZING...</div>
         <button id="btn-start-auto" class="btn-common" style="display:none;" onclick="startGame()">GAME START</button>
@@ -754,116 +828,114 @@
     (function() {
 
     // ============================================================
-    // ★ 판정 시스템 정의 (8단계)
+    // ★ 판정 시스템 정의 (5단계)
+    // TP Perfect는 더 좁은 만점 판정이며, 화면 표기는 Perfect로 통일한다.
     // ============================================================
     const JUDGE_TABLE = [
         {
-            name: 'Perfect!',
-            window: 32,
+            name: 'Perfect',
+            window: 40,
             rate: 100,
             scoreRate: 1.0,
-            key: 'perfectEx',
-            cssClass: 'judge-perfect-ex',
-            color: '#ffffff',           // 무지개라 캔버스용으로 흰색 base
-            glowColor: '#ff0080',
-            particleColors: ['#ff0080','#ff8c00','#ffe000','#00ff88','#00e5ff','#7b2fff'],
+            key: 'tpPerfect',
+            cssClass: 'judge-tp-perfect',
+            color: '#fff0bd',
+            glowColor: '#f2bc43',
+            particleColors: ['#fff0bd','#f2bc43','#fff7d5'],
             comboBreak: false,
         },
         {
             name: 'Perfect',
-            window: 40,
-            rate: 96,
-            scoreRate: 0.96,
+            window: 64,
+            rate: 90,
+            scoreRate: 1.0,
             key: 'perfect',
             cssClass: 'judge-perfect',
-            color: '#FFE000',
-            glowColor: '#FFE000',
-            particleColors: ['#FFE000','#fff48c','#ffe55c'],
-            comboBreak: false,
-        },
-        {
-            name: 'Great',
-            window: 48,
-            rate: 88,
-            scoreRate: 0.88,
-            key: 'great',
-            cssClass: 'judge-great',
-            color: '#00F2FF',
-            glowColor: '#00F2FF',
-            particleColors: ['#00F2FF','#80f9ff','#00aacc'],
+            color: '#f1c765',
+            glowColor: '#d1a13c',
+            particleColors: ['#f1c765','#f8df96','#d1a13c'],
             comboBreak: false,
         },
         {
             name: 'Good',
-            window: 56,
+            window: 100,
             rate: 70,
             scoreRate: 0.70,
             key: 'good',
             cssClass: 'judge-good',
-            color: '#88FF00',
-            glowColor: '#88FF00',
-            particleColors: ['#88FF00','#ccff66','#55cc00'],
+            color: '#9ee68a',
+            glowColor: '#78cc72',
+            particleColors: ['#9ee68a','#d2ffb7','#78cc72'],
             comboBreak: false,
         },
         {
-            name: 'Not Bad',
-            window: 72,
-            rate: 45,
-            scoreRate: 0.45,
-            key: 'notBad',
-            cssClass: 'judge-notbad',
-            color: '#FFB300',
-            glowColor: '#FFB300',
-            particleColors: ['#FFB300','#ffd060','#cc8800'],
-            comboBreak: false,
-        },
-        {
-            name: 'Save',
-            window: 90,
-            rate: 20,
-            scoreRate: 0.20,
-            key: 'save',
-            cssClass: 'judge-save',
-            color: '#FF7733',
-            glowColor: '#FF7733',
-            particleColors: ['#FF7733','#ffaa66','#cc4400'],
-            comboBreak: false,
-        },
-        {
-            name: 'Oh...',
-            window: 110,
-            rate: 5,
-            scoreRate: 0.05,
-            key: 'oh',
-            cssClass: 'judge-oh',
-            color: '#FF2D78',
-            glowColor: '#FF2D78',
-            particleColors: ['#FF2D78','#ff80aa'],
+            name: 'Bad',
+            window: 150,
+            rate: 40,
+            scoreRate: 0.30,
+            key: 'bad',
+            cssClass: 'judge-bad',
+            color: '#ff9e77',
+            glowColor: '#ff735f',
+            particleColors: ['#ff9e77','#ffd19a','#ff735f'],
             comboBreak: true,
         },
         {
-            name: 'No...',
+            name: 'Miss',
             window: Infinity,
             rate: 0,
             scoreRate: 0,
             key: 'miss',
-            cssClass: 'judge-no',
-            color: '#555566',
-            glowColor: '#555566',
-            particleColors: ['#555566'],
+            cssClass: 'judge-miss',
+            color: '#747d91',
+            glowColor: '#545d70',
+            particleColors: ['#747d91'],
             comboBreak: true,
         },
     ];
 
+    // ABSOLUTE SYNC: 최상위 ±20ms 판정을 추가하고, 일반 점수 대신 SYNC 비율만 경쟁한다.
+    const ABSOLUTE_SYNC_JUDGE_TABLE = [
+        { name:'|SYNC|',       window:20,       rate:100, scoreRate:1.0, key:'absoluteSync', cssClass:'judge-absolute-sync', color:'#ffffff', glowColor:'#b9d8ff', particleColors:['#fff7cf','#63d6ff','#ff4a91'], comboBreak:false },
+        { name:'Perfect',      window:40,       rate:90,  scoreRate:0.9, key:'tpPerfect',    cssClass:'judge-tp-perfect',    color:'#fff0bd', glowColor:'#f2bc43', particleColors:['#fff0bd','#f2bc43','#fff7d5'], comboBreak:false },
+        { name:'Perfect',      window:64,       rate:80,  scoreRate:0.8, key:'perfect',      cssClass:'judge-perfect',       color:'#f1c765', glowColor:'#d1a13c', particleColors:['#f1c765','#f8df96','#d1a13c'], comboBreak:false },
+        { name:'Good',         window:100,      rate:60,  scoreRate:0.6, key:'good',         cssClass:'judge-good',          color:'#9ee68a', glowColor:'#78cc72', particleColors:['#9ee68a','#d2ffb7','#78cc72'], comboBreak:false },
+        { name:'Bad',          window:150,      rate:40,  scoreRate:0.4, key:'bad',          cssClass:'judge-bad',           color:'#ff9e77', glowColor:'#ff735f', particleColors:['#ff9e77','#ffd19a','#ff735f'], comboBreak:true },
+        { name:'Miss',         window:Infinity, rate:0,   scoreRate:0,   key:'miss',         cssClass:'judge-miss',          color:'#747d91', glowColor:'#545d70', particleColors:['#747d91'], comboBreak:true },
+    ];
+    const ABSOLUTE_SYNC_WEIGHTS = { absoluteSync:1.0, tpPerfect:0.90, perfect:0.80, good:0.60, bad:0.40, miss:0 };
+    let precisionPlayMode = false;
+    function isPrecisionEligibleDiffKey(diffKey) {
+        // 정규 Normal/Hard만 제외한다. Troll과 이후 추가되는 모든 특수 채보를 허용한다.
+        return !/^(?:normal|hard)(?:_|$)/i.test(String(diffKey || '').replace(/__precision$/i, ''));
+    }
+    function calculatePrecisionScore(stats = judgeStats, total = totalMaxHits) {
+        if (!total) return 0;
+        const weighted = Object.entries(ABSOLUTE_SYNC_WEIGHTS)
+            .reduce((sum, [key, weight]) => sum + ((stats[key] || 0) * weight), 0);
+        return Math.floor((weighted / total) * 1000000);
+    }
+    function getActiveJudgeTable() {
+        return precisionPlayMode ? ABSOLUTE_SYNC_JUDGE_TABLE : JUDGE_TABLE;
+    }
+    function formatPrecisionPercent(scoreValue) {
+        return `${(Math.max(0, scoreValue || 0) / 10000).toFixed(2)}%`;
+    }
+    function configurePrecisionHud() {
+        document.body.classList.toggle('precision-play', precisionPlayMode);
+        const scoreLabel = document.querySelector('.hud-score .hud-sub');
+        const scoreValue = document.getElementById('g-score');
+        if (scoreLabel) scoreLabel.textContent = precisionPlayMode ? 'SYNC' : 'SCORE';
+        if (scoreValue) scoreValue.textContent = precisionPlayMode ? '0.00%' : '000000';
+    }
+
     // 판정 CSS 스타일 동적 삽입
     const judgeStyles = `
-        .judge-perfect { color: #FFE000; text-shadow: 0 0 20px #FFE000, 0 0 40px #ffe000aa; }
-        .judge-great   { color: #00F2FF; text-shadow: 0 0 20px #00F2FF, 0 0 40px #00f2ffaa; }
-        .judge-good    { color: #88FF00; text-shadow: 0 0 20px #88FF00, 0 0 40px #88ff0088; }
-        .judge-notbad  { color: #FFB300; text-shadow: 0 0 16px #FFB300, 0 0 30px #ffb30066; }
-        .judge-save    { color: #FF7733; text-shadow: 0 0 14px #FF7733, 0 0 28px #ff773366; }
-        .judge-oh      { color: #FF2D78; text-shadow: 0 0 18px #FF2D78, 0 0 35px #ff2d7888; }
-        .judge-no      { color: #555566; opacity: 0.6; font-size: 24px !important; }
+        .judge-tp-perfect { color: #fff0bd; text-shadow: 0 0 3px #fff8da, 0 0 11px rgba(255,224,139,.72), 0 0 23px rgba(242,188,67,.40); }
+        .judge-perfect    { color: #f1c765; text-shadow: 0 0 2px rgba(255,229,153,.28); }
+        .judge-good       { color: #9ee68a; text-shadow: 0 0 20px #78cc72, 0 0 40px #78cc7288; }
+        .judge-bad        { color: #ff9e77; text-shadow: 0 0 16px #ff735f, 0 0 30px #ff735f66; }
+        .judge-miss       { color: #747d91; opacity: 0.72; font-size: 24px !important; }
     `;
     const styleEl = document.createElement('style');
     styleEl.textContent = judgeStyles;
@@ -881,7 +953,7 @@
     // ============================================================
     // 기존 변수 / 초기화
     // ============================================================
-    const SERVER_URL = "https://port-0-vibecoding-rhythmgame-server-mkgu8rcq7cd54e6c.sel3.cloudtype.app/api/score"; 
+    const SERVER_URL = "https://webbeat-api.yunhogim528.workers.dev/api/score";
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
     let userProfile = null;
@@ -984,8 +1056,36 @@
     // ============================================================
     // 오디오
     // ============================================================
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    // 히트사운드는 입력과 최대한 가깝게 들려야 하므로, 브라우저에 저지연 출력을 요청한다.
+    let audioCtx;
+    try {
+        audioCtx = new AudioContextClass({ latencyHint: 'interactive' });
+    } catch (_) {
+        audioCtx = new AudioContextClass();
+    }
     const soundBuffers = {};
+    const soundStartOffsets = {};
+    const INPUT_SFX_NAMES = new Set(['hit', 'hold_start', 'hold_end']);
+
+    function findLeadingSilence(buffer, maxTrimMs = 80) {
+        const scanFrames = Math.min(buffer.length, Math.floor(buffer.sampleRate * maxTrimMs / 1000));
+        const threshold = 0.0025;
+        for (let frame = 0; frame < scanFrames; frame++) {
+            for (let channel = 0; channel < buffer.numberOfChannels; channel++) {
+                if (Math.abs(buffer.getChannelData(channel)[frame]) >= threshold) {
+                    // 파형 첫 순간을 자르지 않도록 아주 짧은 여유만 남긴다.
+                    return Math.max(0, (frame - 12) / buffer.sampleRate);
+                }
+            }
+        }
+        return 0;
+    }
+
+    function wakeSfxEngine() {
+        if (audioCtx.state !== 'suspended') return Promise.resolve();
+        return audioCtx.resume().catch(() => {});
+    }
 
     async function loadSound(name, url) {
         try {
@@ -994,6 +1094,8 @@
             const arrayBuffer = await response.arrayBuffer();
             const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
             soundBuffers[name] = audioBuffer;
+            // 입력에 맞춰 들리는 효과음은 인코더 선행 무음을 건너뛰어 뒤따라오는 느낌을 막는다.
+            soundStartOffsets[name] = INPUT_SFX_NAMES.has(name) ? findLeadingSilence(audioBuffer) : 0;
         } catch (e) { console.warn(e); }
     }
 
@@ -1007,7 +1109,7 @@
     loadSound('fever', 'sfx/fever.wav');
 
     function playSfx(name) {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+        wakeSfxEngine();
         if (!soundBuffers[name]) return;
         const source = audioCtx.createBufferSource();
         source.buffer = soundBuffers[name];
@@ -1016,7 +1118,7 @@
         gainNode.gain.value = savedVol;
         source.connect(gainNode);
         gainNode.connect(audioCtx.destination);
-        source.start(0);
+        source.start(audioCtx.currentTime, soundStartOffsets[name] || 0);
     }
 
     // ============================================================
@@ -2311,6 +2413,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
     let gameFinished    = false;
     let finishTimer     = null;
+    let finishCelebrated = false;
     let speedWarningTimer = null;
     let gameState       = 'LOADING';
     let gameNotes       = [], activeNotes = [], particles = [], recentHits = [], judgments = [];
@@ -2328,8 +2431,8 @@ function renderScreenEffects(ctx,gw,gh,ct){
     let lastNoteEndTime = 0;
     let totalMaxHits    = 0;
 
-    // ★ 판정 통계 (8단계)
-    let judgeStats = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
+    // ★ 판정 통계 (ABSOLUTE SYNC는 전용 최상위 판정)
+    let judgeStats = { absoluteSync: 0, tpPerfect: 0, perfect: 0, good: 0, bad: 0, miss: 0 };
 
     let isPaused     = false;
     let isResuming   = false;
@@ -2416,23 +2519,25 @@ function renderScreenEffects(ctx,gw,gh,ct){
         const judgeStyle = localStorage.getItem('wb_judge_style') || 'neon';
         const judgeSize = Math.max(40, Math.min(140, parseFloat(localStorage.getItem('wb_judge_size') || '100') || 100));
         const anchor = getLaneJudgeAnchor(safeLane);
-        const isRainbowPerfect = judgeInfo.key === 'perfectEx' || judgeInfo.cssClass === 'judge-perfect-ex';
-        const el = document.createElement(judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 'div' : 'span');
+        const isTpPerfect = judgeInfo.key === 'tpPerfect' || judgeInfo.cssClass === 'judge-tp-perfect';
+        const isSyncMaster = precisionPlayMode && judgeInfo.key === 'absoluteSync';
+        const usesShapeEffect = (judgeStyle === 'ripple' || judgeStyle === 'linewave') && !precisionPlayMode;
+        const el = document.createElement(usesShapeEffect ? 'div' : 'span');
         el.dataset.lane = String(safeLane);
-        el.style.setProperty('--judge-color', isRainbowPerfect ? '#ff0080' : judgeInfo.color);
+        el.style.setProperty('--judge-color', isTpPerfect ? '#fff0bd' : judgeInfo.color);
         el.style.setProperty('--judge-scale', String(judgeSize / 100));
-        if(judgeStyle === 'ripple') {
-            el.className = `judge-effect judge-effect-ripple${isRainbowPerfect ? ' judge-effect-perfect' : ''}`;
+        if(judgeStyle === 'ripple' && usesShapeEffect) {
+            el.className = `judge-effect judge-effect-ripple${isTpPerfect ? ' judge-effect-tp' : ''}${isSyncMaster ? ' judge-effect-sync' : ''}`;
             el.dataset.offsetY = '0';
-        } else if(judgeStyle === 'linewave') {
-            el.className = `judge-effect judge-effect-linewave${isRainbowPerfect ? ' judge-effect-perfect' : ''}`;
+        } else if(judgeStyle === 'linewave' && usesShapeEffect) {
+            el.className = `judge-effect judge-effect-linewave${isTpPerfect ? ' judge-effect-tp' : ''}${isSyncMaster ? ' judge-effect-sync' : ''}`;
             el.dataset.offsetY = '0';
             el.style.setProperty('--wave-width', `${Math.max(44, LANE_WIDTH * 0.86) * judgeSize / 100}px`);
             el.style.setProperty('--judge-angle', `${anchor.angle.toFixed(3)}deg`);
         } else {
-            el.className = `judge-popup ${judgeInfo.cssClass} judge-style-${judgeStyle}`;
-            el.textContent = judgeInfo.name;
-            el.style.fontSize = `${32 * judgeSize / 100}px`;
+            el.className = `judge-popup ${judgeInfo.cssClass} judge-style-${judgeStyle}${isSyncMaster ? ' rainbow-effect judge-absolute-sync' : ''}`;
+            el.textContent = isSyncMaster ? '|SYNC|' : judgeInfo.name;
+            el.style.fontSize = `${(isSyncMaster ? 30 : 32) * judgeSize / 100}px`;
             el.dataset.offsetY = '-58';
         }
         judgeDisplayEl.appendChild(el);
@@ -2441,7 +2546,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
         judgePopupTimeouts[safeLane] = setTimeout(() => {
             el.remove();
             judgePopupTimeouts[safeLane] = null;
-        }, judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 560 : 500);
+        }, usesShapeEffect ? 560 : 500);
     }
 
     // ============================================================
@@ -2564,6 +2669,8 @@ function renderScreenEffects(ctx,gw,gh,ct){
         const urlParams = new URLSearchParams(window.location.search);
         const _songFolder = urlParams.get('song') || '';
         const _diffType = urlParams.get('diff') || 'Normal';
+        precisionPlayMode = urlParams.get('precision') === '1' && isPrecisionEligibleDiffKey(_diffType);
+        configurePrecisionHud();
         // 1. UI 표시용 원본 문자열 확보 ("14+")
         const _levelRaw = urlParams.get('level') || '?';
         // 2. 내부 연산 및 DB 저장용 실수 계산 (14.5)
@@ -2724,8 +2831,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
         return ev.vPos + (time - ev.time) * ev.mult;
     }
 
-    function startGame() {
-        if (audioCtx.state === 'suspended') audioCtx.resume();
+    async function startGame() {
+        // 카운트다운 전에 오디오 컨텍스트를 실제로 실행 상태로 만들어 첫 노트부터 지연을 없앤다.
+        await wakeSfxEngine();
         document.getElementById('loading-screen').style.display = 'none';
         buildSpeedMap();
 
@@ -2741,8 +2849,8 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
         if(guideMsgEl) { guideMsgEl.className = ''; guideMsgEl.innerText = ''; }
 
-        combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; score = 0;
-        judgeStats = { perfectEx: 0, perfect: 0, great: 0, good: 0, notBad: 0, save: 0, oh: 0, miss: 0 };
+        combo = 0; maxCombo = 0; totalHits = 0; totalRateSum = 0; score = 0; finishCelebrated = false;
+        judgeStats = { absoluteSync: 0, tpPerfect: 0, perfect: 0, good: 0, bad: 0, miss: 0 };
         activeNotes = []; particles = []; recentHits = []; judgments = [];
         fireflies = []; gearParticles = []; lineFlash = null;
         lineStates = DEFAULT_LINE.map(l=>({...l}));
@@ -3067,7 +3175,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
         // ============================================================
         // ★ 노트 판정 / 렌더링 (개선된 얼리미스 / 롱노트)
         // ============================================================
-        const MAX_HIT_WINDOW = 110; // Oh... 윈도우 (초과시 Miss)
+        const MAX_HIT_WINDOW = 150; // 150ms를 초과하면 Miss
 
         for(let i = 0; i < activeNotes.length; i++) {
             let n = activeNotes[i];
@@ -3081,10 +3189,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
             if (tailY > gameCanvas.height + 30) {
                 if (!n.finished) {
                     n.finished = true;
-                    if (!n.hit) {
-                        // 아직 히트 안 된 노트: Miss
-                        applyJudge(n, 'miss');
-                    }
+                    // 아직 누르지 못한 롱노트는 head + tail 모두 Miss 처리한다.
+                    applyJudge(n, 'miss', n.hit ? 1 : (n.len > 0 ? 2 : 1));
+                    checkFinish();
                 }
                 continue;
             }
@@ -3092,9 +3199,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
             // ★ 얼리 미스 판정: 히트하지 않은 노트가 판정선 아래 MAX_HIT_WINDOW 이상 지난 경우
             if (!n.hit && !n.finished) {
                 const lateDiff = currentTime - n.time;
-                if (lateDiff > MAX_HIT_WINDOW + 50) { // 버퍼 50ms
+                if (lateDiff > MAX_HIT_WINDOW) {
                     n.hit = true; n.finished = true;
-                    applyJudge(n, 'miss');
+                    applyJudge(n, 'miss', n.len > 0 ? 2 : 1);
                     checkFinish();
                     continue;
                 }
@@ -3105,18 +3212,10 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 if (activeKeys[n.lane]) {
                     if (currentTime >= n.endTime) {
                         n.finished = true;
-                        totalHits++;
-                        score += scorePerHit;
-                        totalRateSum += 100;
-                        combo++;
-                        judgeStats.perfectEx++;
-                        if(combo > maxCombo) maxCombo = combo;
-                        updateGameHUD();
-                        createParticlesForJudge(n.lane, JUDGE_TABLE[0]);
-                        showJudgePopup(JUDGE_TABLE[0], n.lane);
+                        // 끝까지 유지한 롱노트는 ABSOLUTE SYNC에서 최고 판정을 받을 수 있어야 한다.
                         playSfx('hold_end');
+                        applyJudge(n, precisionPlayMode ? 'absoluteSync' : 'perfect');
                         checkFinish();
-                        checkFeverState(combo);
                     }
                 } else {
                     // ★ 롱노트 도중 손을 뗀 경우 - 안전 구간 / 불안전 구간 판별
@@ -3127,12 +3226,8 @@ function renderScreenEffects(ctx,gw,gh,ct){
                     if (remaining > safeZone) {
                         // 불안전 구간에서 손 뗌: Miss
                         n.finished = true;
-                        combo = 0;
-                        totalHits++;
-                        judgeStats.miss++;
-                        updateGameHUD();
-                        showJudgePopup(JUDGE_TABLE[7], n.lane);
-                        resetFever();
+                        applyJudge(n, 'miss');
+                        checkFinish();
                     } else {
                         // 안전 구간에서 손 뗌: Perfect 처리 (checkRelease 에서 처리됨)
                         // (여기선 아직 손 안 뗀 상태 = 별도 처리 없음)
@@ -3244,22 +3339,23 @@ function renderScreenEffects(ctx,gw,gh,ct){
     // ============================================================
     // ★ 판정 적용 통합 함수
     // ============================================================
-    function applyJudge(note, forceKey) {
+    function applyJudge(note, forceKey, hitUnits = 1) {
         const key      = forceKey || 'miss';
-        const judgeInfo = JUDGE_TABLE.find(j => j.key === key) || JUDGE_TABLE[7];
+        const table = getActiveJudgeTable();
+        const judgeInfo = table.find(j => j.key === key) || table[table.length - 1];
+        const units = Math.max(1, Math.floor(hitUnits) || 1);
         
-        totalHits++;
-        if(note.len > 0) totalHits++; // 롱노트는 head+tail 2카운트
+        totalHits += units;
 
-        judgeStats[judgeInfo.key]++;
-        totalRateSum += judgeInfo.rate;
-        score += scorePerHit * judgeInfo.scoreRate;
+        judgeStats[judgeInfo.key] += units;
+        totalRateSum += judgeInfo.rate * units;
+        score += scorePerHit * judgeInfo.scoreRate * units;
 
         if(judgeInfo.comboBreak) {
             combo = 0;
             resetFever();
         } else {
-            combo++;
+            combo += units;
             if(combo > maxCombo) maxCombo = combo;
             checkFeverState(combo);
         }
@@ -3267,6 +3363,16 @@ function renderScreenEffects(ctx,gw,gh,ct){
         updateGameHUD();
         showJudgePopup(judgeInfo, note ? note.lane : 0);
         if(!judgeInfo.comboBreak) createParticlesForJudge(note.lane, judgeInfo);
+        if (totalHits >= totalMaxHits && totalMaxHits > 0) {
+            checkFinish();
+            if (!finishTimer) finishTimer = setTimeout(finishGame, 1500);
+        }
+    }
+
+    function getJudgeForTiming(diff) {
+        const absDiff = Math.abs(diff);
+        // ABSOLUTE SYNC는 ±20ms 최상위 판정을 추가하고, 그 아래에 기존 판정을 유지한다.
+        return getActiveJudgeTable().find(judge => absDiff <= judge.window) || null;
     }
 
     // ============================================================
@@ -3434,7 +3540,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
     }
 
     // ============================================================
-    // ★ checkHit (8단계 판정)
+    // ★ checkHit (TP Perfect / Perfect / Good / Bad)
     // ============================================================
     function checkHit(laneOrLanes) {
         let currentTime = getCurrentTime();
@@ -3442,10 +3548,10 @@ function renderScreenEffects(ctx,gw,gh,ct){
             .filter(l => getLineActive(l, currentTime));
         if(candidateLanes.length===0) return;
 
-        const MAX_WINDOW = 110; // Oh... 까지의 최대 윈도우
+        const MAX_WINDOW = 150;
         const candidates = activeNotes.filter(n =>
             candidateLanes.includes(n.lane) && !n.hit && !n.finished &&
-            Math.abs(currentTime - n.time) <= MAX_WINDOW
+            currentTime - n.time >= -MAX_WINDOW && currentTime - n.time <= MAX_WINDOW
         );
         if (candidates.length === 0) return;
 
@@ -3454,7 +3560,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
         );
         const lane    = n.lane; // 후보 라인들 중 실제로 맞은 노트가 속한 라인
         const diff    = currentTime - n.time;
-        const absDiff = Math.abs(diff);
 
         n.hit = true;
         n.holding = true;
@@ -3463,30 +3568,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
         // ★ SFX
         if (n.len > 0) playSfx('hold_start'); else playSfx('hit');
 
-        // ★ 판정 결정 (8단계)
-        let judgeInfo = JUDGE_TABLE[7]; // 기본: No...
-        for(const j of JUDGE_TABLE) {
-            if(absDiff <= j.window) { judgeInfo = j; break; }
-        }
-
-        // 판정 통계 반영
-        totalHits++;
-        judgeStats[judgeInfo.key]++;
-        totalRateSum += judgeInfo.rate;
-        score += scorePerHit * judgeInfo.scoreRate;
-
-        if(judgeInfo.comboBreak) {
-            combo = 0;
-            resetFever();
-        } else {
-            combo++;
-            if(combo > maxCombo) maxCombo = combo;
-            checkFeverState(combo);
-        }
-
-        updateGameHUD();
-        showJudgePopup(judgeInfo, lane);
-        createParticlesForJudge(lane, judgeInfo);
+        const judgeInfo = getJudgeForTiming(diff);
+        if (!judgeInfo) return;
+        applyJudge(n, judgeInfo.key);
 
         // 히트 에러 바 기록
         recentHits.push({ diff, color: judgeInfo.color, life: 600, maxLife: 600 });
@@ -3512,27 +3596,13 @@ function renderScreenEffects(ctx,gw,gh,ct){
         if (remaining > safeZone) {
             // 너무 일찍 뗌: Miss
             n.finished = true;
-            totalHits++;
-            judgeStats.miss++;
-            totalRateSum += 0;
-            combo = 0;
-            updateGameHUD();
-            showJudgePopup(JUDGE_TABLE[7], lane);
-            resetFever();
+            applyJudge(n, 'miss');
         } else {
-            // 안전 구간에서 뗌: Perfect! 처리
+            // 안전 구간에서 뗌: 일반 모드는 Perfect, ABSOLUTE SYNC는 실제 종료 오차로 판정한다.
             n.finished = true;
-            totalHits++;
-            score += scorePerHit * 1.0;
-            totalRateSum += 100;
-            combo++;
-            judgeStats.perfectEx++;
-            if(combo > maxCombo) maxCombo = combo;
-            updateGameHUD();
-            showJudgePopup(JUDGE_TABLE[0], lane);
-            createParticlesForJudge(lane, JUDGE_TABLE[0]);
             playSfx('hold_end');
-            checkFeverState(combo);
+            const releaseJudge = precisionPlayMode ? getJudgeForTiming(currentTime - n.endTime) : null;
+            applyJudge(n, releaseJudge ? releaseJudge.key : 'perfect');
         }
 
         checkFinish();
@@ -3547,15 +3617,17 @@ function renderScreenEffects(ctx,gw,gh,ct){
     function updateGameHUD() {
         const comboEl = document.getElementById('g-combo');
         comboEl.innerText  = combo;
-        document.getElementById('g-score').innerText  = Math.round(score).toString().padStart(6, '0');
+        const displayScore = precisionPlayMode ? calculatePrecisionScore() : Math.round(score);
+        document.getElementById('g-score').innerText = precisionPlayMode
+            ? formatPrecisionPercent(displayScore)
+            : displayScore.toString().padStart(6, '0');
         let currentRate = 100.00;
         if (totalHits > 0) currentRate = Math.min(100, (totalRateSum / (totalHits * 100)) * 100);
         document.getElementById('g-rate').innerText   = currentRate.toFixed(2) + "%";
 
-        // ★ 콤보 색상: TB(All Perfect) 가능 → 노랑 / FC 가능 → 파랑 / 그 외 → 흰색
-        const tbPossible = (judgeStats.perfect + judgeStats.great + judgeStats.good
-                          + judgeStats.notBad + judgeStats.save + judgeStats.oh + judgeStats.miss) === 0;
-        const fcPossible = (judgeStats.oh + judgeStats.miss) === 0;
+        // TP Perfect와 Perfect는 모두 만점 판정이다.
+        const tbPossible = (judgeStats.good + judgeStats.bad + judgeStats.miss) === 0;
+        const fcPossible = (judgeStats.bad + judgeStats.miss) === 0;
         let cColor = '#ffffff', cGlow = 'rgba(255,255,255,0.4)';
         if (tbPossible)      { cColor = '#ffd700'; cGlow = '#ffd700'; }   // TROLL BEAT 가능
         else if (fcPossible) { cColor = '#00e5ff'; cGlow = '#00e5ff'; }   // FULL COMBO 가능
@@ -3693,11 +3765,15 @@ function renderScreenEffects(ctx,gw,gh,ct){
     }
 
     function checkFinish() {
-        if (totalHits === totalMaxHits && totalMaxHits > 0) {
-            if (judgeStats.perfectEx === totalMaxHits) {
+        if (totalHits === totalMaxHits && totalMaxHits > 0 && !finishCelebrated) {
+            finishCelebrated = true;
+            if (precisionPlayMode && judgeStats.absoluteSync === totalMaxHits) {
+                finishEffect.innerHTML = "<div class='text-glitch' data-text='|SYNC|'>|SYNC|</div>";
+                playSfx('ap_main'); playSfx('ap_layer');
+            } else if (!precisionPlayMode && (judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits) {
                 finishEffect.innerHTML = "<div class='text-glitch' data-text='TROLL BEAT!!'>TROLL BEAT!!</div>";
                 playSfx('ap_main'); playSfx('ap_layer');
-            } else if (combo === totalMaxHits) {
+            } else if (!precisionPlayMode && (judgeStats.bad + judgeStats.miss) === 0) {
                 finishEffect.innerHTML = "<div class='text-fc'>FULL COMBO</div>";
                 playSfx('fc');
             }
@@ -3770,27 +3846,37 @@ function renderScreenEffects(ctx,gw,gh,ct){
             }
 
             const pureScore = Math.floor(score);
-            const calcScore = Math.floor(
-                (judgeStats.perfectEx * scorePerHit * 1.0) +
-                (judgeStats.perfect   * scorePerHit * 0.96) +
-                (judgeStats.great     * scorePerHit * 0.88) +
-                (judgeStats.good      * scorePerHit * 0.70) +
-                (judgeStats.notBad    * scorePerHit * 0.45) +
-                (judgeStats.save      * scorePerHit * 0.20) +
-                (judgeStats.oh        * scorePerHit * 0.05)
-            );
-            if (Math.abs(pureScore - calcScore) > 1000) {
+            const standardScore = Math.floor(scorePerHit * (
+                (judgeStats.tpPerfect + judgeStats.perfect) +
+                (judgeStats.good * 0.70) +
+                (judgeStats.bad * 0.30)
+            ));
+            const calcScore = precisionPlayMode ? calculatePrecisionScore() : standardScore;
+            if (!precisionPlayMode && Math.abs(pureScore - standardScore) > 1) {
                 alert("데이터 무결성 오류가 발생했습니다. (점수 불일치)");
                 location.href = 'index.html'; return;
             }
 
             const SECRET_SALT    = "WebBeat_Secure_Key_2026_Ver42";
-            const secureScore    = Math.floor(score);
+            const secureJudgeStats = {
+                absoluteSync: Math.floor(judgeStats.absoluteSync || 0),
+                tpPerfect: Math.floor(judgeStats.tpPerfect || 0),
+                perfect: Math.floor(judgeStats.perfect || 0),
+                good: Math.floor(judgeStats.good || 0),
+                bad: Math.floor(judgeStats.bad || 0),
+                miss: Math.floor(judgeStats.miss || 0),
+            };
+            const secureScore    = calcScore;
             const secureMaxCombo = Math.floor(maxCombo || 0);
+            const scoreMode      = precisionPlayMode ? 'precision' : 'standard';
             const secureUserId   = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2,9);
             const secureUserName = userProfile ? userProfile.name : "GUEST";
             const securePlayTime = Math.floor(playDuration || 0);
-            const rawSignature   = `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
+            // 일반 기록은 기존 서버 서명 형식을 유지하고, 동기화 연주는 모드/세부판정을 포함해 검증한다.
+            const judgeSignature = [secureJudgeStats.absoluteSync, secureJudgeStats.tpPerfect, secureJudgeStats.perfect, secureJudgeStats.good, secureJudgeStats.bad, secureJudgeStats.miss, totalMaxHits].join(':');
+            const rawSignature   = precisionPlayMode
+                ? `${secureUserId}_${secureScore}_${secureMaxCombo}_${scoreMode}_${judgeSignature}_${SECRET_SALT}`
+                : `${secureUserId}_${secureScore}_${secureMaxCombo}_${SECRET_SALT}`;
             const signatureToken = btoa(unescape(encodeURIComponent(rawSignature)));
             const SERVER_BASE    = SERVER_URL.replace('/api/score','');
             finishEffect.innerHTML = "";
@@ -3819,9 +3905,11 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 { min:600000,  grade:'C',      cls:'rg-c',  hex:'#ffc832' },
                 { min:0,       grade:'FAILED', cls:'rg-failed', hex:'#ff4455' },
             ];
-            const gradeInfo = secureScore >= 600000
-                ? (thresholds.find(t => secureScore >= t.min) || thresholds[thresholds.length-1])
-                : thresholds[thresholds.length-1];
+            const gradeInfo = precisionPlayMode
+                ? { grade: '|SYNC|', cls:'rg-sp', hex:'#9fc4ff' }
+                : (secureScore >= 600000
+                    ? (thresholds.find(t => secureScore >= t.min) || thresholds[thresholds.length-1])
+                    : thresholds[thresholds.length-1]);
             const rank = gradeInfo.grade;
             const rankCls = gradeInfo.cls;
             const rankColor = gradeInfo.hex;
@@ -3831,23 +3919,26 @@ function renderScreenEffects(ctx,gw,gh,ct){
             const songParam  = urlParams.get('song');
             const diffParam  = urlParams.get('diff');
             const resultSongInfo = await getResultSongInfo(songParam, diffParam);
+            const leaderboardDiff = precisionPlayMode ? `${diffParam}__precision` : diffParam;
 
             // ── 개인 최고기록 ──
             let savedScore = 0, isNewRecord = false, scoreDiff = 0;
             if (songParam && diffParam) {
-                const scoreKey  = `wb_score_${songParam}_${diffParam}`;
-                const badgeKey  = `wb_badge_${songParam}_${diffParam}`;
-                const detailKey = `wb_detail_${songParam}_${diffParam}`;
+                const recordPrefix = precisionPlayMode ? 'wb_precision' : 'wb';
+                const scoreKey  = `${recordPrefix}_score_${songParam}_${diffParam}`;
+                const badgeKey  = `${recordPrefix}_badge_${songParam}_${diffParam}`;
+                const detailKey = `${recordPrefix}_detail_${songParam}_${diffParam}`;
                 savedScore = parseInt(localStorage.getItem(scoreKey) || "0");
                 scoreDiff  = secureScore - savedScore;
                 isNewRecord = secureScore > savedScore && savedScore > 0;
-                if (secureScore > savedScore) localStorage.setItem(scoreKey, secureScore.toString().padStart(6,'0'));
-                if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
-                else if (combo === totalMaxHits && totalMaxHits > 0) {
+                if (secureScore > savedScore) localStorage.setItem(scoreKey, precisionPlayMode ? secureScore.toString() : secureScore.toString().padStart(6,'0'));
+                if (precisionPlayMode && judgeStats.absoluteSync === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "SYNC");
+                else if (!precisionPlayMode && (judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
+                else if (!precisionPlayMode && (judgeStats.bad + judgeStats.miss) === 0 && totalMaxHits > 0) {
                     if (localStorage.getItem(badgeKey) !== "TB") localStorage.setItem(badgeKey, "FC");
                 }
                 localStorage.setItem(detailKey, JSON.stringify({
-                    score: secureScore, maxCombo: secureMaxCombo, rate: finalRate,
+                    score: secureScore, mode: scoreMode, maxCombo: secureMaxCombo, rate: finalRate,
                     judgeStats, totalMaxHits, playedAt: new Date().toISOString()
                 }));
             }
@@ -3857,7 +3948,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 try {
                     const response = await fetch(`${SERVER_BASE}/api/score`, {
                         method:"POST", headers:{"Content-Type":"application/json"},
-                        body: JSON.stringify({ userId:secureUserId, userName:secureUserName, song:songParam, diff:diffParam, score:secureScore, maxCombo:secureMaxCombo, level:currentLv, signature:signatureToken, playTime:securePlayTime, details:judgeStats })
+                        body: JSON.stringify({ userId:secureUserId, userName:secureUserName, song:songParam, diff:leaderboardDiff, mode:scoreMode, score:secureScore, maxCombo:secureMaxCombo, level:currentLv, signature:signatureToken, playTime:securePlayTime, details:secureJudgeStats, totalNotes:totalMaxHits })
                     });
                     const resData = await response.json();
                     if (!response.ok || !resData.success) throw new Error(resData.error || "Server Validation Failed");
@@ -3867,14 +3958,14 @@ function renderScreenEffects(ctx,gw,gh,ct){
                     });
                 } catch(err) {
                     console.error("🚨 서버 전송 중 에러:", err);
-                    alert("점수 검증 에러: " + err.message);
+                    // 기록 전송 실패가 결과 화면 표시를 막으면 안 된다.
                 }
             }
 
             // ── 랭킹 ──
             let rankingHtml = '';
             try {
-                const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${diffParam}`);
+                const res = await fetch(`${SERVER_BASE}/api/ranking/${songParam}/${leaderboardDiff}`);
                 const rankData = await res.json();
                 if (rankData.length > 0) {
                     const rows = rankData.slice(0,5).map((r, idx) => {
@@ -3883,7 +3974,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
                         return `<div class="res-rank-entry${isMe?' is-me':''}">
                             <span class="res-rank-medal">${medal}</span>
                             <span class="res-rank-name">${r.userName}</span>
-                            <span class="res-rank-score">${r.score}</span>
+                            <span class="res-rank-score">${precisionPlayMode ? formatPrecisionPercent(r.score) : r.score}</span>
                         </div>`;
                     }).join('');
                     rankingHtml = `<div class="res-ranking-wrap">
@@ -3895,9 +3986,11 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
             // ── badge ──
             let badgeHtml = '';
-            if (judgeStats.perfectEx === totalMaxHits && totalMaxHits > 0)
+            if (precisionPlayMode && judgeStats.absoluteSync === totalMaxHits && totalMaxHits > 0)
+                badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-tb">✦ |SYNC| ✦</span></div>`;
+            else if (!precisionPlayMode && (judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits && totalMaxHits > 0)
                 badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-tb">✦ TROLL BEAT ✦</span></div>`;
-            else if (combo === totalMaxHits && totalMaxHits > 0)
+            else if (!precisionPlayMode && (judgeStats.bad + judgeStats.miss) === 0 && totalMaxHits > 0)
                 badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-fc">✦ FULL COMBO ✦</span></div>`;
 
             // ── PB diff 표시 ──
@@ -3905,36 +3998,47 @@ function renderScreenEffects(ctx,gw,gh,ct){
             if (savedScore > 0) {
                 const sign = scoreDiff >= 0 ? '+' : '';
                 const cls  = scoreDiff >= 0 ? '' : ' negative';
-                pbHtml = `<div class="res-pb-diff${cls}">PERSONAL BEST ${sign}${scoreDiff.toLocaleString()}</div>`;
+                const deltaText = precisionPlayMode ? `${sign}${(scoreDiff / 10000).toFixed(2)}%` : `${sign}${scoreDiff.toLocaleString()}`;
+                pbHtml = `<div class="res-pb-diff${cls}">${precisionPlayMode ? '이전 SYNC ' : 'PERSONAL BEST '}${deltaText}</div>`;
             }
             const newRecordHtml = isNewRecord
                 ? `<div class="res-new-record">NEW RECORD</div>`
                 : '';
+            const resultHeroStatus = precisionPlayMode
+                ? `<div class="res-precision-status">${rank}</div>`
+                : `<div class="res-grade ${rankCls}" style="color:${rankColor}">${rank}</div>`;
+            const resultScoreLabel = precisionPlayMode ? 'SYNC' : 'SCORE';
+            const resultScoreInitial = precisionPlayMode ? '0.00%' : '000000';
 
             // ── 판정 bars ──
-            const judgeRows = [
-                { name:'Perfect!', val:judgeStats.perfectEx, color:'#ff80cc' },
-                { name:'Perfect',  val:judgeStats.perfect,   color:'#FFE000' },
-                { name:'Great',    val:judgeStats.great,     color:'#00F2FF' },
-                { name:'Good',     val:judgeStats.good,      color:'#88FF00' },
-                { name:'Not Bad',  val:judgeStats.notBad,    color:'#FFB300' },
-                { name:'Save',     val:judgeStats.save,      color:'#FF7733' },
-                { name:'Oh...',    val:judgeStats.oh,        color:'#FF2D78' },
-                { name:'No...',    val:judgeStats.miss,      color:'#555566' },
-            ];
+            const perfectTotal = judgeStats.tpPerfect + judgeStats.perfect;
+            const judgeRows = precisionPlayMode
+                ? [
+                    { name:'|SYNC|',        val:judgeStats.absoluteSync, color:'#d6e5ff', absolute:true },
+                    { name:'Perfect',       val:judgeStats.tpPerfect,   color:'#fff0bd', tp:true },
+                    { name:'Perfect',       val:judgeStats.perfect,     color:'#f1c765' },
+                    { name:'Good',          val:judgeStats.good,        color:'#9ee68a' },
+                    { name:'Bad',           val:judgeStats.bad,         color:'#ff9e77' },
+                    { name:'Miss',          val:judgeStats.miss,        color:'#747d91' },
+                ]
+                : [
+                    { name:'Perfect', val:perfectTotal,    color:'#f1c765' },
+                    { name:'Good',    val:judgeStats.good, color:'#9ee68a' },
+                    { name:'Bad',     val:judgeStats.bad,  color:'#ff9e77' },
+                    { name:'Miss',    val:judgeStats.miss, color:'#747d91' },
+                ];
             const judgeTotal = Math.max(1, judgeRows.reduce((sum, j) => sum + j.val, 0));
             const judgeHtml = judgeRows.map(j => {
                 const ratio = j.val / judgeTotal;
                 return `
                 <div class="res-judge-row">
-                    <span class="res-judge-name" style="color:${j.color}">${j.name}</span>
+                    <span class="res-judge-name${j.absolute ? ' res-judge-absolute' : ''}${j.tp ? ' res-judge-tp' : ''}" style="color:${j.color}"${j.tp ? ' aria-label="TP Perfect"' : ''}>${j.name}</span>
                     <div class="res-judge-bar-wrap">
                         <div class="res-judge-bar" style="color:${j.color};width:100%" data-ratio="${ratio.toFixed(4)}"></div>
                     </div>
                     <span class="res-judge-count">${j.val}</span>
                 </div>`;
             }).join('');
-
             // ── Google login ──
             const loginHtml = (!userProfile)
                 ? `<div id="google-login-btn-result" style="margin-bottom:10px;display:flex;justify-content:center;min-height:40px;"></div>`
@@ -3949,10 +4053,10 @@ function renderScreenEffects(ctx,gw,gh,ct){
                         <div class="res-song-name">${resultSongInfo.title}</div>
                         <div class="res-diff-badge">${resultSongInfo.diffName} <span>Lv.${resultSongInfo.level}</span></div>
                         <div class="res-rank-hero">
-                            <div class="res-grade ${rankCls}" style="color:${rankColor}">${rank}</div>
+                            ${resultHeroStatus}
                             <div class="res-score-block">
-                                <div class="res-score-label">SCORE</div>
-                                <div class="res-score-value" id="result-score-value">000000</div>
+                                <div class="res-score-label">${resultScoreLabel}</div>
+                                <div class="res-score-value" id="result-score-value">${resultScoreInitial}</div>
                             </div>
                         </div>
                         ${newRecordHtml}
@@ -3962,7 +4066,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
                         ${badgeHtml}
                         <div class="res-stat-row">
                             <div class="res-stat">
-                                <div class="res-stat-label">RATE</div>
+                                <div class="res-stat-label">${precisionPlayMode ? '판정률' : 'RATE'}</div>
                                 <div class="res-stat-val" id="result-rate-value">0.00%</div>
                             </div>
                             <div class="res-stat">
@@ -3970,7 +4074,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
                                 <div class="res-stat-val">${secureMaxCombo}</div>
                             </div>
                         </div>
-                        <div class="res-judge-title">JUDGMENT DETAIL</div>
+                        <div class="res-judge-title">판정 결과</div>
                         <div class="res-judge-grid">${judgeHtml}</div>
                         ${rankingHtml}
                         ${loginHtml}
@@ -3985,7 +4089,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
             // ── 카운트업 ──
             animateResultValue(document.getElementById('result-score-value'), secureScore,
-                v => Math.floor(v).toString().padStart(6,'0'), 1600);
+                v => precisionPlayMode ? formatPrecisionPercent(v) : Math.floor(v).toString().padStart(6,'0'), 1600);
             animateResultValue(document.getElementById('result-rate-value'), finalRate,
                 v => v.toFixed(2) + '%', 1400);
 

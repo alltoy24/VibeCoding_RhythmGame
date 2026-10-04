@@ -2,7 +2,8 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="ui-refresh.css">
     <title>WEB BEAT : NOTE SKIN LAB</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600;800&family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Audiowide&family=Oxanium:wght@400;700;800&display=swap');
@@ -344,29 +345,40 @@
         .judge-popup.judge-style-flat {
             text-shadow: none !important; filter: none !important; letter-spacing: 1px;
         }
+        .judge-popup.judge-style-flat.judge-tp-perfect {
+            color: #fff0bd !important;
+            text-shadow: 0 0 8px rgba(255,237,176,.60), 0 0 17px rgba(242,188,67,.34) !important;
+        }
         .judge-popup.judge-style-outline {
             color: #fff !important;
             text-shadow: 0 0 16px var(--judge-color), 0 0 34px var(--judge-color) !important;
             -webkit-text-stroke: 1.2px var(--judge-color); filter: none !important;
         }
-        /* Perfect! 레인보우 */
-        .judge-perfect-ex {
+        .judge-popup.judge-style-outline.judge-tp-perfect {
+            -webkit-text-stroke-color: #ffe5a0;
+            text-shadow: 0 0 9px rgba(255,237,176,.68), 0 0 22px rgba(242,188,67,.42) !important;
+        }
+        /* TP Perfect의 현재 표현: 밝은 금색 후광 */
+        .judge-tp-perfect {
+            color: #fff0bd;
+            text-shadow: 0 0 3px #fff8da, 0 0 11px rgba(255,224,139,.72), 0 0 23px rgba(242,188,67,.40);
+            font-size: 38px;
+        }
+        /* 나중에 사용할 무지개 반짝임 효과 */
+        .judge-tp-perfect.rainbow-effect {
             background: linear-gradient(90deg,#ff0080,#ff8c00,#ffe000,#00ff88,#00e5ff,#7b2fff,#ff0080);
             background-size: 300% 100%;
             -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
             animation: judgeAnim 0.5s forwards, rainbow-shift 0.8s linear infinite;
             filter: drop-shadow(0 0 12px #fff) drop-shadow(0 0 6px #ff0080); font-size: 38px;
         }
-        .judge-perfect-ex.judge-style-flat  { background: none; -webkit-text-fill-color: var(--judge-color); color: var(--judge-color); }
-        .judge-perfect-ex.judge-style-outline { background: none; -webkit-text-fill-color: #fff; color: #fff !important; }
+        .judge-tp-perfect.rainbow-effect.judge-style-flat  { background: none; -webkit-text-fill-color: var(--judge-color); color: var(--judge-color); }
+        .judge-tp-perfect.rainbow-effect.judge-style-outline { background: none; -webkit-text-fill-color: #fff; color: #fff !important; }
         /* 판정 색 */
-        .judge-perfect { color: #FFE000; text-shadow: 0 0 20px #FFE000, 0 0 40px #ffe000aa; }
-        .judge-great   { color: #00F2FF; text-shadow: 0 0 20px #00F2FF, 0 0 40px #00f2ffaa; }
-        .judge-good    { color: #88FF00; text-shadow: 0 0 20px #88FF00, 0 0 40px #88ff0088; }
-        .judge-notbad  { color: #FFB300; text-shadow: 0 0 16px #FFB300, 0 0 30px #ffb30066; }
-        .judge-save    { color: #FF7733; text-shadow: 0 0 14px #FF7733, 0 0 28px #ff773366; }
-        .judge-oh      { color: #FF2D78; text-shadow: 0 0 18px #FF2D78, 0 0 35px #ff2d7888; }
-        .judge-no      { color: #555566; opacity: 0.6; font-size: 24px !important; }
+        .judge-perfect { color: #f1c765; text-shadow: 0 0 2px rgba(255,229,153,.28); }
+        .judge-good    { color: #9ee68a; text-shadow: 0 0 20px #78cc72, 0 0 40px #78cc7288; }
+        .judge-bad     { color: #ff9e77; text-shadow: 0 0 16px #ff735f, 0 0 30px #ff735f66; }
+        .judge-miss    { color: #747d91; opacity: 0.72; font-size: 24px !important; }
         /* 이펙트 (ripple / linewave) */
         .judge-effect {
             position: absolute; left: 0; top: 0; width: 0; height: 0;
@@ -402,6 +414,16 @@
             background: linear-gradient(90deg,transparent,#ff0080,#ff8c00,#ffe000,#00ff88,#00e5ff,#7b2fff,#ff0080,transparent);
             box-shadow: 0 0 12px #fff, 0 0 22px #ff0080, 0 0 34px #00e5ff;
         }
+        .judge-effect-ripple.judge-effect-tp::before,
+        .judge-effect-ripple.judge-effect-tp::after {
+            border-color: #ffe7a0;
+            box-shadow: 0 0 13px #ffe7a0, 0 0 25px rgba(245,190,70,.58), inset 0 0 12px rgba(255,255,255,.34);
+        }
+        .judge-effect-linewave.judge-effect-tp::before,
+        .judge-effect-linewave.judge-effect-tp::after {
+            background: linear-gradient(90deg,transparent,#d7a942,#fff3bd,#d7a942,transparent);
+            box-shadow: 0 0 12px #ffe7a0, 0 0 24px rgba(245,190,70,.45);
+        }
         .judge-effect-linewave::before { top: 0; animation: judgeLineWaveUp 0.48s ease-out forwards; }
         .judge-effect-linewave::after  { bottom: 0; animation: judgeLineWaveDown 0.48s ease-out forwards; }
         @keyframes judgeRipple {
@@ -428,7 +450,7 @@
         @keyframes rainbow-shift { 0% { background-position: 0% 0%; } 100% { background-position: 300% 0%; } }
     </style>
 </head>
-<body>
+<body data-ui="skin">
     <aside class="panel" id="panel">
         <div class="panel-header">
             <div class="title">NOTE <span>SKIN</span> LAB</div>
@@ -1029,19 +1051,16 @@
     }
 
     // ═══════════════════════════════════════════════════
-    // ★ 판정 테이블 (game.html 동일 8단계)
+    // ★ 판정 테이블 (game.html 동일 5단계)
     // ═══════════════════════════════════════════════════
     const JUDGE_TABLE = [
-        { name:'Perfect!', window:32,       key:'perfectEx', cssClass:'judge-perfect-ex', color:'#ffffff', glowColor:'#ff0080', comboBreak:false, ratePct:100 },
-        { name:'Perfect',  window:40,       key:'perfect',   cssClass:'judge-perfect',    color:'#FFE000', glowColor:'#FFE000', comboBreak:false, ratePct:96  },
-        { name:'Great',    window:48,       key:'great',     cssClass:'judge-great',      color:'#00F2FF', glowColor:'#00F2FF', comboBreak:false, ratePct:88  },
-        { name:'Good',     window:56,       key:'good',      cssClass:'judge-good',       color:'#88FF00', glowColor:'#88FF00', comboBreak:false, ratePct:70  },
-        { name:'Not Bad',  window:72,       key:'notBad',    cssClass:'judge-notbad',     color:'#FFB300', glowColor:'#FFB300', comboBreak:false, ratePct:45  },
-        { name:'Save',     window:90,       key:'save',      cssClass:'judge-save',       color:'#FF7733', glowColor:'#FF7733', comboBreak:false, ratePct:20  },
-        { name:'Oh...',    window:110,      key:'oh',        cssClass:'judge-oh',         color:'#FF2D78', glowColor:'#FF2D78', comboBreak:true,  ratePct:5   },
-        { name:'No...',    window:Infinity, key:'miss',      cssClass:'judge-no',         color:'#555566', glowColor:'#555566', comboBreak:true,  ratePct:0   },
+        { name:'Perfect', window:40,       key:'tpPerfect', cssClass:'judge-tp-perfect', color:'#fff0bd', glowColor:'#f2bc43', comboBreak:false, ratePct:100 },
+        { name:'Perfect', window:64,       key:'perfect',   cssClass:'judge-perfect',    color:'#f1c765', glowColor:'#d1a13c', comboBreak:false, ratePct:90  },
+        { name:'Good',    window:100,      key:'good',      cssClass:'judge-good',       color:'#9ee68a', glowColor:'#78cc72', comboBreak:false, ratePct:70  },
+        { name:'Bad',     window:150,      key:'bad',       cssClass:'judge-bad',        color:'#ff9e77', glowColor:'#ff735f', comboBreak:true,  ratePct:40  },
+        { name:'Miss',    window:Infinity, key:'miss',      cssClass:'judge-miss',       color:'#747d91', glowColor:'#545d70', comboBreak:true,  ratePct:0   },
     ];
-    const MAX_HIT_WINDOW = 110;
+    const MAX_HIT_WINDOW = 150;
 
     // ─── 라이브 점수 상태 ─────────────────────────────────
     let liveScore  = 0;
@@ -1117,19 +1136,19 @@
         const laneW  = gearW / 4;
         const hitY   = H * 0.85;
         const x      = gearX + laneW * (safeLane + 0.5);
-        const isRainbow = judgeInfo.key === 'perfectEx';
+        const isTpPerfect = judgeInfo.key === 'tpPerfect';
 
         const el = document.createElement(judgeStyle === 'ripple' || judgeStyle === 'linewave' ? 'div' : 'span');
         el.dataset.lane = safeLane;
         el.style.left = `${x}px`;
-        el.style.setProperty('--judge-color', isRainbow ? '#ff0080' : judgeInfo.color);
+        el.style.setProperty('--judge-color', isTpPerfect ? '#fff0bd' : judgeInfo.color);
         el.style.setProperty('--judge-scale', String(judgeSize / 100));
 
         if (judgeStyle === 'ripple') {
-            el.className = `judge-effect judge-effect-ripple${isRainbow ? ' judge-effect-perfect' : ''}`;
+            el.className = `judge-effect judge-effect-ripple${isTpPerfect ? ' judge-effect-tp' : ''}`;
             el.style.top = `${hitY}px`;
         } else if (judgeStyle === 'linewave') {
-            el.className = `judge-effect judge-effect-linewave${isRainbow ? ' judge-effect-perfect' : ''}`;
+            el.className = `judge-effect judge-effect-linewave${isTpPerfect ? ' judge-effect-tp' : ''}`;
             el.style.top = `${hitY}px`;
             el.style.setProperty('--wave-width', `${Math.max(44, laneW * 0.86) * judgeSize / 100}px`);
         } else {
@@ -1226,7 +1245,7 @@
                     // 끝까지 유지: 자동 Perfect!
                     if (fbVirtualMs >= n.endTime) {
                         n.finished = true;
-                        showJudgePopup(JUDGE_TABLE[0], n.lane);
+                        showJudgePopup(JUDGE_TABLE[1], n.lane);
                         spawnParticle(getLaneX(n.lane), getLineY(), getPaletteColor(n.lane));
                     }
                 } else {
@@ -1234,9 +1253,9 @@
                 }
             }
             // MISS 처리
-            if (!n.hit && !n.finished && fbVirtualMs - n.time > MAX_HIT_WINDOW + 50) {
+            if (!n.hit && !n.finished && fbVirtualMs - n.time > MAX_HIT_WINDOW) {
                 n.finished = true;
-                showJudgePopup(JUDGE_TABLE[7], n.lane);
+                showJudgePopup(JUDGE_TABLE[JUDGE_TABLE.length - 1], n.lane);
             }
         });
         fbActiveNotes = fbActiveNotes.filter(n => !n.finished);
@@ -1370,8 +1389,8 @@
         n.holding = true;
         if (n.len === 0) n.finished = true;
 
-        // 판정 결정 (8단계)
-        let judgeInfo = JUDGE_TABLE[7];
+        // 판정 결정 (TP Perfect / Perfect / Good / Bad)
+        let judgeInfo = JUDGE_TABLE[JUDGE_TABLE.length - 1];
         for (const j of JUDGE_TABLE) {
             if (absDiff <= j.window) { judgeInfo = j; break; }
         }
@@ -1395,12 +1414,12 @@
             // 불안전 구간 — No... (Miss)
             n.finished = true;
             n.holding  = false;
-            showJudgePopup(JUDGE_TABLE[7], lane);
+            showJudgePopup(JUDGE_TABLE[JUDGE_TABLE.length - 1], lane);
         } else {
             // 안전 구간 — Perfect!
             n.finished = true;
             n.holding  = false;
-            showJudgePopup(JUDGE_TABLE[0], lane);
+            showJudgePopup(JUDGE_TABLE[1], lane);
             spawnParticle(getLaneX(lane), getLineY(), getPaletteColor(lane));
         }
     }
@@ -1521,15 +1540,15 @@
                         if (activeKeys[n.lane]) {
                             if (currentMs >= n.endTime) {
                                 n.finished = true;
-                                showJudgePopup(JUDGE_TABLE[0], n.lane);
+                                showJudgePopup(JUDGE_TABLE[1], n.lane);
                                 spawnParticle(getLaneX(n.lane), lineY, palette[n.lane]);
                             }
                         }
                         // 일찍 뗀 경우는 checkRelease에서 처리
                     }
-                    if (!n.hit && !n.finished && currentMs - n.time > MAX_HIT_WINDOW + 50) {
+                    if (!n.hit && !n.finished && currentMs - n.time > MAX_HIT_WINDOW) {
                         n.finished = true;
-                        showJudgePopup(JUDGE_TABLE[7], n.lane);
+                        showJudgePopup(JUDGE_TABLE[JUDGE_TABLE.length - 1], n.lane);
                     }
                 });
                 activeNotes = activeNotes.filter(n => !n.finished);
