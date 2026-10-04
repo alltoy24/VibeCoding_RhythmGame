@@ -931,8 +931,9 @@
         body[data-ui="select"] .chart-stat-row { display:grid; grid-template-columns:54px 1fr 28px; align-items:center; gap:7px; }
         body[data-ui="select"] .chart-stat-name { color:#a5b6c7; font-family:'Orbitron'; font-size:7px; letter-spacing:.8px; }
         body[data-ui="select"] .chart-stat-track { height:6px; overflow:hidden; border-radius:999px; background:#2b3b4e; }
-        body[data-ui="select"] .chart-stat-fill { height:100%; border-radius:inherit; background:var(--cur-diff); }
-        body[data-ui="select"] .chart-stat-value { color:#eef5fb; font-family:'Orbitron'; font-size:8px; text-align:right; }
+        body[data-ui="select"] .chart-stat-fill { display:block; height:100%; border-radius:inherit; background:var(--cur-diff); transition:width .35s cubic-bezier(.2,.8,.2,1); }
+        body[data-ui="select"] .chart-stat-value { color:#eef5fb; font-family:'Orbitron'; font-size:8px; text-align:right; white-space:nowrap; }
+        body[data-ui="select"] .chart-stat-max { margin-left:2px; color:#72849a; font-size:6px; }
         body[data-ui="select"] .details-bottom .ranking-sidebar { width:auto; min-width:0; min-height:0; display:flex; border-radius:8px; border-color:#2d4055; background:#151f2c; }
         body[data-ui="select"] .details-bottom .rsb-header { padding:12px 14px; background:#1a2736; }
         body[data-ui="select"] .details-bottom .rsb-list { min-height:0; padding:3px 0; }
@@ -1264,8 +1265,9 @@
         .info-side-drawer-head { display:flex; align-items:center; justify-content:space-between; padding:15px 16px 13px; border-bottom:1px solid var(--dock-border); background:var(--dock-surface); }
         .info-side-kicker { display:block; margin-bottom:3px; color:var(--dock-muted); font-family:'Orbitron'; font-size:7px; letter-spacing:1.4px; }
         .info-side-drawer-head strong { font-family:'Orbitron'; font-size:12px; letter-spacing:.6px; }
-        .info-side-close { width:28px; height:28px; border:1px solid var(--dock-border); border-radius:7px; background:transparent; color:var(--dock-muted); font-size:20px; line-height:1; cursor:pointer; }
-        .info-side-close:hover { border-color:var(--dock-accent); color:var(--dock-accent); }
+        .info-side-close { min-width:62px; height:28px; display:inline-flex; align-items:center; justify-content:center; gap:5px; border:1px solid var(--dock-border); border-radius:7px; background:transparent; color:var(--dock-muted); font-family:'Orbitron'; font-size:8px; font-weight:700; letter-spacing:.5px; cursor:pointer; }
+        .info-side-close::first-letter { font-size:15px; }
+        .info-side-close:hover { border-color:var(--dock-accent); color:var(--dock-accent); background:color-mix(in srgb, var(--dock-accent) 7%, transparent); }
         .info-side-panel { min-height:0; flex:1; overflow:auto; padding:14px; scrollbar-color:var(--dock-muted) transparent; }
         .info-panel-caption { margin-bottom:12px; color:var(--dock-muted); font-family:'Orbitron'; font-size:8px; letter-spacing:1px; }
         .info-side-panel .gimmick-stats-row { margin:0; min-height:0; padding:14px; border:1px solid var(--dock-border); border-radius:9px; background:var(--dock-surface); }
@@ -1291,6 +1293,81 @@
             .info-side-drawer { top:auto; bottom:0; right:0; width:min(390px,calc(100vw - 16px)); height:min(520px,calc(100dvh - 80px)); border-radius:13px; transform:translateY(calc(100% + 14px)); transition:transform .28s cubic-bezier(.2,.8,.2,1); }
             .info-side-dock.open .info-side-drawer { right:0; transform:translateY(0); }
             .info-side-dock.open .info-side-rail { opacity:0; pointer-events:none; }
+        }
+
+        /* 정보는 더 이상 화면 가장자리에서 떠다니지 않는다. 상세 카드 안의 가로 탭에서 펼친다. */
+        body[data-ui="select"] .main { grid-template-columns:300px minmax(0,1fr); }
+        body[data-ui="select"] .detail-panel { overflow-x:hidden; overflow-y:auto; scrollbar-color:#526780 transparent; }
+        .info-side-dock {
+            position:relative; z-index:2; top:auto; right:auto; bottom:auto; width:100%; height:auto;
+            display:flex; flex-direction:column; gap:8px; flex:0 0 auto;
+        }
+        .info-side-rail {
+            position:static; width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+            gap:6px; padding:5px; border:1px solid var(--dock-border); border-radius:9px;
+            background:var(--dock-surface); box-shadow:none;
+        }
+        .info-side-tab {
+            width:auto; min-height:38px; padding:7px 10px; display:flex; align-items:center; justify-content:center; gap:6px;
+            font-size:8px; letter-spacing:.6px; border-radius:6px;
+        }
+        .info-side-tab-icon { display:inline; margin:0; font-size:13px; }
+        .info-side-drawer {
+            position:relative; top:auto; right:auto; width:100%; height:0; max-height:0; min-height:0;
+            margin:0; border-color:transparent; border-radius:9px; transform:none; opacity:0;
+            box-shadow:none; pointer-events:none; transition:max-height .28s cubic-bezier(.2,.8,.2,1), height .28s cubic-bezier(.2,.8,.2,1), opacity .2s ease, border-color .2s ease;
+        }
+        .info-side-dock.open .info-side-drawer {
+            right:auto; height:min(270px,36dvh); max-height:min(270px,36dvh); opacity:1;
+            border-color:var(--dock-border); pointer-events:auto;
+        }
+        .info-side-dock.open .info-side-rail { opacity:1; pointer-events:auto; }
+        .info-side-drawer-head { padding:10px 13px 9px; }
+        .info-side-panel { padding:12px; }
+        .info-side-panel .gimmick-stats-row { padding:12px; }
+        .info-side-panel .ranking-sidebar { min-height:0; }
+        @media (max-width:900px) {
+            body[data-ui="select"] .main { grid-template-columns:none; }
+            .info-side-dock { position:relative; right:auto; bottom:auto; }
+            .info-side-rail { position:static; width:100%; }
+            .info-side-drawer { position:relative; right:auto; bottom:auto; width:100%; transform:none; }
+            .info-side-dock.open .info-side-drawer { right:auto; transform:none; height:min(300px,44dvh); max-height:min(300px,44dvh); }
+        }
+
+        /* 곡 정보는 플레이 아래에 항상 이어지고, 상세 패널 한 곳에서만 스크롤한다. */
+        body[data-ui="select"] .detail-panel { overscroll-behavior:contain; scroll-behavior:smooth; }
+        body[data-ui="select"] .detail-panel .play-row { order:2; margin-top:4px; flex-shrink:0; }
+        .info-side-dock { order:3; display:block; margin:0 0 4px; padding-top:14px; border-top:1px solid var(--dock-border); }
+        .info-side-rail, .info-side-drawer-head { display:none !important; }
+        .info-side-drawer {
+            position:static; display:block; width:100%; height:auto !important; max-height:none !important; min-height:0;
+            margin:0; overflow:visible; border:0; border-radius:0; background:transparent; color:var(--dock-text);
+            box-shadow:none; transform:none !important; opacity:1 !important; pointer-events:auto; transition:none;
+        }
+        .info-side-panel, .info-side-panel[hidden] { display:block !important; min-height:0; flex:none; overflow:visible; padding:0; }
+        .info-side-panel + .info-side-panel { margin-top:18px; }
+        .info-panel-caption { margin:0 0 9px; color:var(--dock-muted); font-size:8px; letter-spacing:1.4px; }
+        .info-side-panel .gimmick-stats-row { padding:13px; }
+        .info-side-panel .ranking-sidebar { width:100%; height:auto; min-height:0; overflow:visible; }
+        .info-side-panel .rsb-list { flex:none; max-height:none; overflow:visible; }
+        .info-side-panel .rsb-my-record { margin-top:0; }
+
+        /* 넓은 화면에서는 상세 카드 자체가 하나의 고정 스크롤 영역이다. */
+        @media (min-width:701px) {
+            body[data-ui="select"] { height:100dvh; max-height:100dvh; overflow:hidden; }
+            body[data-ui="select"] .main {
+                display:grid; grid-template-columns:minmax(260px,300px) minmax(0,1fr);
+                flex:1 1 0; height:0; min-height:0; overflow:hidden;
+            }
+            body[data-ui="select"] .detail-panel {
+                height:100%; max-height:100%; min-height:0;
+                overflow-x:hidden; overflow-y:scroll !important; scrollbar-gutter:stable;
+                scrollbar-width:thin; scrollbar-color:#607b9e #111925;
+            }
+            body[data-ui="select"] .detail-panel::-webkit-scrollbar { width:10px; }
+            body[data-ui="select"] .detail-panel::-webkit-scrollbar-track { background:#111925; border-left:1px solid #2a394e; }
+            body[data-ui="select"] .detail-panel::-webkit-scrollbar-thumb { background:#607b9e; border:2px solid #111925; border-radius:999px; }
+            body[data-ui="select"] .detail-panel::-webkit-scrollbar-thumb:hover { background:#82a4cf; }
         }
     </style>
 </head>
@@ -1458,67 +1535,67 @@
             </details>
         </div>
 
+        <aside class="info-side-dock" id="info-side-dock" aria-label="곡 정보 패널">
+            <nav class="info-side-rail" aria-label="곡 정보 탭">
+                <button type="button" class="info-side-tab active" data-info-tab="chart" onclick="openInfoDock('chart')" aria-controls="info-chart-panel" aria-pressed="true">
+                    <span class="info-side-tab-icon">◈</span><span>특성</span>
+                </button>
+                <button type="button" class="info-side-tab" data-info-tab="ranking" onclick="openInfoDock('ranking')" aria-controls="info-ranking-panel" aria-pressed="false">
+                    <span class="info-side-tab-icon">♜</span><span>순위</span>
+                </button>
+            </nav>
+            <div class="info-side-drawer" role="region" aria-live="polite">
+                <div class="info-side-drawer-head">
+                    <div><span class="info-side-kicker">곡 정보</span><strong id="info-side-title">채보 특성</strong></div>
+                    <button type="button" class="info-side-close" onclick="closeInfoDock()" aria-label="곡 정보 패널 접기">⌃ 접기</button>
+                </div>
+                <section class="info-side-panel active" id="info-chart-panel" data-info-panel="chart">
+                    <div class="info-panel-caption">채보 특성 및 통계</div>
+                    <div class="gimmick-stats-row">
+                        <div class="gimmick-col">
+                            <div class="stats-section-label">채보 특성</div>
+                            <div class="gimmick-row" id="gimmick-row"></div>
+                        </div>
+                        <div class="chart-stats-card" id="chart-stats-card"></div>
+                    </div>
+                </section>
+
+                <section class="info-side-panel" id="info-ranking-panel" data-info-panel="ranking">
+                    <div class="info-panel-caption">순위표</div>
+                    <aside class="ranking-sidebar" id="ranking-sidebar">
+                        <div class="rsb-header">
+                            <div class="rsb-title-row">
+                                <div class="rsb-label">순위</div>
+                                <div class="rsb-live-dot" id="rsb-live-dot"></div>
+                            </div>
+                            <div class="rsb-song-name" id="rsb-song-name">—</div>
+                            <div class="rsb-diff-badge" id="rsb-diff-badge">—</div>
+                        </div>
+
+                        <div class="rsb-list" id="rsb-list">
+                            <div class="rsb-state">
+                                <div class="rsb-state-icon">🏆</div>
+                                <div>곡을 선택하세요</div>
+                            </div>
+                        </div>
+
+                        <div class="rsb-my-record" id="rsb-my-record">
+                            <div class="rsb-my-label">내 최고 기록</div>
+                            <div class="rsb-my-row">
+                                <div class="rsb-my-score" id="rsb-my-score">—</div>
+                                <div class="rsb-my-badge no" id="rsb-my-badge">미플레이</div>
+                            </div>
+                        </div>
+                    </aside>
+                </section>
+            </div>
+        </aside>
+
         <div class="play-row">
             <div class="play-ready">플레이 준비<kbd>Enter</kbd></div>
             <button class="btn-play" id="btn-play" onclick="playSelected()">▶ &nbsp; 플레이</button>
         </div>
     </div>
-
-    <aside class="info-side-dock" id="info-side-dock" aria-label="곡 정보 패널">
-        <nav class="info-side-rail" aria-label="곡 정보 탭">
-            <button type="button" class="info-side-tab active" data-info-tab="chart" onclick="openInfoDock('chart')" aria-controls="info-chart-panel" aria-pressed="true">
-                <span class="info-side-tab-icon">◈</span><span>특성</span>
-            </button>
-            <button type="button" class="info-side-tab" data-info-tab="ranking" onclick="openInfoDock('ranking')" aria-controls="info-ranking-panel" aria-pressed="false">
-                <span class="info-side-tab-icon">♜</span><span>순위</span>
-            </button>
-        </nav>
-        <div class="info-side-drawer" role="region" aria-live="polite">
-            <div class="info-side-drawer-head">
-                <div><span class="info-side-kicker">곡 정보</span><strong id="info-side-title">채보 특성</strong></div>
-                <button type="button" class="info-side-close" onclick="closeInfoDock()" aria-label="곡 정보 패널 닫기">×</button>
-            </div>
-            <section class="info-side-panel active" id="info-chart-panel" data-info-panel="chart">
-                <div class="info-panel-caption">채보 특성 및 통계</div>
-                <div class="gimmick-stats-row">
-                <div class="gimmick-col">
-                    <div class="stats-section-label">채보 특성</div>
-                    <div class="gimmick-row" id="gimmick-row"></div>
-                </div>
-                <div class="chart-stats-card" id="chart-stats-card"></div>
-                </div>
-            </section>
-
-            <section class="info-side-panel" id="info-ranking-panel" data-info-panel="ranking" hidden>
-                <div class="info-panel-caption">순위표</div>
-                <aside class="ranking-sidebar" id="ranking-sidebar">
-                <div class="rsb-header">
-                    <div class="rsb-title-row">
-                        <div class="rsb-label">순위</div>
-                        <div class="rsb-live-dot" id="rsb-live-dot"></div>
-                    </div>
-                    <div class="rsb-song-name" id="rsb-song-name">—</div>
-                    <div class="rsb-diff-badge" id="rsb-diff-badge">—</div>
-                </div>
-
-                <div class="rsb-list" id="rsb-list">
-                    <div class="rsb-state">
-                        <div class="rsb-state-icon">🏆</div>
-                        <div>곡을 선택하세요</div>
-                    </div>
-                </div>
-
-                <div class="rsb-my-record" id="rsb-my-record">
-                    <div class="rsb-my-label">내 최고 기록</div>
-                    <div class="rsb-my-row">
-                        <div class="rsb-my-score" id="rsb-my-score">—</div>
-                        <div class="rsb-my-badge no" id="rsb-my-badge">미플레이</div>
-                    </div>
-                </div>
-                </aside>
-            </section>
-        </div>
-    </aside>
 
 </div>
 
@@ -2078,6 +2155,7 @@ function renderRadarChart(stats) {
         ${labels}
     </svg>`;
 }
+const CHART_STAT_MAX = 150;
 function renderChartStatsCard(container, stats) {
     const rows = [
         ['체력', stats.stamina],
@@ -2086,8 +2164,10 @@ function renderChartStatsCard(container, stats) {
         ['가독성', stats.readability],
     ];
     container.innerHTML = `<div class="chart-stat-list">${rows.map(([label, value]) => {
-        const safeValue = Math.round(clamp01to100(value));
-        return `<div class="chart-stat-row"><span class="chart-stat-name">${label}</span><span class="chart-stat-track"><span class="chart-stat-fill" style="width:${safeValue}%"></span></span><span class="chart-stat-value">${safeValue}</span></div>`;
+        const baseValue = clamp01to100(value);
+        const safeValue = Math.round(baseValue / 100 * CHART_STAT_MAX);
+        const fillPercent = Math.max(0, Math.min(100, safeValue / CHART_STAT_MAX * 100));
+        return `<div class="chart-stat-row"><span class="chart-stat-name">${label}</span><span class="chart-stat-track"><span class="chart-stat-fill" style="width:${fillPercent}%"></span></span><span class="chart-stat-value">${safeValue}<small class="chart-stat-max">/ ${CHART_STAT_MAX}</small></span></div>`;
     }).join('')}</div>`;
 }
 function renderMetaQuickStats(stats) {
