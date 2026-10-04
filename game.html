@@ -1268,7 +1268,7 @@
     const BASE_RES = 192;
     // BPM 이벤트는 '마디 + 192분해상도 위치'를 기준으로 저장한다.
     // 재생 시에는 tempoMap이 이 음악적 위치를 실제 밀리초로 변환한다.
-    let bpmEvents = [], tempoMap = [];
+    let bpmEvents = [], measureMeters = [], tempoMap = [];
 
     const gameCanvas    = document.getElementById('gameCanvas');
     const gameCtx       = gameCanvas.getContext('2d');
@@ -1818,63 +1818,92 @@
     }
     function getCameraZoom(chartMs){ return getCameraZoomPercent(chartMs)/100; }
 
-    function msPerMeasureAt(tempo) {
-      const safeBpm = Math.max(1, Number(tempo) || bpm || 120);
-      return (60000 / safeBpm) * (4 / beatDenom) * beatNum;
+    // BPM와 마디별 박자표를 공통 4분음표 길이로 환산한다.
+    // 한 마디만 5/4처럼 길어져도 이후 노트·롱노트·BPM 트리거 시간이 같이 보정된다.
+    function msPerQuarterAt(tempo) { return 60000 / Math.max(1, Number(tempo) || bpm || 120); }
+    function getMeasureMeter(measureIdx = 0) {
+      const idx = Math.max(0, Math.floor(Number(measureIdx) || 0));
+      const override = measureMeters.find(m => m.measureIdx === idx);
+      return {
+        numerator: Math.max(1, Math.round(Number(override?.numerator) || beatNum)),
+        denominator: Number(override?.denominator) || beatDenom
+      };
     }
-    function chartUnitOf(measureIdx = 0, pos = 0) {
-      return Math.max(0, Number(measureIdx || 0) + (Number(pos || 0) / BASE_RES));
+    function measureQuarterLength(measureIdx) {
+      const meter = getMeasureMeter(measureIdx);
+      return meter.numerator * (4 / meter.denominator);
+    }
+    function msPerMeasureAt(tempo, measureIdx = 0) { return msPerQuarterAt(tempo) * measureQuarterLength(measureIdx); }
+    function chartUnitOf(measureIdx = 0, pos = 0) { return Math.max(0, Number(measureIdx || 0) + (Number(pos || 0) / BASE_RES)); }
+    function normalizeChartPosition(measureIdx = 0, pos = 0) {
+      let m = Math.max(0, Math.floor(Number(measureIdx) || 0)), p = Number(pos) || 0;
+      while (p >= BASE_RES) { p -= BASE_RES; m++; }
+      while (p < 0 && m > 0) { p += BASE_RES; m--; }
+      return { measureIdx: m, pos: p };
+    }
+    function measureStartQuarter(measureIdx) {
+      let total = 0;
+      for (let i = 0; i < Math.max(0, Math.floor(Number(measureIdx) || 0)); i++) total += measureQuarterLength(i);
+      return total;
+    }
+    function chartPositionToQuarter(measureIdx, pos = 0) {
+      const point = normalizeChartPosition(measureIdx, pos);
+      return measureStartQuarter(point.measureIdx) + (point.pos / BASE_RES) * measureQuarterLength(point.measureIdx);
+    }
+    function chartQuarterToPosition(quarter) {
+      let left = Math.max(0, Number(quarter) || 0), mIdx = 0;
+      while (left >= measureQuarterLength(mIdx) && mIdx < 100000) { left -= measureQuarterLength(mIdx); mIdx++; }
+      return { mIdx, pos192: Math.round((left / measureQuarterLength(mIdx)) * BASE_RES) };
     }
     function rebuildTempoMap() {
       const initialBpm = Math.max(1, Number(bpm) || 120);
       const sorted = (bpmEvents || [])
         .filter(ev => Number.isFinite(Number(ev?.bpm)) && Number(ev.bpm) > 0)
-        .map(ev => ({ ...ev, unit: chartUnitOf(ev.measureIdx, ev.pos), bpm: Number(ev.bpm) }))
-        .sort((a, b) => a.unit - b.unit);
-      tempoMap = [{ unit: 0, time: 0, bpm: initialBpm }];
-      let lastUnit = 0, lastTime = 0, activeBpm = initialBpm;
+        .map(ev => ({ ...ev, quarter: chartPositionToQuarter(ev.measureIdx, ev.pos), bpm: Number(ev.bpm) }))
+        .sort((a, b) => a.quarter - b.quarter);
+      tempoMap = [{ quarter: 0, time: 0, bpm: initialBpm }];
+      let lastQuarter = 0, lastTime = 0, activeBpm = initialBpm;
       sorted.forEach(ev => {
-        if (ev.unit <= 0) {
-          tempoMap[0].bpm = ev.bpm;
-          activeBpm = ev.bpm;
-          return;
-        }
+        if (ev.quarter <= 0) { tempoMap[0].bpm = ev.bpm; activeBpm = ev.bpm; return; }
         const last = tempoMap[tempoMap.length - 1];
-        if (Math.abs(ev.unit - lastUnit) < 0.000001) {
-          last.bpm = ev.bpm;
-          activeBpm = ev.bpm;
-          return;
-        }
-        lastTime += (ev.unit - lastUnit) * msPerMeasureAt(activeBpm);
-        tempoMap.push({ unit: ev.unit, time: lastTime, bpm: ev.bpm });
-        lastUnit = ev.unit;
-        activeBpm = ev.bpm;
+        if (Math.abs(ev.quarter - lastQuarter) < 0.000001) { last.bpm = ev.bpm; activeBpm = ev.bpm; return; }
+        lastTime += (ev.quarter - lastQuarter) * msPerQuarterAt(activeBpm);
+        tempoMap.push({ quarter: ev.quarter, time: lastTime, bpm: ev.bpm });
+        lastQuarter = ev.quarter; activeBpm = ev.bpm;
       });
     }
-    function chartUnitToMs(unit) {
+    function chartQuarterToMs(quarter) {
       if (!tempoMap.length) rebuildTempoMap();
-      const safeUnit = Math.max(0, Number(unit) || 0);
+      const safeQuarter = Math.max(0, Number(quarter) || 0);
       let segment = tempoMap[0];
-      for (let i = 1; i < tempoMap.length; i++) {
-        if (tempoMap[i].unit > safeUnit) break;
-        segment = tempoMap[i];
-      }
-      return segment.time + ((safeUnit - segment.unit) * msPerMeasureAt(segment.bpm));
+      for (let i = 1; i < tempoMap.length; i++) { if (tempoMap[i].quarter > safeQuarter) break; segment = tempoMap[i]; }
+      return segment.time + (safeQuarter - segment.quarter) * msPerQuarterAt(segment.bpm);
     }
-    function chartPositionToMs(measureIdx, pos = 0) {
-      return chartUnitToMs(chartUnitOf(measureIdx, pos));
-    }
+    function chartPositionToMs(measureIdx, pos = 0) { return chartQuarterToMs(chartPositionToQuarter(measureIdx, pos)); }
     function chartSpanToMs(measureIdx, pos = 0, len = 0) {
-      const startUnit = chartUnitOf(measureIdx, pos);
-      return Math.max(0, chartUnitToMs(startUnit + ((Number(len) || 0) / BASE_RES)) - chartUnitToMs(startUnit));
+      const start = chartPositionToQuarter(measureIdx, pos);
+      const end = chartPositionToQuarter(measureIdx, (Number(pos) || 0) + (Number(len) || 0));
+      return Math.max(0, chartQuarterToMs(end) - chartQuarterToMs(start));
+    }
+    function chartMsToQuarter(chartMs) {
+      if (!tempoMap.length) rebuildTempoMap();
+      const safeMs = Math.max(0, Number(chartMs) || 0);
+      let segment = tempoMap[0];
+      for (let i = 1; i < tempoMap.length; i++) { if (tempoMap[i].time > safeMs) break; segment = tempoMap[i]; }
+      return segment.quarter + ((safeMs - segment.time) / msPerQuarterAt(segment.bpm));
+    }
+    function chartUnitToMs(unit) {
+      const safeUnit = Math.max(0, Number(unit) || 0), mIdx = Math.floor(safeUnit);
+      return chartPositionToMs(mIdx, (safeUnit - mIdx) * BASE_RES);
+    }
+    function chartMsToUnit(chartMs) {
+      const point = chartQuarterToPosition(chartMsToQuarter(chartMs));
+      return chartUnitOf(point.mIdx, point.pos192);
     }
     function getBpmAtChartMs(chartMs) {
       if (!tempoMap.length) rebuildTempoMap();
       let segment = tempoMap[0];
-      for (let i = 1; i < tempoMap.length; i++) {
-        if (tempoMap[i].time > chartMs) break;
-        segment = tempoMap[i];
-      }
+      for (let i = 1; i < tempoMap.length; i++) { if (tempoMap[i].time > chartMs) break; segment = tempoMap[i]; }
       return segment.bpm;
     }
     function evTimeMs(ev){
@@ -2955,6 +2984,14 @@ function renderScreenEffects(ctx,gw,gh,ct){
         if(data.offset)    offset  += (data.offset || 0);
         if(data.beat)      beatNum  = data.beat;
         if(data.beatDenom) beatDenom = data.beatDenom;
+        measureMeters = (data.measureMeters || [])
+            .filter(m => Number.isFinite(Number(m?.measureIdx)))
+            .map(m => ({
+                measureIdx: Math.max(0, Math.floor(Number(m.measureIdx) || 0)),
+                numerator: Math.max(1, Math.min(32, Math.round(Number(m.numerator) || beatNum))),
+                denominator: Number(m.denominator) || beatDenom
+            }))
+            .sort((a, b) => a.measureIdx - b.measureIdx);
 
         // 새 포맷: 음악적 위치(measureIdx/pos)에 BPM 변경을 기록한다.
         // 구형 시간 기반 이벤트도 기본 BPM 격자 기준으로 읽어 호환한다.

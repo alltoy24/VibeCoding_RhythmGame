@@ -1093,7 +1093,7 @@ let bpm=130,offset=0,beatNum=4,beatDenom=4;
 // 사용자가 고른 그리드의 음악적 밀도(기본: 16분음표)를 보존해 박자표 변경 시
 // 실제 마디 칸 수만 자연스럽게 갱신한다. 예: 4/4 16칸 → 3/4 12칸.
 let splitBaseDivision=16;
-let measures=[],speedEvents=[],msgEvents=[],bpmEvents=[];
+let measures=[],speedEvents=[],msgEvents=[],bpmEvents=[],measureMeters=[];
 let tempoMap=[];
 let measureHeight=400;
 let isEditPlaying=false,editAnimId,isRecording=false;
@@ -1101,57 +1101,89 @@ let gameState='IDLE',startTimestamp=0;
 let activeMapOffset=0;
 const START_DELAY=2000;
 
-// BPM 변경은 마디 격자 위의 위치로 저장한다. 이 맵 하나로 에디터, 테스트 플레이,
-// 내보낸 채보가 동일한 음악적 위치를 같은 실제 시간으로 바꾸게 한다.
-function msPerMeasureAt(tempo){
-  const safeBpm=Math.max(1,Number(tempo)||bpm||120);
-  return (60000/safeBpm)*(4/beatDenom)*beatNum;
+// BPM과 마디별 박자표를 모두 음악적 4분음표 길이(quarter)로 환산한다.
+// 그래서 특정 마디만 4/4→5/4가 되어도 그 뒤 노트와 BPM 트리거의 실제 시간이 함께 밀린다.
+function msPerQuarterAt(tempo){return 60000/Math.max(1,Number(tempo)||bpm||120);}
+function getMeasureMeter(measureIdx=0){
+  const idx=Math.max(0,Math.floor(Number(measureIdx)||0));
+  const override=measureMeters.find(m=>m.measureIdx===idx);
+  return {
+    numerator:Math.max(1,Math.round(Number(override?.numerator)||beatNum)),
+    denominator:Number(override?.denominator)||beatDenom
+  };
 }
-function chartUnitOf(measureIdx=0,pos=0){
-  return Math.max(0,Number(measureIdx||0)+(Number(pos||0)/BASE_RES));
+function measureQuarterLength(measureIdx){
+  const meter=getMeasureMeter(measureIdx);
+  return meter.numerator*(4/meter.denominator);
+}
+function msPerMeasureAt(tempo,measureIdx=0){return msPerQuarterAt(tempo)*measureQuarterLength(measureIdx);}
+function chartUnitOf(measureIdx=0,pos=0){return Math.max(0,Number(measureIdx||0)+(Number(pos||0)/BASE_RES));}
+function normalizeChartPosition(measureIdx=0,pos=0){
+  let m=Math.max(0,Math.floor(Number(measureIdx)||0)),p=Number(pos)||0;
+  while(p>=BASE_RES){p-=BASE_RES;m++;}
+  while(p<0&&m>0){p+=BASE_RES;m--;}
+  return {measureIdx:m,pos:p};
+}
+function measureStartQuarter(measureIdx){
+  let total=0;
+  for(let i=0;i<Math.max(0,Math.floor(Number(measureIdx)||0));i++)total+=measureQuarterLength(i);
+  return total;
+}
+function chartPositionToQuarter(measureIdx,pos=0){
+  const point=normalizeChartPosition(measureIdx,pos);
+  return measureStartQuarter(point.measureIdx)+(point.pos/BASE_RES)*measureQuarterLength(point.measureIdx);
+}
+function chartQuarterToPosition(quarter){
+  let left=Math.max(0,Number(quarter)||0),mIdx=0;
+  while(left>=measureQuarterLength(mIdx)&&mIdx<100000){left-=measureQuarterLength(mIdx);mIdx++;}
+  return {mIdx,pos192:Math.round((left/measureQuarterLength(mIdx))*BASE_RES)};
 }
 function rebuildTempoMap(){
   const initialBpm=Math.max(1,Number(bpm)||120);
   const sorted=(bpmEvents||[])
     .filter(ev=>Number.isFinite(Number(ev?.bpm))&&Number(ev.bpm)>0)
-    .map(ev=>({...ev,unit:chartUnitOf(ev.measureIdx,ev.pos),bpm:Number(ev.bpm)}))
-    .sort((a,b)=>a.unit-b.unit);
-  tempoMap=[{unit:0,time:0,bpm:initialBpm}];
-  let lastUnit=0,lastTime=0,activeBpm=initialBpm;
+    .map(ev=>({...ev,quarter:chartPositionToQuarter(ev.measureIdx,ev.pos),bpm:Number(ev.bpm)}))
+    .sort((a,b)=>a.quarter-b.quarter);
+  tempoMap=[{quarter:0,time:0,bpm:initialBpm}];
+  let lastQuarter=0,lastTime=0,activeBpm=initialBpm;
   sorted.forEach(ev=>{
-    if(ev.unit<=0){tempoMap[0].bpm=ev.bpm;activeBpm=ev.bpm;return;}
+    if(ev.quarter<=0){tempoMap[0].bpm=ev.bpm;activeBpm=ev.bpm;return;}
     const last=tempoMap[tempoMap.length-1];
-    if(Math.abs(ev.unit-lastUnit)<0.000001){last.bpm=ev.bpm;activeBpm=ev.bpm;return;}
-    lastTime+=(ev.unit-lastUnit)*msPerMeasureAt(activeBpm);
-    tempoMap.push({unit:ev.unit,time:lastTime,bpm:ev.bpm});
-    lastUnit=ev.unit;activeBpm=ev.bpm;
+    if(Math.abs(ev.quarter-lastQuarter)<0.000001){last.bpm=ev.bpm;activeBpm=ev.bpm;return;}
+    lastTime+=(ev.quarter-lastQuarter)*msPerQuarterAt(activeBpm);
+    tempoMap.push({quarter:ev.quarter,time:lastTime,bpm:ev.bpm});
+    lastQuarter=ev.quarter;activeBpm=ev.bpm;
   });
 }
-function chartUnitToMs(unit){
+function chartQuarterToMs(quarter){
   if(!tempoMap.length)rebuildTempoMap();
-  const safeUnit=Math.max(0,Number(unit)||0);
+  const safeQuarter=Math.max(0,Number(quarter)||0);
   let segment=tempoMap[0];
-  for(let i=1;i<tempoMap.length;i++){if(tempoMap[i].unit>safeUnit)break;segment=tempoMap[i];}
-  return segment.time+(safeUnit-segment.unit)*msPerMeasureAt(segment.bpm);
+  for(let i=1;i<tempoMap.length;i++){if(tempoMap[i].quarter>safeQuarter)break;segment=tempoMap[i];}
+  return segment.time+(safeQuarter-segment.quarter)*msPerQuarterAt(segment.bpm);
 }
-function chartPositionToMs(measureIdx,pos=0){return chartUnitToMs(chartUnitOf(measureIdx,pos));}
+function chartPositionToMs(measureIdx,pos=0){return chartQuarterToMs(chartPositionToQuarter(measureIdx,pos));}
 function chartSpanToMs(measureIdx,pos=0,len=0){
-  const start=chartUnitOf(measureIdx,pos);
-  return Math.max(0,chartUnitToMs(start+(Number(len||0)/BASE_RES))-chartUnitToMs(start));
+  const start=chartPositionToQuarter(measureIdx,pos);
+  const end=chartPositionToQuarter(measureIdx,(Number(pos)||0)+(Number(len)||0));
+  return Math.max(0,chartQuarterToMs(end)-chartQuarterToMs(start));
 }
-function chartMsToUnit(chartMs){
+function chartMsToQuarter(chartMs){
   if(!tempoMap.length)rebuildTempoMap();
   const safeMs=Math.max(0,Number(chartMs)||0);
   let segment=tempoMap[0];
   for(let i=1;i<tempoMap.length;i++){if(tempoMap[i].time>safeMs)break;segment=tempoMap[i];}
-  return segment.unit+((safeMs-segment.time)/msPerMeasureAt(segment.bpm));
+  return segment.quarter+((safeMs-segment.time)/msPerQuarterAt(segment.bpm));
 }
-function chartMsToPosition(chartMs){
-  const unit=chartMsToUnit(chartMs);
-  let mIdx=Math.floor(unit),pos=Math.round((unit-mIdx)*BASE_RES);
-  if(pos>=BASE_RES){mIdx++;pos=0;}
-  return {mIdx,pos192:pos};
+function chartUnitToMs(unit){
+  const safeUnit=Math.max(0,Number(unit)||0),mIdx=Math.floor(safeUnit);
+  return chartPositionToMs(mIdx,(safeUnit-mIdx)*BASE_RES);
 }
+function chartMsToUnit(chartMs){
+  const point=chartQuarterToPosition(chartMsToQuarter(chartMs));
+  return chartUnitOf(point.mIdx,point.pos192);
+}
+function chartMsToPosition(chartMs){return chartQuarterToPosition(chartMsToQuarter(chartMs));}
 function eventGridUnit(ev){
   return ev&&ev.measureIdx!==undefined
     ? chartUnitOf(ev.measureIdx,ev.pos)
@@ -1169,8 +1201,9 @@ function bpmAtChartMs(chartMs){
   return segment.bpm;
 }
 // Split 입력값은 현재 박자표에서의 "마디당 실제 칸 수"다.
-function getGridStepsPerMeasure(){
-  return Math.max(1,parseInt(splitInput?.value)||16);
+function getGridStepsPerMeasure(measureIdx=0){
+  const meter=getMeasureMeter(measureIdx);
+  return Math.max(1,Math.round(splitBaseDivision*meter.numerator/meter.denominator));
 }
 function syncSplitToMeter(){
   const steps=Math.max(1,Math.min(64,Math.round(splitBaseDivision*beatNum/beatDenom)));
@@ -1178,8 +1211,33 @@ function syncSplitToMeter(){
   const hint=document.getElementById('split-meter-hint');
   if(hint)hint.textContent=`${beatNum}/${beatDenom} 기준 ${steps}칸`;
 }
-function snapMeasurePosition(relativeY){
-  const steps=getGridStepsPerMeasure();
+function adjustMeasureMeter(measureIdx,delta){
+  const current=getMeasureMeter(measureIdx);
+  const numerator=Math.max(1,Math.min(32,current.numerator+delta));
+  if(numerator===current.numerator)return;
+  pushHistory();
+  const idx=measureMeters.findIndex(m=>m.measureIdx===measureIdx);
+  if(numerator===beatNum&&current.denominator===beatDenom){
+    if(idx!==-1)measureMeters.splice(idx,1);
+  }else if(idx!==-1){
+    measureMeters[idx]={measureIdx,numerator,denominator:current.denominator};
+  }else{
+    measureMeters.push({measureIdx,numerator,denominator:current.denominator});
+    measureMeters.sort((a,b)=>a.measureIdx-b.measureIdx);
+  }
+  rebuildTempoMap();drawGrid();
+}
+function getMeasureMeterControlAt(x,absY){
+  const measureIdx=Math.floor(absY/measureHeight);
+  if(measureIdx<0)return null;
+  const yInMeasure=absY-measureIdx*measureHeight;
+  if(yInMeasure<3||yInMeasure>17)return null;
+  if(x>=24&&x<=38)return {measureIdx,delta:-1};
+  if(x>=81&&x<=95)return {measureIdx,delta:1};
+  return null;
+}
+function snapMeasurePosition(relativeY,measureIdx=0){
+  const steps=getGridStepsPerMeasure(measureIdx);
   const step=Math.max(0,Math.min(steps,Math.round(relativeY*steps)));
   return {step,pos192:Math.round(step*(BASE_RES/steps))};
 }
@@ -2717,8 +2775,6 @@ function drawGrid(){
   const cameraColumnX=getCameraColumnX();
   const fxColumnX=getFxColumnX();
   const gridWidth=getGridCanvasWidth();
-  const gridSteps=getGridStepsPerMeasure();
-  const cellH=measureHeight/gridSteps;
   const scrollY=editorContainer.scrollTop;
   const startMI=Math.max(0,Math.floor(scrollY/measureHeight));
   const endMI=Math.min(measures.length-1,Math.ceil((scrollY+gridCanvas.height)/measureHeight));
@@ -2737,16 +2793,26 @@ function drawGrid(){
 
   for(let i=startMI;i<=endMI;i++){
     const drawY=i*measureHeight-scrollY;
+    const meter=getMeasureMeter(i);
+    const gridSteps=getGridStepsPerMeasure(i);
+    const cellH=measureHeight/gridSteps;
     for(let j=0;j<gridSteps;j++){
       const ly=drawY+j*cellH;
-      const beatProgress=(j*beatNum)/gridSteps;
+      const beatProgress=(j*meter.numerator)/gridSteps;
       const isBeatBoundary=Math.abs(beatProgress-Math.round(beatProgress))<0.0001;
       gridCtx.strokeStyle=j===0?'#555':(isBeatBoundary?'#333':'#1a1a1a');
       gridCtx.lineWidth=j===0?1.5:1;
       gridCtx.beginPath();gridCtx.moveTo(0,ly);gridCtx.lineTo(gridWidth,ly);gridCtx.stroke();
     }
     gridCtx.fillStyle='#333';gridCtx.font='11px monospace';
-    gridCtx.fillText(`${i+1}  ${beatNum}/${beatDenom}`,3,drawY+14);
+    gridCtx.fillText(i+1,3,drawY+14);
+    // 마디별 박자표 제어: 이 두 버튼은 해당 마디에만 한 박을 더하거나 뺀다.
+    gridCtx.fillStyle='rgba(120,186,255,.15)';
+    gridCtx.fillRect(24,drawY+3,14,14);gridCtx.fillRect(81,drawY+3,14,14);
+    gridCtx.strokeStyle='rgba(120,186,255,.55)';gridCtx.lineWidth=1;
+    gridCtx.strokeRect(24,drawY+3,14,14);gridCtx.strokeRect(81,drawY+3,14,14);
+    gridCtx.fillStyle='#9acdff';gridCtx.font='bold 12px monospace';
+    gridCtx.fillText('−',27,drawY+14);gridCtx.fillText(`${meter.numerator}/${meter.denominator}`,43,drawY+14);gridCtx.fillText('+',84,drawY+14);
     for(let k=1;k<visibleLanes.length;k++){
       gridCtx.strokeStyle='#222';gridCtx.lineWidth=1;
       gridCtx.beginPath();gridCtx.moveTo(k*100,drawY);gridCtx.lineTo(k*100,drawY+measureHeight);gridCtx.stroke();
@@ -3140,6 +3206,7 @@ function snapshot(){
     measures: measures.map(m=>({index:m.index,notes:m.notes.map(n=>({...n}))})),
     speedEvents: speedEvents.map(e=>({...e})),
     bpmEvents: bpmEvents.map(e=>({...e})),
+    measureMeters: measureMeters.map(e=>({...e})),
     msgEvents: msgEvents.map(e=>({...e})),
     lineEvents: lineEvents.map(arr=>arr.map(e=>({...e}))),
     pulseEvents: pulseEvents.map(arr=>arr.map(e=>({...e}))),
@@ -3167,6 +3234,7 @@ function restoreSnapshot(snap){
   measures=d.measures.map(m=>({index:m.index,notes:m.notes.map(n=>({...n}))}));
   speedEvents=d.speedEvents;
   bpmEvents=d.bpmEvents||[];
+  measureMeters=d.measureMeters||[];
   msgEvents=d.msgEvents;
   rebuildTempoMap();
   lineEvents=d.lineEvents;
@@ -3205,7 +3273,7 @@ function clearSelection(){ selection=[]; }
 function yToMeasurePos(absY){
   const mIdx=Math.floor(absY/measureHeight);
   const relY=(absY%measureHeight)/measureHeight;
-  const snapped=snapMeasurePosition(relY);
+  const snapped=snapMeasurePosition(relY,mIdx);
   if(snapped.pos192>=BASE_RES)return {mIdx:mIdx+1,pos192:0};
   return {mIdx,pos192:snapped.pos192};
 }
@@ -3288,6 +3356,9 @@ gridCanvas.addEventListener('mousedown',e=>{
   const lane=getEditorLaneFromX(x);
   const mIdx=Math.floor(absY/measureHeight);
 
+  const meterControl=getMeasureMeterControlAt(x,absY);
+  if(meterControl){adjustMeasureMeter(meterControl.measureIdx,meterControl.delta);return;}
+
   if(selection.length>0 && !e.shiftKey && hitSelected(x,absY)){
     pushHistory();
     isMovingSel=true;
@@ -3320,7 +3391,7 @@ gridCanvas.addEventListener('mousedown',e=>{
   }
 
   const relY=(absY%measureHeight)/measureHeight;
-  const {pos192}=snapMeasurePosition(relY);
+  const {pos192}=snapMeasurePosition(relY,mIdx);
   if(pos192>=BASE_RES)return;
 
   // 카메라·이펙트 컬럼은 전용 모드에서만 동작
@@ -3531,7 +3602,7 @@ gridCanvas.addEventListener('contextmenu',e=>{
   const lane=getEditorLaneFromX(x);
   const mIdx=Math.floor(absY/measureHeight);
   if(mIdx>=measures.length)return;
-  const {pos192}=snapMeasurePosition((absY%measureHeight)/measureHeight);
+  const {pos192}=snapMeasurePosition((absY%measureHeight)/measureHeight,mIdx);
   if(x>=getNoteAreaWidth() && !['CAMERA','FLIPX','FLIPY','CAMZOOM','EFFECT'].includes(editMode)) return;
 
   if(editMode==='LINE'){
@@ -3607,7 +3678,7 @@ function buildChartData(){
   return {
     title,bpm,offset,beat:beatNum,beatDenom,
     initKeyCount:DEFAULT_ACTIVE_COUNT,keyMap:KEY_MAP,
-    speedEvents:speedData,bpmEvents:tempoData,msgEvents:messageData,
+    speedEvents:speedData,bpmEvents:tempoData,measureMeters,msgEvents:messageData,
     lineEvents,pulseEvents,meterEvents,activeEvents,
     cameraEvents,camFlipXEvents,camFlipYEvents,camZoomEvents,effectEvents,
     measures:measures.filter(m=>m.notes.length>0).map(m=>({...m,split:BASE_RES}))
@@ -3696,6 +3767,14 @@ function parseChartData(data){
   if(data.beatDenom){beatDenom=data.beatDenom;document.getElementById('beat-denom').value=beatDenom;}
   splitBaseDivision=16;
   syncSplitToMeter();
+  measureMeters=(data.measureMeters||[])
+    .filter(m=>Number.isFinite(Number(m?.measureIdx)))
+    .map(m=>({
+      measureIdx:Math.max(0,Math.floor(Number(m.measureIdx)||0)),
+      numerator:Math.max(1,Math.min(32,Math.round(Number(m.numerator)||beatNum))),
+      denominator:Number(m.denominator)||beatDenom
+    }))
+    .sort((a,b)=>a.measureIdx-b.measureIdx);
   // BPM 트리거가 있는 채보는 먼저 템포 맵을 완성해야 이후의 시간 기반 이벤트도
   // 올바른 마디 위치로 다시 배치할 수 있다.
   bpmEvents=[];
@@ -3760,7 +3839,8 @@ function parseChartData(data){
   if(data.measures&&data.measures.length>0){
     const maxNoteMeasure=Math.max(...data.measures.map(m=>Number(m.index)||0));
     const maxTempoMeasure=bpmEvents.length?Math.max(...bpmEvents.map(ev=>ev.measureIdx)):0;
-    const maxI=Math.max(maxNoteMeasure,maxTempoMeasure);
+    const maxMeterMeasure=measureMeters.length?Math.max(...measureMeters.map(ev=>ev.measureIdx)):0;
+    const maxI=Math.max(maxNoteMeasure,maxTempoMeasure,maxMeterMeasure);
     for(let i=0;i<=maxI+5;i++) measures.push({index:i,notes:[]});
     data.measures.forEach(m=>{
       const ratio=BASE_RES/(m.split||32);
@@ -3772,7 +3852,9 @@ function parseChartData(data){
     });
   }
   // 노트가 하나도 없는 채보(예: 카메라 이동만 있는 채보)라도 에디터가 빈 화면이 되지 않도록 최소 마디 확보
-  const minimumMeasures=Math.max(40,(bpmEvents.length?Math.max(...bpmEvents.map(ev=>ev.measureIdx))+6:0));
+  const minimumMeasures=Math.max(40,
+    (bpmEvents.length?Math.max(...bpmEvents.map(ev=>ev.measureIdx))+6:0),
+    (measureMeters.length?Math.max(...measureMeters.map(ev=>ev.measureIdx))+6:0));
   if(measures.length<minimumMeasures){
     for(let i=measures.length;i<minimumMeasures;i++) measures.push({index:i,notes:[]});
   }
@@ -5601,7 +5683,7 @@ window.addEventListener('keydown',e=>{
     const chartMs=audio.currentTime*1000-offset;
     const point=chartMsToPosition(chartMs);let mi=point.mIdx;
     if(!measures[mi]){for(let i=measures.length;i<=mi+5;i++) measures.push({index:i,notes:[]});resizeEditor();}
-    let pos192=snapMeasurePosition(point.pos192/BASE_RES).pos192;
+    let pos192=snapMeasurePosition(point.pos192/BASE_RES,mi).pos192;
     if(pos192>=BASE_RES){mi++;pos192=0;}
     if(measures[mi]){
       const ex=measures[mi].notes.some(n=>n.lane===li&&Math.abs(n.pos-pos192)<2);
