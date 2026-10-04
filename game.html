@@ -146,6 +146,88 @@
         @keyframes popIn { 0% { opacity: 0; transform: scale(0.5); } 100% { opacity: 1; transform: scale(1.2); } }
         @keyframes shake { 0% { transform: translate(1px, 1px) rotate(0deg); } 100% { transform: translate(-1px, -2px) rotate(-1deg); } }
 
+        /* 최고 기록 피니시 — TROLL BEAT / ABSOLUTE SYNC */
+        .finish-announcement {
+            position: relative; display: inline-grid; place-items: center;
+            min-width: min(86vw, 720px); min-height: 154px; padding: 24px 52px;
+            isolation: isolate; overflow: visible;
+            animation: finishReveal .62s cubic-bezier(.16,.94,.25,1) both;
+        }
+        .finish-announcement::before {
+            content: ''; position: absolute; inset: 16px 0; z-index: -1;
+            border: 1px solid rgba(255,255,255,.58);
+            clip-path: polygon(3% 0,97% 0,100% 24%,100% 76%,97% 100%,3% 100%,0 76%,0 24%);
+            opacity: .88;
+        }
+        .finish-announcement::after {
+            content: ''; position: absolute; inset: -56px -76px; z-index: -2;
+            background: radial-gradient(ellipse at center, var(--finish-glow) 0%, transparent 61%);
+            opacity: .92; animation: finishAura 1.2s ease-out both;
+        }
+        .finish-announcement__beam {
+            position: absolute; inset: 44% -5%; z-index: -1; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--finish-edge), #fff, var(--finish-edge), transparent);
+            box-shadow: 0 0 18px var(--finish-edge), 0 0 42px var(--finish-glow);
+            animation: finishBeam .82s ease-out both;
+        }
+        .finish-announcement__eyebrow,
+        .finish-announcement__detail {
+            display: block; font-family: var(--ui-font); font-weight: 900; letter-spacing: .32em;
+        }
+        .finish-announcement__eyebrow { font-size: clamp(8px,1vw,12px); color: rgba(255,255,255,.78); margin-bottom: 6px; }
+        .finish-announcement__main {
+            display: block; font-family: var(--ui-font); font-weight: 900;
+            font-size: clamp(38px,7vw,88px); line-height: .92; letter-spacing: .08em;
+            white-space: nowrap;
+        }
+        .finish-announcement__detail { font-size: clamp(8px,.9vw,11px); margin-top: 10px; color: rgba(255,255,255,.72); }
+        .finish-announcement--tb {
+            --finish-edge: #ff4d72; --finish-glow: rgba(255,35,93,.42);
+        }
+        .finish-announcement--tb::before {
+            border-color: #ff5478;
+            box-shadow: 0 0 0 1px rgba(255,184,107,.24), 0 0 24px rgba(255,36,93,.54), inset 0 0 34px rgba(255,42,102,.16);
+        }
+        .finish-announcement--tb .finish-announcement__main {
+            background: linear-gradient(100deg,#ff416c 3%,#ff8b51 29%,#ffe36d 48%,#fff 58%,#ff8b51 70%,#ff416c 98%);
+            background-size: 190% 100%; -webkit-background-clip: text; background-clip: text;
+            color: transparent; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(255,128,84,.62));
+            animation: finishTitleShine 1.05s ease-out both;
+        }
+        .finish-announcement--tb .finish-announcement__detail { color: #ffc6ab; }
+        .finish-announcement--sync {
+            --finish-edge: #74c5ff; --finish-glow: rgba(80,141,255,.40);
+        }
+        .finish-announcement--sync::before {
+            inset: 7px 12%; border-radius: 999px; clip-path: none;
+            border-color: rgba(183,221,255,.82);
+            box-shadow: 0 0 0 7px rgba(100,174,255,.06), 0 0 34px rgba(84,130,255,.48), inset 0 0 28px rgba(74,161,255,.14);
+            animation: finishSyncRing 1.02s ease-out both;
+        }
+        .finish-announcement--sync .finish-announcement__beam {
+            background: linear-gradient(90deg, transparent, #ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff,transparent);
+            box-shadow: 0 0 16px #fff, 0 0 36px rgba(109,163,255,.68);
+        }
+        .finish-announcement--sync .finish-announcement__main {
+            background: linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff,#ff4a91);
+            background-size: 300% 100%; -webkit-background-clip: text; background-clip: text;
+            color: transparent; -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 8px rgba(255,255,255,.78)) drop-shadow(0 0 20px rgba(100,162,255,.64));
+            animation: finishTitleShine 1s ease-out both, rainbow-shift .82s linear infinite;
+        }
+        .finish-announcement--sync .finish-announcement__detail { color: #b9d9ff; }
+        @keyframes finishReveal { 0% { opacity:0; transform:scale(.62) translateY(16px); filter:blur(8px); } 60% { opacity:1; transform:scale(1.04) translateY(0); filter:blur(0); } 100% { opacity:1; transform:scale(1); } }
+        @keyframes finishAura { 0% { opacity:0; transform:scale(.48); } 42% { opacity:1; } 100% { opacity:.72; transform:scale(1.12); } }
+        @keyframes finishBeam { 0% { opacity:0; transform:scaleX(.08); } 48% { opacity:1; } 100% { opacity:.86; transform:scaleX(1); } }
+        @keyframes finishTitleShine { 0% { background-position:100% 0; letter-spacing:.22em; opacity:0; } 100% { background-position:0 0; letter-spacing:.08em; opacity:1; } }
+        @keyframes finishSyncRing { 0% { opacity:0; transform:scale(.62); } 58% { opacity:1; transform:scale(1.04); } 100% { opacity:.9; transform:scale(1); } }
+        @media (max-width: 620px) {
+            .finish-announcement { min-width:94vw; min-height:126px; padding:18px 20px; }
+            .finish-announcement__main { letter-spacing:.045em; }
+            .finish-announcement__eyebrow, .finish-announcement__detail { letter-spacing:.18em; }
+        }
+
         .res-badge { margin: 10px 0 30px 0; font-size: 40px; font-family: 'Orbitron', sans-serif; letter-spacing: 2px; }
         .badge-fc { color: #00e5ff; text-shadow: 0 0 15px #00e5ff; animation: pulse 1s infinite; }
         .badge-ap { color: #ff0055; text-shadow: 2px 2px 0 #fff, 0 0 20px #ff0055; animation: shake 0.5s infinite; }
@@ -442,7 +524,25 @@
         .res-rank-entry.is-me { background: rgba(0,229,255,0.07); color: var(--fever-gold); }
         .res-rank-medal { width: 22px; flex-shrink: 0; }
         .res-rank-name { flex: 1; padding: 0 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .res-rank-score { font-family: 'Orbitron'; font-size: 11px; }
+        .res-rank-status {
+            min-width: 38px; padding: 3px 5px; border-radius: 4px;
+            font-family: var(--ui-font); font-size: 8px; font-weight: 900;
+            letter-spacing: .4px; text-align: center; color: #aebed2;
+            background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.10);
+        }
+        .res-rank-status.tb, .res-rank-status.sync-full {
+            color: #fff; border-color: transparent;
+            background: linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff);
+            text-shadow: 0 0 6px rgba(255,255,255,.65);
+        }
+        .res-rank-status.fc { color: #80f1ff; border-color: rgba(0,229,255,.42); background: rgba(0,229,255,.10); }
+        .res-rank-status.sync { color: #a9c8ff; border-color: rgba(125,174,255,.42); background: rgba(105,152,255,.11); }
+        .res-rank-status.grade-splus, .res-rank-status.grade-s { color: #74f5ff; border-color: rgba(0,229,255,.36); }
+        .res-rank-status.grade-aplus, .res-rank-status.grade-a { color: #89f1a7; border-color: rgba(137,241,167,.32); }
+        .res-rank-status.grade-b { color: #90baff; border-color: rgba(144,186,255,.32); }
+        .res-rank-status.grade-c { color: #ffd174; border-color: rgba(255,209,116,.32); }
+        .res-rank-status.grade-failed { color: #ff9a9f; border-color: rgba(255,108,116,.30); }
+        .res-rank-score { font-family: 'Orbitron'; font-size: 11px; margin-left: 5px; }
 
         /* 하단 버튼 */
         .res-actions {
@@ -834,7 +934,7 @@
     const JUDGE_TABLE = [
         {
             name: 'Perfect',
-            window: 40,
+            window: 75,
             rate: 100,
             scoreRate: 1.0,
             key: 'tpPerfect',
@@ -846,7 +946,7 @@
         },
         {
             name: 'Perfect',
-            window: 64,
+            window: 100,
             rate: 90,
             scoreRate: 1.0,
             key: 'perfect',
@@ -858,7 +958,7 @@
         },
         {
             name: 'Good',
-            window: 100,
+            window: 140,
             rate: 70,
             scoreRate: 0.70,
             key: 'good',
@@ -870,7 +970,7 @@
         },
         {
             name: 'Bad',
-            window: 150,
+            window: 200,
             rate: 40,
             scoreRate: 0.30,
             key: 'bad',
@@ -894,13 +994,13 @@
         },
     ];
 
-    // ABSOLUTE SYNC: 최상위 ±20ms 판정을 추가하고, 일반 점수 대신 SYNC 비율만 경쟁한다.
+    // ABSOLUTE SYNC: 최상위 ±40ms 판정을 추가하고, 일반 점수 대신 SYNC 비율만 경쟁한다.
     const ABSOLUTE_SYNC_JUDGE_TABLE = [
-        { name:'|SYNC|',       window:20,       rate:100, scoreRate:1.0, key:'absoluteSync', cssClass:'judge-absolute-sync', color:'#ffffff', glowColor:'#b9d8ff', particleColors:['#fff7cf','#63d6ff','#ff4a91'], comboBreak:false },
-        { name:'Perfect',      window:40,       rate:90,  scoreRate:0.9, key:'tpPerfect',    cssClass:'judge-tp-perfect',    color:'#fff0bd', glowColor:'#f2bc43', particleColors:['#fff0bd','#f2bc43','#fff7d5'], comboBreak:false },
-        { name:'Perfect',      window:64,       rate:80,  scoreRate:0.8, key:'perfect',      cssClass:'judge-perfect',       color:'#f1c765', glowColor:'#d1a13c', particleColors:['#f1c765','#f8df96','#d1a13c'], comboBreak:false },
-        { name:'Good',         window:100,      rate:60,  scoreRate:0.6, key:'good',         cssClass:'judge-good',          color:'#9ee68a', glowColor:'#78cc72', particleColors:['#9ee68a','#d2ffb7','#78cc72'], comboBreak:false },
-        { name:'Bad',          window:150,      rate:40,  scoreRate:0.4, key:'bad',          cssClass:'judge-bad',           color:'#ff9e77', glowColor:'#ff735f', particleColors:['#ff9e77','#ffd19a','#ff735f'], comboBreak:true },
+        { name:'|SYNC|',       window:40,       rate:100, scoreRate:1.0, key:'absoluteSync', cssClass:'judge-absolute-sync', color:'#ffffff', glowColor:'#b9d8ff', particleColors:['#fff7cf','#63d6ff','#ff4a91'], comboBreak:false },
+        { name:'Perfect',      window:75,       rate:90,  scoreRate:0.9, key:'tpPerfect',    cssClass:'judge-tp-perfect',    color:'#fff0bd', glowColor:'#f2bc43', particleColors:['#fff0bd','#f2bc43','#fff7d5'], comboBreak:false },
+        { name:'Perfect',      window:100,      rate:80,  scoreRate:0.8, key:'perfect',      cssClass:'judge-perfect',       color:'#f1c765', glowColor:'#d1a13c', particleColors:['#f1c765','#f8df96','#d1a13c'], comboBreak:false },
+        { name:'Good',         window:140,      rate:60,  scoreRate:0.6, key:'good',         cssClass:'judge-good',          color:'#9ee68a', glowColor:'#78cc72', particleColors:['#9ee68a','#d2ffb7','#78cc72'], comboBreak:false },
+        { name:'Bad',          window:200,      rate:40,  scoreRate:0.4, key:'bad',          cssClass:'judge-bad',           color:'#ff9e77', glowColor:'#ff735f', particleColors:['#ff9e77','#ffd19a','#ff735f'], comboBreak:true },
         { name:'Miss',         window:Infinity, rate:0,   scoreRate:0,   key:'miss',         cssClass:'judge-miss',          color:'#747d91', glowColor:'#545d70', particleColors:['#747d91'], comboBreak:true },
     ];
     const ABSOLUTE_SYNC_WEIGHTS = { absoluteSync:1.0, tpPerfect:0.90, perfect:0.80, good:0.60, bad:0.40, miss:0 };
@@ -2521,7 +2621,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
         const anchor = getLaneJudgeAnchor(safeLane);
         const isTpPerfect = judgeInfo.key === 'tpPerfect' || judgeInfo.cssClass === 'judge-tp-perfect';
         const isSyncMaster = precisionPlayMode && judgeInfo.key === 'absoluteSync';
-        const usesShapeEffect = (judgeStyle === 'ripple' || judgeStyle === 'linewave') && !precisionPlayMode;
+        // 모드에 관계 없이 사용자가 고른 리플/라인웨이브 판정 이펙트를 적용한다.
+        // |SYNC| 최상위 판정은 아래 judge-effect-sync 클래스로 무지개 형태가 된다.
+        const usesShapeEffect = judgeStyle === 'ripple' || judgeStyle === 'linewave';
         const el = document.createElement(usesShapeEffect ? 'div' : 'span');
         el.dataset.lane = String(safeLane);
         el.style.setProperty('--judge-color', isTpPerfect ? '#fff0bd' : judgeInfo.color);
@@ -3175,7 +3277,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
         // ============================================================
         // ★ 노트 판정 / 렌더링 (개선된 얼리미스 / 롱노트)
         // ============================================================
-        const MAX_HIT_WINDOW = 150; // 150ms를 초과하면 Miss
+        const MAX_HIT_WINDOW = 200; // ±200ms 바깥부터 Miss
 
         for(let i = 0; i < activeNotes.length; i++) {
             let n = activeNotes[i];
@@ -3212,9 +3314,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 if (activeKeys[n.lane]) {
                     if (currentTime >= n.endTime) {
                         n.finished = true;
-                        // 끝까지 유지한 롱노트는 ABSOLUTE SYNC에서 최고 판정을 받을 수 있어야 한다.
+                        // 끝까지 유지한 롱노트의 테일은 두 모드 모두 최고 판정으로 처리한다.
                         playSfx('hold_end');
-                        applyJudge(n, precisionPlayMode ? 'absoluteSync' : 'perfect');
+                        applyJudge(n, precisionPlayMode ? 'absoluteSync' : 'tpPerfect');
                         checkFinish();
                     }
                 } else {
@@ -3548,7 +3650,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
             .filter(l => getLineActive(l, currentTime));
         if(candidateLanes.length===0) return;
 
-        const MAX_WINDOW = 150;
+        const MAX_WINDOW = 200;
         const candidates = activeNotes.filter(n =>
             candidateLanes.includes(n.lane) && !n.hit && !n.finished &&
             currentTime - n.time >= -MAX_WINDOW && currentTime - n.time <= MAX_WINDOW
@@ -3598,11 +3700,10 @@ function renderScreenEffects(ctx,gw,gh,ct){
             n.finished = true;
             applyJudge(n, 'miss');
         } else {
-            // 안전 구간에서 뗌: 일반 모드는 Perfect, ABSOLUTE SYNC는 실제 종료 오차로 판정한다.
+            // 끝부분까지 유지한 롱노트의 테일은 최고 판정으로 고정한다.
             n.finished = true;
             playSfx('hold_end');
-            const releaseJudge = precisionPlayMode ? getJudgeForTiming(currentTime - n.endTime) : null;
-            applyJudge(n, releaseJudge ? releaseJudge.key : 'perfect');
+            applyJudge(n, precisionPlayMode ? 'absoluteSync' : 'tpPerfect');
         }
 
         checkFinish();
@@ -3764,14 +3865,28 @@ function renderScreenEffects(ctx,gw,gh,ct){
         gameCtx.globalAlpha = 1.0;
     }
 
+    function showFinishAnnouncement(type) {
+        const isSync = type === 'sync';
+        const eyebrow = isSync ? 'ABSOLUTE SYNC' : 'MAXIMUM SCORE';
+        const main = isSync ? '|SYNC|' : 'TROLL BEAT';
+        const detail = isSync ? 'ABSOLUTE RESONANCE' : '1,000,000 SCORE';
+        finishEffect.innerHTML = `
+            <div class="finish-announcement finish-announcement--${isSync ? 'sync' : 'tb'}">
+                <span class="finish-announcement__beam"></span>
+                <span class="finish-announcement__eyebrow">${eyebrow}</span>
+                <strong class="finish-announcement__main">${main}</strong>
+                <span class="finish-announcement__detail">${detail}</span>
+            </div>`;
+    }
+
     function checkFinish() {
         if (totalHits === totalMaxHits && totalMaxHits > 0 && !finishCelebrated) {
             finishCelebrated = true;
             if (precisionPlayMode && judgeStats.absoluteSync === totalMaxHits) {
-                finishEffect.innerHTML = "<div class='text-glitch' data-text='|SYNC|'>|SYNC|</div>";
+                showFinishAnnouncement('sync');
                 playSfx('ap_main'); playSfx('ap_layer');
             } else if (!precisionPlayMode && (judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits) {
-                finishEffect.innerHTML = "<div class='text-glitch' data-text='TROLL BEAT!!'>TROLL BEAT!!</div>";
+                showFinishAnnouncement('tb');
                 playSfx('ap_main'); playSfx('ap_layer');
             } else if (!precisionPlayMode && (judgeStats.bad + judgeStats.miss) === 0) {
                 finishEffect.innerHTML = "<div class='text-fc'>FULL COMBO</div>";
@@ -3971,9 +4086,14 @@ function renderScreenEffects(ctx,gw,gh,ct){
                     const rows = rankData.slice(0,5).map((r, idx) => {
                         const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`#${idx+1}`;
                         const isMe  = userProfile && r.userId === secureUserId;
+                        const fallbackGrade = thresholds.find(t => (parseInt(r.score, 10) || 0) >= t.min) || thresholds[thresholds.length - 1];
+                        const fallbackKind = ({ 'S+':'grade-splus', 'S':'grade-s', 'A+':'grade-aplus', 'A':'grade-a', 'B':'grade-b', 'C':'grade-c', 'FAILED':'grade-failed', 'TB':'tb' })[fallbackGrade.grade] || 'grade';
+                        const rankLabel = r.rankLabel || (precisionPlayMode ? 'SYNC' : fallbackGrade.grade);
+                        const rankKind = r.rankKind || (precisionPlayMode ? 'sync' : fallbackKind);
                         return `<div class="res-rank-entry${isMe?' is-me':''}">
                             <span class="res-rank-medal">${medal}</span>
                             <span class="res-rank-name">${r.userName}</span>
+                            <span class="res-rank-status ${rankKind}">${rankLabel}</span>
                             <span class="res-rank-score">${precisionPlayMode ? formatPrecisionPercent(r.score) : r.score}</span>
                         </div>`;
                     }).join('');
