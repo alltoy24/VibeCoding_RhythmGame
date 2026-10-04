@@ -4062,7 +4062,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
             const secureMaxCombo = Math.floor(maxCombo || 0);
             const scoreMode      = precisionPlayMode ? 'precision' : 'standard';
             const secureUserId   = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2,9);
-            const secureUserName = userProfile ? userProfile.name : "GUEST";
+            const secureUserName = (localStorage.getItem('wb_nickname') || '').trim() || (userProfile ? userProfile.name : "GUEST");
             const securePlayTime = Math.floor(playDuration || 0);
             // 일반 기록은 기존 서버 서명 형식을 유지하고, 동기화 연주는 모드/세부판정을 포함해 검증한다.
             const judgeSignature = [secureJudgeStats.absoluteSync, secureJudgeStats.tpPerfect, secureJudgeStats.perfect, secureJudgeStats.good, secureJudgeStats.bad, secureJudgeStats.miss, totalMaxHits].join(':');

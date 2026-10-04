@@ -1388,6 +1388,7 @@
         </div>
         <div class="pc-action-row">
             <button id="pc-stats-btn" class="pc-btn" onclick="togglePlayerStats()">📊 통계</button>
+            <button id="pc-nickname-btn" class="pc-btn" onclick="openNicknameModal(true)" style="display:none;">닉네임 변경</button>
             <button id="main-login-btn" class="pc-btn" onclick="handleAuth()">로그인</button>
         </div>
     </div>
@@ -1651,10 +1652,10 @@
 <!-- 닉네임 모달 -->
 <div id="name-modal" class="modal-overlay">
     <div class="modal-box">
-        <div class="modal-title">닉네임 설정</div>
-        <p style="color:#555;font-size:12px;">닉네임을 등록하세요 (2~12자)</p>
+        <div class="modal-title" id="nickname-modal-title">닉네임 설정</div>
+        <p id="nickname-modal-description" style="color:#555;font-size:12px;">닉네임을 등록하세요 (2~12자)</p>
         <input type="text" id="nickname-input" class="modal-input" placeholder="닉네임 입력" maxlength="12">
-        <button class="btn-full" onclick="saveNicknameToServer()">확인</button>
+        <button class="btn-full" id="nickname-modal-submit" onclick="saveNicknameToServer()">확인</button>
     </div>
 </div>
 
@@ -3569,14 +3570,51 @@ function scheduleBeep(){if(!isCalibrating)return;const o=audioCtx.createOscillat
 function handleTap(e){if(e&&(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON'))return;if(!isCalibrating){startCalib();return;}const t=audioCtx.currentTime,fp=t-(nextBeatTime-INT_SEC),tn=nextBeatTime-t,diff=Math.abs(fp)<Math.abs(tn)?fp:-tn;if(Math.abs(diff)<0.2){tapDiffs.push(diff*1000);const c=document.getElementById('calib-circle');c.style.transform='scale(0.9)';setTimeout(()=>c.style.transform='scale(1)',100);const avg=Math.round(tapDiffs.reduce((a,b)=>a+b,0)/tapDiffs.length);document.getElementById('offset-input').value=avg;manualInput();if(tapDiffs.length>=8){stopCalib();document.getElementById('calib-msg').innerHTML='<span style="color:#00e5ff;font-weight:bold;">동기화 완료</span>';}}}
 
 // ═══════════ AUTH ═══════════
-function openNicknameModal(force){if(!force&&localStorage.getItem('wb_nickname'))return;const inp=document.getElementById('nickname-input');const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');inp.value=localStorage.getItem('wb_nickname')||p.name||'';document.getElementById('name-modal').style.display='flex';}
-async function saveNicknameToServer(){const inp=document.getElementById('nickname-input');const n=inp.value.trim();if(n.length<2||n.length>12){alert('2~12글자');return;}localStorage.setItem('wb_nickname',n);const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');if(p.sub){try{await fetch(`${API_BASE}/api/user/update`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId:p.sub,nickname:n})});}catch(e){}}document.getElementById('name-modal').style.display='none';checkLoginStatus();alert(`환영합니다, [${n}]님!`);}
+function openNicknameModal(force){
+    const isLoggedIn=localStorage.getItem('wb_logged_in')==='true';
+    if(!isLoggedIn){alert('닉네임은 로그인 후 변경할 수 있어요.');return;}
+    if(!force&&localStorage.getItem('wb_nickname'))return;
+    const inp=document.getElementById('nickname-input');
+    const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');
+    const hasNickname=Boolean(localStorage.getItem('wb_nickname'));
+    inp.value=localStorage.getItem('wb_nickname')||p.name||'';
+    document.getElementById('nickname-modal-title').textContent=hasNickname?'닉네임 변경':'닉네임 설정';
+    document.getElementById('nickname-modal-description').textContent=hasNickname?'새 닉네임을 입력하세요 (2~12자)':'닉네임을 등록하세요 (2~12자)';
+    document.getElementById('nickname-modal-submit').textContent=hasNickname?'변경':'확인';
+    document.getElementById('name-modal').style.display='flex';
+    setTimeout(()=>inp.focus(),0);
+}
+async function saveNicknameToServer(){
+    const inp=document.getElementById('nickname-input');
+    const n=inp.value.trim();
+    if(n.length<2||n.length>12){alert('닉네임은 2~12자로 입력해 주세요.');return;}
+    const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');
+    const userId=p.sub||p.id;
+    if(!userId){alert('로그인 정보를 찾지 못했어요. 다시 로그인해 주세요.');return;}
+    const submit=document.getElementById('nickname-modal-submit');
+    submit.disabled=true;submit.textContent='저장 중…';
+    try{
+        const response=await fetch(`${API_BASE}/api/user/update`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId,nickname:n})});
+        if(!response.ok)throw new Error('Nickname update failed');
+        localStorage.setItem('wb_nickname',n);
+        document.getElementById('name-modal').style.display='none';
+        checkLoginStatus();
+        alert(`닉네임을 [${n}](으)로 변경했어요.`);
+    }catch(e){
+        console.error('Nickname update failed:',e);
+        alert('닉네임을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+    }finally{
+        submit.disabled=false;
+        submit.textContent=localStorage.getItem('wb_nickname')?'변경':'확인';
+    }
+}
 function checkLoginStatus(){
     const isIn=localStorage.getItem('wb_logged_in')==='true';
     const btn=document.getElementById('main-login-btn');
+    const nicknameBtn=document.getElementById('pc-nickname-btn');
     const nd=document.getElementById('user-name-display');
-    if(isIn){btn.textContent='로그아웃';btn.classList.add('logout');btn.onclick=handleAuth;nd.textContent=localStorage.getItem('wb_nickname')||'플레이어';nd.style.color='#00e5ff';updateProfile();}
-    else{btn.textContent='로그인';btn.classList.remove('logout');btn.onclick=handleAuth;nd.textContent='손님';nd.style.color='#444';}
+    if(isIn){btn.textContent='로그아웃';btn.classList.add('logout');btn.onclick=handleAuth;nicknameBtn.style.display='block';nd.textContent=localStorage.getItem('wb_nickname')||'플레이어';nd.style.color='#00e5ff';updateProfile();}
+    else{btn.textContent='로그인';btn.classList.remove('logout');btn.onclick=handleAuth;nicknameBtn.style.display='none';nd.textContent='손님';nd.style.color='#444';}
 }
 function handleAuth(){if(localStorage.getItem('wb_logged_in')==='true'){if(confirm('로그아웃?')){localStorage.clear();location.reload();}}else{location.href='login.html';}}
 function updateProfile(){const lv=parseInt(localStorage.getItem('wb_user_lv')||1),xp=parseInt(localStorage.getItem('wb_user_xp')||0),nxp=lv*500;document.getElementById('user-lv').textContent=`레벨 ${lv}`;document.getElementById('user-xp-fill').style.width=`${Math.min(100,xp/nxp*100)}%`;document.getElementById('user-xp-text').textContent=`${xp} / ${nxp} 경험치`;}
