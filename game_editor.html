@@ -449,9 +449,10 @@ input[type=file]{display:none;}
         <div class="row"><span>Zoom</span>
           <input type="range" id="zoom" min="200" max="1000" step="50" value="400">
         </div>
-        <div class="row"><span>Split</span>
+        <div class="row"><span>Split (마디 칸)</span>
           <input type="number" id="split" value="16" min="1" max="64" style="width:55px;text-align:center;">
         </div>
+        <div id="split-meter-hint" style="font-size:8px;color:#66798d;text-align:right;margin-top:-2px;">4/4 기준 16칸</div>
         <button onclick="addMeasures(4)" style="margin-top:3px;">+ Add 4 Bars</button>
       </div>
 
@@ -1089,6 +1090,9 @@ function playSfx(name){
 
 let audio=new Audio();
 let bpm=130,offset=0,beatNum=4,beatDenom=4;
+// 사용자가 고른 그리드의 음악적 밀도(기본: 16분음표)를 보존해 박자표 변경 시
+// 실제 마디 칸 수만 자연스럽게 갱신한다. 예: 4/4 16칸 → 3/4 12칸.
+let splitBaseDivision=16;
 let measures=[],speedEvents=[],msgEvents=[],bpmEvents=[];
 let tempoMap=[];
 let measureHeight=400;
@@ -1164,11 +1168,15 @@ function bpmAtChartMs(chartMs){
   for(let i=1;i<tempoMap.length;i++){if(tempoMap[i].time>chartMs)break;segment=tempoMap[i];}
   return segment.bpm;
 }
-// Split은 4/4만을 기준으로 한 칸 수가 아니라, 선택한 음표 단위(기본 16분음표)다.
-// 따라서 3/4는 12칸, 6/8은 12칸처럼 박자표에 맞춰 마디 격자가 바뀐다.
+// Split 입력값은 현재 박자표에서의 "마디당 실제 칸 수"다.
 function getGridStepsPerMeasure(){
-  const noteDivision=Math.max(1,parseInt(splitInput?.value)||16);
-  return Math.max(1,Math.round((noteDivision*beatNum)/beatDenom));
+  return Math.max(1,parseInt(splitInput?.value)||16);
+}
+function syncSplitToMeter(){
+  const steps=Math.max(1,Math.min(64,Math.round(splitBaseDivision*beatNum/beatDenom)));
+  if(splitInput)splitInput.value=steps;
+  const hint=document.getElementById('split-meter-hint');
+  if(hint)hint.textContent=`${beatNum}/${beatDenom} 기준 ${steps}칸`;
 }
 function snapMeasurePosition(relativeY){
   const steps=getGridStepsPerMeasure();
@@ -3686,6 +3694,8 @@ function parseChartData(data){
   offsetInput.value=offset;
   if(data.beat){beatNum=data.beat;document.getElementById('beat-num').value=beatNum;}
   if(data.beatDenom){beatDenom=data.beatDenom;document.getElementById('beat-denom').value=beatDenom;}
+  splitBaseDivision=16;
+  syncSplitToMeter();
   // BPM 트리거가 있는 채보는 먼저 템포 맵을 완성해야 이후의 시간 기반 이벤트도
   // 올바른 마디 위치로 다시 배치할 수 있다.
   bpmEvents=[];
@@ -3795,14 +3805,21 @@ document.getElementById('bpm').addEventListener('change',e=>{
   rebuildTempoMap();renderBpmEventList();drawGrid();scheduleDraftSave();
 });
 offsetInput.addEventListener('input',e=>{offset=parseInt(e.target.value)||0;scheduleDraftSave();});
-splitInput.addEventListener('input',()=>{drawGrid();scheduleDraftSave();});
+splitInput.addEventListener('input',()=>{
+  const steps=Math.max(1,Math.min(64,parseInt(splitInput.value)||1));
+  splitInput.value=steps;
+  splitBaseDivision=steps*beatDenom/beatNum;
+  const hint=document.getElementById('split-meter-hint');
+  if(hint)hint.textContent=`${beatNum}/${beatDenom} 기준 ${steps}칸`;
+  drawGrid();scheduleDraftSave();
+});
 zoomSlider.addEventListener('input',e=>{measureHeight=parseInt(e.target.value);resizeEditor();drawGrid();scheduleDraftSave();});
 speedSlider.addEventListener('input',e=>{baseNoteSpeed=parseFloat(e.target.value);speedVal.innerText='x'+baseNoteSpeed.toFixed(1);});
 document.getElementById('beat-num').addEventListener('input',e=>{
-  beatNum=parseInt(e.target.value)||4;rebuildTempoMap();drawGrid();scheduleDraftSave();
+  beatNum=parseInt(e.target.value)||4;syncSplitToMeter();rebuildTempoMap();drawGrid();scheduleDraftSave();
 });
 document.getElementById('beat-denom').addEventListener('change',e=>{
-  beatDenom=parseInt(e.target.value)||4;rebuildTempoMap();drawGrid();scheduleDraftSave();
+  beatDenom=parseInt(e.target.value)||4;syncSplitToMeter();rebuildTempoMap();drawGrid();scheduleDraftSave();
 });
 document.getElementById('kf-dur').addEventListener('input',e=>{
   const v = Math.max(0, parseInt(e.target.value) || 0);
@@ -5672,6 +5689,7 @@ window.addEventListener('mouseup',()=>isDraggingPopup=false);
 resizeEditor();
 applyInitialKeyLayout(DEFAULT_ACTIVE_COUNT);
 rebuildTempoMap();
+syncSplitToMeter();
 setChartEditorMode('simple',{skipDraftSave:true});
 drawGrid();
 renderBpmEventList();
