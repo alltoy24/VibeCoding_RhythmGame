@@ -1266,6 +1266,9 @@
     let bpm = 130, offset = 0;
     let beatNum = 4, beatDenom = 4;
     const BASE_RES = 192;
+    // BPM 이벤트는 '마디 + 192분해상도 위치'를 기준으로 저장한다.
+    // 재생 시에는 tempoMap이 이 음악적 위치를 실제 밀리초로 변환한다.
+    let bpmEvents = [], tempoMap = [];
 
     const gameCanvas    = document.getElementById('gameCanvas');
     const gameCtx       = gameCanvas.getContext('2d');
@@ -1814,11 +1817,67 @@
     }
     function getCameraZoom(chartMs){ return getCameraZoomPercent(chartMs)/100; }
 
-    function evTimeMs(ev){
-      if(ev.measureIdx!==undefined){
-        const mpm=(60000/bpm)*(4/beatDenom)*beatNum;
-        return ev.measureIdx*mpm+(ev.pos/BASE_RES)*mpm;
+    function msPerMeasureAt(tempo) {
+      const safeBpm = Math.max(1, Number(tempo) || bpm || 120);
+      return (60000 / safeBpm) * (4 / beatDenom) * beatNum;
+    }
+    function chartUnitOf(measureIdx = 0, pos = 0) {
+      return Math.max(0, Number(measureIdx || 0) + (Number(pos || 0) / BASE_RES));
+    }
+    function rebuildTempoMap() {
+      const initialBpm = Math.max(1, Number(bpm) || 120);
+      const sorted = (bpmEvents || [])
+        .filter(ev => Number.isFinite(Number(ev?.bpm)) && Number(ev.bpm) > 0)
+        .map(ev => ({ ...ev, unit: chartUnitOf(ev.measureIdx, ev.pos), bpm: Number(ev.bpm) }))
+        .sort((a, b) => a.unit - b.unit);
+      tempoMap = [{ unit: 0, time: 0, bpm: initialBpm }];
+      let lastUnit = 0, lastTime = 0, activeBpm = initialBpm;
+      sorted.forEach(ev => {
+        if (ev.unit <= 0) {
+          tempoMap[0].bpm = ev.bpm;
+          activeBpm = ev.bpm;
+          return;
+        }
+        const last = tempoMap[tempoMap.length - 1];
+        if (Math.abs(ev.unit - lastUnit) < 0.000001) {
+          last.bpm = ev.bpm;
+          activeBpm = ev.bpm;
+          return;
+        }
+        lastTime += (ev.unit - lastUnit) * msPerMeasureAt(activeBpm);
+        tempoMap.push({ unit: ev.unit, time: lastTime, bpm: ev.bpm });
+        lastUnit = ev.unit;
+        activeBpm = ev.bpm;
+      });
+    }
+    function chartUnitToMs(unit) {
+      if (!tempoMap.length) rebuildTempoMap();
+      const safeUnit = Math.max(0, Number(unit) || 0);
+      let segment = tempoMap[0];
+      for (let i = 1; i < tempoMap.length; i++) {
+        if (tempoMap[i].unit > safeUnit) break;
+        segment = tempoMap[i];
       }
+      return segment.time + ((safeUnit - segment.unit) * msPerMeasureAt(segment.bpm));
+    }
+    function chartPositionToMs(measureIdx, pos = 0) {
+      return chartUnitToMs(chartUnitOf(measureIdx, pos));
+    }
+    function chartSpanToMs(measureIdx, pos = 0, len = 0) {
+      const startUnit = chartUnitOf(measureIdx, pos);
+      return Math.max(0, chartUnitToMs(startUnit + ((Number(len) || 0) / BASE_RES)) - chartUnitToMs(startUnit));
+    }
+    function getBpmAtChartMs(chartMs) {
+      if (!tempoMap.length) rebuildTempoMap();
+      let segment = tempoMap[0];
+      for (let i = 1; i < tempoMap.length; i++) {
+        if (tempoMap[i].time > chartMs) break;
+        segment = tempoMap[i];
+      }
+      return segment.bpm;
+    }
+    function evTimeMs(ev){
+      if(ev.measureIdx!==undefined) return chartPositionToMs(ev.measureIdx, ev.pos);
       return ev.time||0;
     }
 
@@ -2475,7 +2534,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
         if(evTimeMs(events[i])<=chartMs){p=events[i];break;}
       }
       if(!p||p.type==='stop') return 0;
-      const beatLen=60000/bpm;
+      const beatLen=60000/getBpmAtChartMs(chartMs);
       const phase=(chartMs-evTimeMs(p))%beatLen;
       const d=p.decay;
       if(phase>d) return 0;
@@ -2876,6 +2935,19 @@ function renderScreenEffects(ctx,gw,gh,ct){
         if(data.beat)      beatNum  = data.beat;
         if(data.beatDenom) beatDenom = data.beatDenom;
 
+        // 새 포맷: 음악적 위치(measureIdx/pos)에 BPM 변경을 기록한다.
+        // 구형 시간 기반 이벤트도 기본 BPM 격자 기준으로 읽어 호환한다.
+        bpmEvents = (data.bpmEvents || []).map(ev => {
+            const nextBpm = Number(ev?.bpm);
+            if (!Number.isFinite(nextBpm) || nextBpm <= 0) return null;
+            if (ev.measureIdx !== undefined) {
+                return { ...ev, measureIdx: Math.max(0, Math.floor(Number(ev.measureIdx) || 0)), pos: Math.max(0, Number(ev.pos) || 0), bpm: nextBpm };
+            }
+            const unit = Math.max(0, Number(ev.time) || 0) / msPerMeasureAt(bpm);
+            return { ...ev, measureIdx: Math.floor(unit), pos: Math.round((unit % 1) * BASE_RES), bpm: nextBpm };
+        }).filter(Boolean);
+        rebuildTempoMap();
+
         gameNotes = []; totalMaxHits = 0;
         if(data.speedEvents) {
             speedEvents = data.speedEvents;
@@ -2921,12 +2993,12 @@ function renderScreenEffects(ctx,gw,gh,ct){
         const LEGACY_LANE_REMAP = { 0:1, 1:2, 2:4, 3:5 };
 
         if(data.measures) {
-            const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
             data.measures.forEach(m => {
                 const ratio = BASE_RES / (m.split || 32);
                 m.notes.forEach(n => {
-                    const time     = (m.index + (n.pos * ratio / BASE_RES)) * msPerMeasure;
-                    const duration = ((n.len || 0) * ratio / BASE_RES) * msPerMeasure;
+                    const chartPos = n.pos * ratio;
+                    const time     = chartPositionToMs(m.index, chartPos);
+                    const duration = chartSpanToMs(m.index, chartPos, (n.len || 0) * ratio);
                     const noteTime    = time + offset;
                     const noteEndTime = noteTime + duration;
                     if (noteEndTime > lastNoteEndTime) lastNoteEndTime = noteEndTime;
@@ -2940,7 +3012,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
             if(speedEvents.length > 0) {
                 speedEvents = speedEvents.map(ev => {
                     if(ev.measureIdx !== undefined) {
-                        const calculatedTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
+                        const calculatedTime = chartPositionToMs(ev.measureIdx, ev.pos);
                         return { ...ev, time: calculatedTime + offset };
                     }
                     return { ...ev, time: ev.time + offset };
@@ -2976,12 +3048,11 @@ function renderScreenEffects(ctx,gw,gh,ct){
         document.getElementById('loading-screen').style.display = 'none';
         buildSpeedMap();
 
-        const msPerMeasure = (60000 / bpm) * (4 / beatDenom) * beatNum;
         activeMsgEvents = msgEvents.map(ev => {
             let startTime = ev.time, duration = 0;
             if(ev.measureIdx !== undefined) {
-                startTime = (ev.measureIdx * msPerMeasure) + (ev.pos / BASE_RES) * msPerMeasure;
-                duration  = (ev.len / BASE_RES) * msPerMeasure;
+                startTime = chartPositionToMs(ev.measureIdx, ev.pos);
+                duration  = chartSpanToMs(ev.measureIdx, ev.pos, ev.len || 0);
             }
             return { ...ev, time: startTime + offset, endTime: startTime + offset + (duration || 1000) };
         });
@@ -3263,7 +3334,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
             if (audio.ended || currentTime > lastNoteEndTime + 3000) finishGame();
         }
 
-        const msPerMeasure = (60000 / bpm) * 4;
+        const msPerMeasure = msPerMeasureAt(getBpmAtChartMs(Math.max(0, currentTime - offset)));
         let nextEvent = speedMap.find(ev => ev.time > currentTime);
         if (nextEvent && !nextEvent.warned) {
             let currentMult = 1.0;
@@ -3303,13 +3374,16 @@ function renderScreenEffects(ctx,gw,gh,ct){
         drawFeverGearEffect();
 
         // ★ 라인 안무/펄스/카메라 상태 갱신 (에디터와 동일 타임라인)
-        lineStates    = Array.from({length:LANE_COUNT},(_,l)=>getLineState(l, currentTime));
-        linePulsePhase = Array.from({length:LANE_COUNT},(_,l)=>getPulseMagnitude(l, currentTime));
-        camState  = getCameraState(currentTime);
-        camFlipX  = getCameraFlip('x', currentTime);
-        camFlipY  = getCameraFlip('y', currentTime);
-        camZoom   = getCameraZoom(currentTime);
-        updateFxRuntime(currentTime);
+        // 노트는 오프셋이 반영된 실제 재생 시각을 쓰지만, 채보 트리거는 음악적 시간축을 쓴다.
+        // BPM 변경 구간에서도 두 기준이 섞이지 않도록 한 번만 변환해서 공통 사용한다.
+        const chartNow = currentTime - offset;
+        lineStates    = Array.from({length:LANE_COUNT},(_,l)=>getLineState(l, chartNow));
+        linePulsePhase = Array.from({length:LANE_COUNT},(_,l)=>getPulseMagnitude(l, chartNow));
+        camState  = getCameraState(chartNow);
+        camFlipX  = getCameraFlip('x', chartNow);
+        camFlipY  = getCameraFlip('y', chartNow);
+        camZoom   = getCameraZoom(chartNow);
+        updateFxRuntime(chartNow);
         syncJudgePopups();
 
         const currentVisualY = getVisualPos(currentTime);

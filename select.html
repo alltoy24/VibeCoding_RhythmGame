@@ -1714,6 +1714,7 @@ const _songWarnCache = {}; // folder -> Set(gimmick id) — 곡 전체 난이도
 // ═══════════ GIMMICK ICONS (채보 기믹 아이콘) ═══════════
 const GIMMICK_ICON_SVG = {
     speed: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v3M4.2 6.2l2 2M2 13h3M19 13h3M17.8 8.2l2-2"/><path d="M12 13l4-5"/><circle cx="12" cy="13" r="7.5"/></svg>',
+    tempo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 18V6l9-2v12"/><path d="M13 9l7 2v7"/><ellipse cx="8" cy="18" rx="3" ry="2"/><ellipse cx="17" cy="18" rx="3" ry="2"/></svg>',
     keys:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="7" width="4" height="10" rx="1"/><rect x="10" y="4" width="4" height="16" rx="1"/><rect x="17" y="7" width="4" height="10" rx="1"/></svg>',
     move:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M4 12l4-4M4 12l4 4M20 12l-4-4M20 12l-4 4"/></svg>',
     pulse: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l2-7 4 14 3-10 2 3h5"/></svg>',
@@ -1722,6 +1723,7 @@ const GIMMICK_ICON_SVG = {
 };
 const GIMMICK_DEFS = {
     speed:  { title: '라인 속도 변속', color: '#ff9f2d', glow: 'rgba(255,159,45,0.4)',  desc: '곡 중간에 노트가 내려오는 속도가 빨라지거나 느려져요.' },
+    tempo:  { title: 'BPM 변경',       color: '#ff7a45', glow: 'rgba(255,122,69,0.42)',  desc: '곡 중간에 BPM이 바뀌어요. 박자의 흐름이 전환되는 구간에 주의하세요.' },
     keys:   { title: '라인 개수 변경', color: '#00f2ff', glow: 'rgba(0,242,255,0.4)',   desc: '곡 중간에 눌러야 하는 키(라인) 개수가 바뀌어요.' },
     move:   { title: '라인 이동',     color: '#ff2d78', glow: 'rgba(255,45,120,0.4)',  desc: '판정선이 곡 중간에 움직이거나 회전해요.' },
     pulse:  { title: '비트 펄스',     color: '#c060ff', glow: 'rgba(192,96,255,0.4)',  desc: '라인이 박자에 맞춰 통통 튀는 연출이 있어요.' },
@@ -1746,6 +1748,42 @@ function normalizeGimmickKeyMap(km) {
 const GIMMICK_KEYMAP_DEFAULT = [['s'],['d'],['f'],['space'],['j'],['k'],['l']];
 const GIMMICK_ACTIVE_SETS = { 3:[2,4,5], 4:[1,2,4,5], 5:[1,2,3,4,5], 6:[0,1,2,4,5,6], 7:[0,1,2,3,4,5,6] };
 
+// 차트가 저장하는 음악적 위치(마디 + 192분해상도)를 실제 재생 시간으로 바꾼다.
+// 선택 화면의 길이/밀도/라인 전환 시점도 게임과 같은 템포 맵을 사용한다.
+function createChartTempoMapper(chart) {
+    const BASE_RES = 192;
+    const beatNum = Number(chart.beat) || 4, beatDenom = Number(chart.beatDenom) || 4;
+    const baseBpm = Math.max(1, Number(chart.bpm) || 120);
+    const msPerMeasure = tempo => (60000 / Math.max(1, Number(tempo) || baseBpm)) * (4 / beatDenom) * beatNum;
+    const unitOf = (measureIdx = 0, pos = 0) => Math.max(0, Number(measureIdx || 0) + (Number(pos || 0) / BASE_RES));
+    const events = (chart.bpmEvents || [])
+        .filter(ev => ev && ev.measureIdx !== undefined && Number(ev.bpm) > 0)
+        .map(ev => ({ unit: unitOf(ev.measureIdx, ev.pos), bpm: Number(ev.bpm) }))
+        .sort((a, b) => a.unit - b.unit);
+    const map = [{ unit: 0, time: 0, bpm: baseBpm }];
+    let lastUnit = 0, lastTime = 0, activeBpm = baseBpm;
+    events.forEach(ev => {
+        if (ev.unit <= 0) { map[0].bpm = ev.bpm; activeBpm = ev.bpm; return; }
+        const last = map[map.length - 1];
+        if (Math.abs(ev.unit - lastUnit) < 0.000001) { last.bpm = ev.bpm; activeBpm = ev.bpm; return; }
+        lastTime += (ev.unit - lastUnit) * msPerMeasure(activeBpm);
+        map.push({ unit: ev.unit, time: lastTime, bpm: ev.bpm });
+        lastUnit = ev.unit; activeBpm = ev.bpm;
+    });
+    const unitToMs = unit => {
+        let segment = map[0];
+        for (let i = 1; i < map.length; i++) { if (map[i].unit > unit) break; segment = map[i]; }
+        return segment.time + (unit - segment.unit) * msPerMeasure(segment.bpm);
+    };
+    const positionToMs = (measureIdx, pos = 0) => unitToMs(unitOf(measureIdx, pos));
+    const spanToMs = (measureIdx, pos, len) => {
+        const start = unitOf(measureIdx, pos);
+        return Math.max(0, unitToMs(start + (Number(len || 0) / BASE_RES)) - unitToMs(start));
+    };
+    const allBpms = [baseBpm, ...events.map(ev => ev.bpm)];
+    return { positionToMs, spanToMs, bpmMin: Math.min(...allBpms), bpmMax: Math.max(...allBpms) };
+}
+
 function fmtGimmickTime(ms) {
     const s = Math.max(0, Math.round(ms / 1000));
     const m = Math.floor(s / 60), r = s % 60;
@@ -1755,10 +1793,9 @@ function fmtGimmickTime(ms) {
 // 라인 개수 변경(activeEvents) 기믹의 "시간에 따라 어떻게 키가 바뀌는지" 타임라인 계산
 function computeKeyChangeTimeline(chart) {
     const LANE_COUNT = 7, BASE_RES = 192;
-    const bpm = chart.bpm || 120, beatNum = chart.beat || 4, beatDenom = chart.beatDenom || 4;
-    const mpm = (60000 / bpm) * (4 / beatDenom) * beatNum;
+    const tempo = createChartTempoMapper(chart);
     function evTimeMs(ev) {
-        if (ev.measureIdx !== undefined) return ev.measureIdx * mpm + (ev.pos / BASE_RES) * mpm;
+        if (ev.measureIdx !== undefined) return tempo.positionToMs(ev.measureIdx, ev.pos);
         return ev.time || 0;
     }
     const activeEvents = chart.activeEvents || [];
@@ -1818,6 +1855,7 @@ function isComplexRhythm(chart) {
 function detectGimmicks(chart) {
     const found = ['keys']; // 시작 라인 수는 항상 표시 (변경 여부와 무관)
     if (chart.speedEvents && chart.speedEvents.some(e => Math.abs((e.mult ?? 1) - 1) > 0.001)) found.push('speed');
+    if (chart.bpmEvents && chart.bpmEvents.length) found.push('tempo');
     if (chart.lineEvents && chart.lineEvents.some(arr => arr && arr.length > 0)) found.push('move');
     if (chart.pulseEvents && chart.pulseEvents.some(arr => arr && arr.length > 0)) found.push('pulse');
     if ((chart.cameraEvents && chart.cameraEvents.length) ||
@@ -2042,9 +2080,9 @@ function fmtLength(sec) {
 }
 function computeChartStats(chart) {
     const BASE_RES = 192;
-    const bpm = chart.bpm || 120;
+    const tempo = createChartTempoMapper(chart);
+    const bpm = tempo.bpmMax;
     const beatNum = chart.beat || 4, beatDenom = chart.beatDenom || 4;
-    const mpm = (60000 / bpm) * (4 / beatDenom) * beatNum;
 
     let totalNotes = 0, longNoteMs = 0, lastMs = 0;
     let weirdPos = 0, posSamples = 0;
@@ -2056,8 +2094,8 @@ function computeChartStats(chart) {
         const ratio = BASE_RES / (m.split || 32);
         (m.notes || []).forEach(n => {
             const pos = Math.round((n.pos || 0) * ratio);
-            const t = (m.index * mpm) + (pos / BASE_RES) * mpm;
-            const dur = ((n.len || 0) * ratio / BASE_RES) * mpm;
+            const t = tempo.positionToMs(m.index, pos);
+            const dur = tempo.spanToMs(m.index, pos, (n.len || 0) * ratio);
             noteTimes.push(t);
             notesWithLane.push({ t, lane: n.lane || 0 });
             totalNotes++;
@@ -2123,7 +2161,7 @@ function computeChartStats(chart) {
         ? clamp01to100((chordNotes / totalNotes) * 130 + (jackNotes / totalNotes) * 170)
         : 0;
 
-    return { bpm, lengthSec, stamina, speed, rhythm, readability, pattern };
+    return { bpm, bpmMin: tempo.bpmMin, bpmMax: tempo.bpmMax, lengthSec, stamina, speed, rhythm, readability, pattern };
 }
 function renderRadarChart(stats) {
     const cx = 62, cy = 62, R = 44;
@@ -2174,8 +2212,11 @@ function renderChartStatsCard(container, stats) {
 function renderMetaQuickStats(stats) {
     const el = document.getElementById('meta-quick-stats');
     if (!el) return;
+    const bpmLabel = Math.round(stats.bpmMin ?? stats.bpm) === Math.round(stats.bpmMax ?? stats.bpm)
+        ? Math.round(stats.bpm)
+        : `${Math.round(stats.bpmMin)}–${Math.round(stats.bpmMax)}`;
     el.innerHTML = `
-        <div class="meta-quick-stat"><span class="meta-quick-stat-label">BPM</span><span class="meta-quick-stat-value">${Math.round(stats.bpm)}</span></div>
+        <div class="meta-quick-stat"><span class="meta-quick-stat-label">BPM</span><span class="meta-quick-stat-value">${bpmLabel}</span></div>
         <div class="meta-quick-stat"><span class="meta-quick-stat-label">길이</span><span class="meta-quick-stat-value">${fmtLength(stats.lengthSec)}</span></div>`;
 }
 
