@@ -274,7 +274,7 @@
         .chip-label { font-family: 'Orbitron'; font-size: 7px; color: #444; letter-spacing: 2px; }
         .chip-val { font-family: 'Orbitron'; font-size: 13px; font-weight: 700; color: #fff; }
         .rank-chip .chip-val { font-size: 14px; letter-spacing: 2px; transition: color 0.4s, text-shadow 0.4s; }
-        .rank-chip.tb .chip-val { color: #fff; text-shadow: 0 0 8px #c060ff; }
+        .rank-chip.tb .chip-val { color:#fff; text-shadow:0 0 8px rgba(255,255,255,.42); }
         .rank-chip.fc .chip-val { color: #ffd700; text-shadow: 0 0 8px #ffd700; }
         .rank-chip.clear .chip-val { color: #3b9eff; }
         .rank-chip.failed .chip-val { color: #ff4455; }
@@ -514,11 +514,8 @@
             letter-spacing:.35px; text-align:center; color:#a9b6c8;
             background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.11);
         }
-        .rsb-rank-badge.tb, .rsb-rank-badge.sync-full {
-            color:#fff; border-color:transparent;
-            background:linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff);
-            text-shadow:0 0 5px rgba(255,255,255,.72);
-        }
+        .rsb-rank-badge.tb { color:#fff; border-color:rgba(255,255,255,.28); background:rgba(255,255,255,.08); text-shadow:0 0 5px rgba(255,255,255,.52); }
+        .rsb-rank-badge.sync-full { color:#fff; border-color:transparent; background:linear-gradient(90deg,#ff4a91,#ffb347,#fff36b,#58eea7,#63d6ff,#b78bff); text-shadow:0 0 5px rgba(255,255,255,.72); }
         .rsb-rank-badge.fc { color:#7beeff; border-color:rgba(0,229,255,.42); background:rgba(0,229,255,.10); }
         .rsb-rank-badge.sync { color:#a9c8ff; border-color:rgba(125,174,255,.42); background:rgba(105,152,255,.11); }
         .rsb-rank-badge.grade-splus, .rsb-rank-badge.grade-s { color:#74f5ff; border-color:rgba(0,229,255,.36); }
@@ -548,7 +545,7 @@
         .rsb-my-score { font-family: 'Orbitron'; font-size: 14px; font-weight: 900; color: #444; }
         .rsb-my-score.has-score { color: #fff; text-shadow: 0 0 8px rgba(255,255,255,0.2); }
         .rsb-my-badge { font-family: 'Orbitron'; font-size: 7px; font-weight: 700; padding: 2px 8px; border-radius: 3px; letter-spacing: 1px; }
-        .rsb-my-badge.tb { background: rgba(192,96,255,0.2); color: #c060ff; border: 1px solid rgba(192,96,255,0.4); }
+        .rsb-my-badge.tb { background:rgba(255,255,255,.08); color:#fff; border:1px solid rgba(255,255,255,.26); }
         .rsb-my-badge.fc { background: rgba(255,215,0,0.12); color: var(--gold); border: 1px solid rgba(255,215,0,0.3); }
         .rsb-my-badge.cl { background: rgba(0,242,255,0.08); color: var(--accent); border: 1px solid rgba(0,242,255,0.25); }
         .rsb-my-badge.no { color: #333; font-style: italic; }
@@ -627,7 +624,7 @@
         .pcs-achievement-label { display:block; font-family:'Orbitron'; font-size:9px; font-weight:900; letter-spacing:1.2px; color:var(--achievement-color); }
         .pcs-achievement-value { display:block; margin-top:3px; font-family:'Orbitron'; font-size:17px; font-weight:900; color:#f4f8ff; }
         .pcs-achievement.fc { --achievement-color:#71eaff; }
-        .pcs-achievement.tb { --achievement-color:#e48bff; }
+        .pcs-achievement.tb { --achievement-color:#f4f8ff; }
         .pcs-achievement.ab { --achievement-color:#ffcf70; }
 
         /* 섹션 구분 */
