@@ -1075,18 +1075,53 @@ function syncEditorViewport(){
 const LANE_COLORS = ['#ff4081','#00e676','#29b6f6','#ffa726','#c084fc','#ff6b6b','#4dd0e1'];
 
 // -- audio --
-const audioCtx = new (window.AudioContext||window.webkitAudioContext)({latencyHint:'interactive',sampleRate:44100});
+// 입력음은 기기 기본 샘플레이트와 interactive 출력으로 재생한다. 별도의 44.1kHz
+// 변환과 MP3 선행 무음이 겹치면, 특히 롱노트 시작/종료음이 손보다 늦게 들릴 수 있다.
+const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+try { audioCtx = new AudioContextClass({latencyHint:'interactive'}); }
+catch (_) { audioCtx = new AudioContextClass(); }
 const soundBuffers = {};
-function warmUp(){if(audioCtx.state==='suspended')audioCtx.resume();}
+const soundStartOffsets = {};
+const INPUT_SFX_NAMES = new Set(['hit','hold_start','hold_end']);
+
+function warmUp(){
+  return audioCtx.state === 'suspended' ? audioCtx.resume().catch(()=>{}) : Promise.resolve();
+}
+function findLeadingSilence(buffer,maxTrimMs=80){
+  const scanFrames=Math.min(buffer.length,Math.floor(buffer.sampleRate*maxTrimMs/1000));
+  const threshold=0.0025;
+  for(let frame=0;frame<scanFrames;frame++){
+    for(let channel=0;channel<buffer.numberOfChannels;channel++){
+      if(Math.abs(buffer.getChannelData(channel)[frame])>=threshold){
+        return Math.max(0,(frame-12)/buffer.sampleRate);
+      }
+    }
+  }
+  return 0;
+}
 async function loadSfx(name,url){
-  try{const r=await fetch(url);const ab=await r.arrayBuffer();
-    soundBuffers[name]=await audioCtx.decodeAudioData(ab);}catch(e){}}
-['hit','hold_start','hold_end','fc','ap','glitch'].forEach(n=>loadSfx(n,`sfx/${n}.mp3`));
+  try{
+    const response=await fetch(url);
+    if(!response.ok)throw new Error(`SFX ${response.status}: ${url}`);
+    const buffer=await audioCtx.decodeAudioData(await response.arrayBuffer());
+    soundBuffers[name]=buffer;
+    soundStartOffsets[name]=INPUT_SFX_NAMES.has(name)?findLeadingSilence(buffer):0;
+  }catch(e){console.warn('SFX load failed:',name,e);}
+}
+loadSfx('hit','sfx/hit.mp3');
+loadSfx('hold_start','sfx/hold_start.mp3');
+loadSfx('hold_end','sfx/hold_end.mp3');
 function playSfx(name){
-  if(!soundBuffers[name])return;
-  const src=audioCtx.createBufferSource();src.buffer=soundBuffers[name];
+  const buffer=soundBuffers[name];
+  if(!buffer)return;
+  // resume()은 사용자 입력에서 해제되고, 실제 재생은 같은 입력 이벤트 안에서 시작한다.
+  warmUp();
+  const src=audioCtx.createBufferSource();src.buffer=buffer;
   const g=audioCtx.createGain();g.gain.value=0.7;
-  src.connect(g);g.connect(audioCtx.destination);src.start(audioCtx.currentTime);}
+  src.connect(g);g.connect(audioCtx.destination);
+  src.start(audioCtx.currentTime,soundStartOffsets[name]||0);
+}
 
 let audio=new Audio();
 let bpm=130,offset=0,beatNum=4,beatDenom=4;
@@ -5427,8 +5462,8 @@ function checkHit(laneOrLanes){
   const diff=Math.abs(ct-n.time);
 
   n.hit=true;n.holding=true;if(n.len===0)n.finished=true;
-  totalHits++;
   playSfx(n.len>0?'hold_start':'hit');
+  totalHits++;
 
   let judge='MISS',clr='#888',rate=0;
   if(diff<=40){judge='PERFECT';clr='#00e5ff';rate=100;judgeStats.perfect++;}
@@ -5458,8 +5493,8 @@ function checkRelease(laneOrLanes){
   const safe=Math.max(300,(n.endTime-n.time)*0.5);
   if(remaining>safe){n.finished=true;combo=0;totalHits++;judgeStats.miss++;updateGameHUD();
     const st=lineStates[lane];judgments.push({text:'BREAK',x:GEAR_X + st.x * GEAR_W,y:st.y*GH-30,life:38,maxLife:38,color:'#555'});}
-  else{n.finished=true;totalHits++;score+=scorePerHit;totalRateSum+=100;
-    combo++;judgeStats.perfect++;createParticles(lane);updateGameHUD();playSfx('hold_end');
+  else{n.finished=true;playSfx('hold_end');totalHits++;score+=scorePerHit;totalRateSum+=100;
+    combo++;judgeStats.perfect++;createParticles(lane);updateGameHUD();
     const st=lineStates[lane];judgments.push({text:'PERFECT',x:GEAR_X + st.x * GEAR_W,y:st.y*GH-30,life:38,maxLife:38,color:'#00e5ff'});}
 }
 
