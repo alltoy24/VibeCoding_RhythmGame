@@ -126,5 +126,15 @@
     "charts": [
       { "name": "Troll", "level": "16", "file": "troll_16.json", "stats": { "stamina": 87, "speed": 72, "pattern": 64, "rhythm": 16, "readability": 12 } }
     ]
+  },
+  {
+    "folder": "EmotionKiller",
+    "title": "Emotion Killer",
+    "artist": "Riya440Hz",
+    "pack": "Reference1",
+    "previewStart": 90,
+    "charts": [
+      { "name": "Hard", "level": "7+", "file": "hard_7.json", "stats": { "stamina": 8, "speed": 20, "pattern": 12, "rhythm": 5, "readability": 0 } }
+    ]
   }
 ]
