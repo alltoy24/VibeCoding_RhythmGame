@@ -552,6 +552,7 @@
         .res-rank-status.grade-c { color: #ffd174; border-color: rgba(255,209,116,.32); }
         .res-rank-status.grade-failed { color: #ff9a9f; border-color: rgba(255,108,116,.30); }
         .res-rank-score { font-family: 'Orbitron'; font-size: 11px; margin-left: 5px; }
+        .res-rank-rate { font-family:'Orbitron'; font-size:8px; color:rgba(190,220,255,.68); margin-left:7px; white-space:nowrap; }
 
         /* 하단 버튼 */
         .res-actions {
@@ -4146,6 +4147,10 @@ function renderScreenEffects(ctx,gw,gh,ct){
         })[char]);
     }
 
+    function formatRankingRate(rateBasisPoints) {
+        return `${(Math.max(0, Number(rateBasisPoints) || 0) / 100).toFixed(2)}%`;
+    }
+
     async function getResultSongInfo(songParam, diffParam) {
         const fallbackSong = songParam ? decodeURIComponent(songParam) : "UNKNOWN SONG";
         const fallbackDiff = diffParam ? diffParam.replace(/\.json$/i, '').split('_')[0].toUpperCase() : "UNKNOWN";
@@ -4309,11 +4314,13 @@ function renderScreenEffects(ctx,gw,gh,ct){
                         const fallbackKind = ({ 'S+':'grade-splus', 'S':'grade-s', 'A+':'grade-aplus', 'A':'grade-a', 'B':'grade-b', 'C':'grade-c', 'FAILED':'grade-failed', 'TB':'tb' })[fallbackGrade.grade] || 'grade';
                         const rankLabel = r.rankLabel || (precisionPlayMode ? 'SYNC' : fallbackGrade.grade);
                         const rankKind = r.rankKind || (precisionPlayMode ? 'sync' : fallbackKind);
+                        const rateHtml = precisionPlayMode ? '' : `<span class="res-rank-rate">RATE ${formatRankingRate(r.rateBasisPoints)}</span>`;
                         return `<div class="res-rank-entry${isMe?' is-me':''}">
                             <span class="res-rank-medal">${medal}</span>
                             <span class="res-rank-name">${escapeRankingText(r.userName || 'PLAYER')}</span>
                             <span class="res-rank-status ${rankKind}">${rankLabel}</span>
                             <span class="res-rank-score">${precisionPlayMode ? formatPrecisionPercent(r.score) : r.score}</span>
+                            ${rateHtml}
                         </div>`;
                     }).join('');
                     rankingHtml = `<div class="res-ranking-wrap">
