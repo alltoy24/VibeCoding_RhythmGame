@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="ui-refresh.css">
+    <script src="identity.js"></script>
     <title>WEB BEAT : 곡 선택</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Exo+2:ital,wght@0,300;0,400;0,600;0,700;1,300&display=swap');
@@ -1388,8 +1389,7 @@
         </div>
         <div class="pc-action-row">
             <button id="pc-stats-btn" class="pc-btn" onclick="togglePlayerStats()">📊 통계</button>
-            <button id="pc-nickname-btn" class="pc-btn" onclick="openNicknameModal(true)" style="display:none;">닉네임 변경</button>
-            <button id="main-login-btn" class="pc-btn" onclick="handleAuth()">로그인</button>
+            <button id="pc-nickname-btn" class="pc-btn" onclick="openNicknameModal(true)">닉네임 변경</button>
         </div>
     </div>
 
@@ -3138,6 +3138,12 @@ function updateScoreVisualizer() {
 // ═══════════════════════════════════════
 let _rsbCurrentKey = '';
 
+function escapeRankingText(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[char]);
+}
+
 async function loadRankingSidebar() {
     const song = currentSongs()[currentSongIdx];
     const d    = _cachedDiffs[currentDiffIdx];
@@ -3197,8 +3203,7 @@ async function loadRankingSidebar() {
         }
 
         // 현재 유저 userId
-        const myProfile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}');
-        const myId      = myProfile.sub || myProfile.id || null;
+        const myId = WebBeatIdentity.getId();
 
         listEl.innerHTML = '';
         data.slice(0, 20).forEach((r, idx) => {
@@ -3220,7 +3225,7 @@ async function loadRankingSidebar() {
             item.innerHTML = `
                 <div class="rsb-num-badge ${nClass}">${nText}</div>
                 <div class="rsb-info">
-                    <div class="rsb-name">${r.userName || '플레이어'}</div>
+                    <div class="rsb-name">${escapeRankingText(r.userName || '플레이어')}</div>
                     <div class="rsb-lv">${lv}</div>
                 </div>
                 <div class="rsb-score-group">
@@ -3631,18 +3636,13 @@ function stopCalib(){clearTimeout(calibInterval);isCalibrating=false;}
 function scheduleBeep(){if(!isCalibrating)return;const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.connect(g);g.connect(audioCtx.destination);o.frequency.value=1000;g.gain.value=0.07;o.start(nextBeatTime);o.stop(nextBeatTime+0.05);const d=(nextBeatTime-audioCtx.currentTime)*1000;setTimeout(()=>{const c=document.getElementById('calib-circle');c.classList.add('flash');setTimeout(()=>c.classList.remove('flash'),50);},d);nextBeatTime+=INT_SEC;calibInterval=setTimeout(scheduleBeep,d+200);}
 function handleTap(e){if(e&&(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON'))return;if(!isCalibrating){startCalib();return;}const t=audioCtx.currentTime,fp=t-(nextBeatTime-INT_SEC),tn=nextBeatTime-t,diff=Math.abs(fp)<Math.abs(tn)?fp:-tn;if(Math.abs(diff)<0.2){tapDiffs.push(diff*1000);const c=document.getElementById('calib-circle');c.style.transform='scale(0.9)';setTimeout(()=>c.style.transform='scale(1)',100);const avg=Math.round(tapDiffs.reduce((a,b)=>a+b,0)/tapDiffs.length);document.getElementById('offset-input').value=avg;manualInput();if(tapDiffs.length>=8){stopCalib();document.getElementById('calib-msg').innerHTML='<span style="color:#00e5ff;font-weight:bold;">동기화 완료</span>';}}}
 
-// ═══════════ AUTH ═══════════
+// ═══════════ PLAYER IDENTITY ═══════════
 function openNicknameModal(force){
-    const isLoggedIn=localStorage.getItem('wb_logged_in')==='true';
-    if(!isLoggedIn){alert('닉네임은 로그인 후 변경할 수 있어요.');return;}
-    if(!force&&localStorage.getItem('wb_nickname'))return;
     const inp=document.getElementById('nickname-input');
-    const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');
-    const hasNickname=Boolean(localStorage.getItem('wb_nickname'));
-    inp.value=localStorage.getItem('wb_nickname')||p.name||'';
-    document.getElementById('nickname-modal-title').textContent=hasNickname?'닉네임 변경':'닉네임 설정';
-    document.getElementById('nickname-modal-description').textContent=hasNickname?'새 닉네임을 입력하세요 (2~12자)':'닉네임을 등록하세요 (2~12자)';
-    document.getElementById('nickname-modal-submit').textContent=hasNickname?'변경':'확인';
+    inp.value=WebBeatIdentity.getNickname();
+    document.getElementById('nickname-modal-title').textContent='닉네임 변경';
+    document.getElementById('nickname-modal-description').textContent='랭킹에 표시될 닉네임을 입력하세요 (2~12자)';
+    document.getElementById('nickname-modal-submit').textContent='변경';
     document.getElementById('name-modal').style.display='flex';
     setTimeout(()=>inp.focus(),0);
 }
@@ -3650,35 +3650,33 @@ async function saveNicknameToServer(){
     const inp=document.getElementById('nickname-input');
     const n=inp.value.trim();
     if(n.length<2||n.length>12){alert('닉네임은 2~12자로 입력해 주세요.');return;}
-    const p=JSON.parse(localStorage.getItem('wb_auth_profile')||'{}');
-    const userId=p.sub||p.id;
-    if(!userId){alert('로그인 정보를 찾지 못했어요. 다시 로그인해 주세요.');return;}
+    WebBeatIdentity.setNickname(n);
+    const userId=WebBeatIdentity.getId();
     const submit=document.getElementById('nickname-modal-submit');
     submit.disabled=true;submit.textContent='저장 중…';
+    let synced=true;
     try{
         const response=await fetch(`${API_BASE}/api/user/update`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({userId,nickname:n})});
         if(!response.ok)throw new Error('Nickname update failed');
-        localStorage.setItem('wb_nickname',n);
-        document.getElementById('name-modal').style.display='none';
-        checkLoginStatus();
-        alert(`닉네임을 [${n}](으)로 변경했어요.`);
     }catch(e){
-        console.error('Nickname update failed:',e);
-        alert('닉네임을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.');
+        console.warn('Nickname server sync failed:',e);
+        synced=false;
     }finally{
         submit.disabled=false;
-        submit.textContent=localStorage.getItem('wb_nickname')?'변경':'확인';
+        submit.textContent='변경';
     }
+    document.getElementById('name-modal').style.display='none';
+    checkLoginStatus();
+    alert(synced ? `닉네임을 [${n}](으)로 변경했어요.` : '닉네임을 이 브라우저에 저장했어요. 랭킹에는 다음 연결 시 반영됩니다.');
 }
 function checkLoginStatus(){
-    const isIn=localStorage.getItem('wb_logged_in')==='true';
-    const btn=document.getElementById('main-login-btn');
     const nicknameBtn=document.getElementById('pc-nickname-btn');
     const nd=document.getElementById('user-name-display');
-    if(isIn){btn.textContent='로그아웃';btn.classList.add('logout');btn.onclick=handleAuth;nicknameBtn.style.display='block';nd.textContent=localStorage.getItem('wb_nickname')||'플레이어';nd.style.color='#00e5ff';updateProfile();}
-    else{btn.textContent='로그인';btn.classList.remove('logout');btn.onclick=handleAuth;nicknameBtn.style.display='none';nd.textContent='손님';nd.style.color='#444';}
+    nicknameBtn.style.display='block';
+    nd.textContent=WebBeatIdentity.getNickname();
+    nd.style.color='#00e5ff';
+    updateProfile();
 }
-function handleAuth(){if(localStorage.getItem('wb_logged_in')==='true'){if(confirm('로그아웃?')){localStorage.clear();location.reload();}}else{location.href='login.html';}}
 function updateProfile(){const lv=parseInt(localStorage.getItem('wb_user_lv')||1),xp=parseInt(localStorage.getItem('wb_user_xp')||0),nxp=lv*500;document.getElementById('user-lv').textContent=`레벨 ${lv}`;document.getElementById('user-xp-fill').style.width=`${Math.min(100,xp/nxp*100)}%`;document.getElementById('user-xp-text').textContent=`${xp} / ${nxp} 경험치`;}
 function toggleProfile(){const pc=document.getElementById('profile-container');pc.style.display=pc.style.display==='flex'?'none':'flex';}
 </script>

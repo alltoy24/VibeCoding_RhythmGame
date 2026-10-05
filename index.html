@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="ui-refresh.css">
+    <script src="identity.js"></script>
     <title>WEB BEAT : TITLE</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600&display=swap');
@@ -242,10 +243,9 @@
             <div class="xp-bar-bg"><div class="xp-bar-fill" id="user-xp-fill"></div></div>
             <div class="xp-text" id="user-xp-text">0 / 500 XP</div>
             <div class="nickname-container" style="margin-top:8px;">
-                <div id="user-name-display">GUEST MODE</div>
-                <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)" style="display:none;">EDIT</button>
+                <div id="user-name-display">PLAYER</div>
+                <button id="btn-edit-nick" class="btn-edit-nick" onclick="openNicknameModal(true)">EDIT</button>
             </div>
-            <button id="main-login-btn" class="custom-login-btn" onclick="handleAuth()">LOGIN</button>
             <button class="archive-btn" onclick="location.href='archive.html'">ARCHIVE</button>
         </div>
 
@@ -318,28 +318,16 @@
 
         // --- 珥덇린??---
         window.onload = function() {
-            checkLoginStatus(); // 濡쒓렇???곹깭 ?뺤씤
-            
-            // 濡쒓렇??吏곹썑 ?됰꽕???ㅼ젙 紐⑤떖 ?꾩슦湲?泥섎━
-            const justLoggedIn = localStorage.getItem('wb_just_logged_in');
-            if (justLoggedIn === 'true') {
-                openNicknameModal(true);
-                localStorage.removeItem('wb_just_logged_in'); 
-            }
+            checkLoginStatus();
         };
 
         // ==========================================
         // ??[濡쒓렇??諛??꾨줈??濡쒖쭅 (?댁떇??] ??
         // ==========================================
         function openNicknameModal(forceOpen) { 
-            if (!forceOpen && localStorage.getItem('wb_nickname')) { 
-                checkLoginStatus(); return; 
-            } 
             const modal = document.getElementById('name-modal'); 
             const input = document.getElementById('nickname-input'); 
-            const googleProfile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}'); 
-            const currentNick = localStorage.getItem('wb_nickname'); 
-            input.value = currentNick || googleProfile.name || ""; 
+            input.value = WebBeatIdentity.getNickname();
             modal.style.display = 'flex'; 
         }
 
@@ -349,48 +337,26 @@
             if (newNickname.length < 2 || newNickname.length > 12) { 
                 alert("Please enter 2 to 12 characters."); return; 
             } 
-            localStorage.setItem('wb_nickname', newNickname); 
-            const profile = JSON.parse(localStorage.getItem('wb_auth_profile') || '{}'); 
-            if (profile.sub) { 
-                try { 
-                    await fetch(`${API_BASE}/api/user/update`, { 
-                        method: 'POST', headers: { 'Content-Type': 'application/json' }, 
-                        body: JSON.stringify({ userId: profile.sub, nickname: newNickname }) 
-                    }); 
-                } catch (e) { console.error(e); } 
-            } 
+            WebBeatIdentity.setNickname(newNickname);
+            try {
+                await fetch(`${API_BASE}/api/user/update`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId: WebBeatIdentity.getId(), nickname: newNickname })
+                });
+            } catch (e) { console.error(e); }
             document.getElementById('name-modal').style.display = 'none'; 
             checkLoginStatus(); 
             alert(`Welcome, ${newNickname}!`); 
         }
 
         function checkLoginStatus() { 
-            const btn = document.getElementById('main-login-btn'); 
             const profileContainer = document.getElementById('profile-container'); 
             const nameDisplay = document.getElementById('user-name-display'); 
             const editBtn = document.getElementById('btn-edit-nick'); 
-            const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true'; 
-            
-            if (isLoggedIn) { 
-                if(btn) { btn.innerText = "LOGOUT"; btn.classList.add('btn-logout'); btn.onclick = handleAuth; } 
-                profileContainer.style.display = "flex"; 
-                const nick = localStorage.getItem('wb_nickname'); 
-                if(nameDisplay) { nameDisplay.innerText = nick ? nick : "PLAYER"; nameDisplay.style.color = "#00e5ff"; } 
-                if(editBtn) editBtn.style.display = "block"; 
-                updateProfile(); 
-            } else { 
-                if(btn) { btn.innerText = "LOGIN"; btn.classList.remove('btn-logout'); btn.onclick = handleAuth; } 
-                profileContainer.style.display = "flex"; 
-                if(nameDisplay) { nameDisplay.innerText = "GUEST MODE"; nameDisplay.style.color = "#888"; } 
-                if(editBtn) editBtn.style.display = "none"; 
-            } 
-        }
-
-        function handleAuth() { 
-            const isLoggedIn = localStorage.getItem('wb_logged_in') === 'true'; 
-            if (isLoggedIn) { 
-                if(confirm("Log out?")) { localStorage.clear(); location.reload(); } 
-            } else { location.href = 'login.html'; } 
+            profileContainer.style.display = "flex";
+            if(nameDisplay) { nameDisplay.innerText = WebBeatIdentity.getNickname(); nameDisplay.style.color = "#00e5ff"; }
+            if(editBtn) editBtn.style.display = "block";
+            updateProfile();
         }
 
         function updateProfile() { 

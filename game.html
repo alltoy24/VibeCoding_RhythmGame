@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="ui-refresh.css">
     <title>WEB BEAT : SECURE</title>
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="identity.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Exo+2:wght@300;600;800&family=Share+Tech+Mono&family=Rajdhani:wght@500;700&family=Audiowide&family=Oxanium:wght@400;700;800&display=swap');
         :root { 
@@ -577,6 +577,7 @@
         /* badge */
         .res-badge-wrap {
             margin-bottom: 14px; min-height: 0;
+            display:flex; justify-content:center; align-items:center; flex-wrap:wrap; gap:10px;
             opacity: 0; animation: resScaleIn 0.46s cubic-bezier(.2,.9,.2,1) 0.76s forwards;
         }
         .res-badge-fc {
@@ -1089,8 +1090,6 @@
     // ============================================================
     const SERVER_URL = "https://webbeat-api.yunhogim528.workers.dev/api/score";
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    const GOOGLE_CLIENT_ID = "143854068141-s09m4p44lfju13dv2gdotoe9hbjfvmmr.apps.googleusercontent.com"; 
-    let userProfile = null;
 
     const GRADE_THRESHOLDS = [
         { min: 1000000, grade: 'TB',     label: 'TROLL BEAT', hex: '#ffffff' },
@@ -1155,36 +1154,6 @@
         console.log(msg);
         const el = document.getElementById('loading-msg');
         if(el) el.innerText = msg;
-    }
-
-    try {
-        const stored = localStorage.getItem('wb_auth_profile');
-        if (stored) userProfile = JSON.parse(stored);
-    } catch(e) {}
-
-    window.onload = function() {
-        if (typeof google !== 'undefined' && google.accounts && !userProfile) {
-            google.accounts.id.initialize({
-                client_id: GOOGLE_CLIENT_ID,
-                callback: handleCredentialResponse
-            });
-        }
-    };
-
-    function handleCredentialResponse(response) {
-        const responsePayload = parseJwt(response.credential);
-        userProfile = responsePayload;
-        localStorage.setItem('wb_auth_profile', JSON.stringify(responsePayload));
-        if(gameFinished) showResult();
-    }
-
-    function parseJwt(token) {
-        var base64Url = token.split('.')[1];
-        var base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        var jsonPayload = decodeURIComponent(window.atob(base64).split('').map(function(c) {
-            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
-        return JSON.parse(jsonPayload);
     }
 
     // ============================================================
@@ -4171,6 +4140,12 @@ function renderScreenEffects(ctx,gw,gh,ct){
         resultOverlay.style.display = 'flex';
     }
 
+    function escapeRankingText(value) {
+        return String(value ?? '').replace(/[&<>'"]/g, char => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+        })[char]);
+    }
+
     async function getResultSongInfo(songParam, diffParam) {
         const fallbackSong = songParam ? decodeURIComponent(songParam) : "UNKNOWN SONG";
         const fallbackDiff = diffParam ? diffParam.replace(/\.json$/i, '').split('_')[0].toUpperCase() : "UNKNOWN";
@@ -4221,8 +4196,9 @@ function renderScreenEffects(ctx,gw,gh,ct){
             const secureScore    = calcScore;
             const secureMaxCombo = Math.floor(maxCombo || 0);
             const scoreMode      = precisionPlayMode ? 'precision' : 'standard';
-            const secureUserId   = userProfile ? (userProfile.sub || userProfile.id) : "GUEST_" + Math.random().toString(36).substring(2,9);
-            const secureUserName = (localStorage.getItem('wb_nickname') || '').trim() || (userProfile ? userProfile.name : "GUEST");
+            const rankingIdentity = WebBeatIdentity.ensure();
+            const secureUserId   = rankingIdentity.id;
+            const secureUserName = rankingIdentity.nickname;
             const securePlayTime = Math.floor(playDuration || 0);
             // 일반 기록은 기존 서버 서명 형식을 유지하고, 동기화 연주는 모드/세부판정을 포함해 검증한다.
             const judgeSignature = [secureJudgeStats.absoluteSync, secureJudgeStats.tpPerfect, secureJudgeStats.perfect, secureJudgeStats.good, secureJudgeStats.bad, secureJudgeStats.miss, totalMaxHits].join(':');
@@ -4286,10 +4262,14 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 scoreDiff  = secureScore - savedScore;
                 isNewRecord = secureScore > savedScore && savedScore > 0;
                 if (secureScore > savedScore) localStorage.setItem(scoreKey, precisionPlayMode ? secureScore.toString() : secureScore.toString().padStart(6,'0'));
-                if (precisionPlayMode && judgeStats.absoluteSync === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "SYNC");
-                else if (!precisionPlayMode && (judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits && totalMaxHits > 0) localStorage.setItem(badgeKey, "TB");
-                else if (!precisionPlayMode && (judgeStats.bad + judgeStats.miss) === 0 && totalMaxHits > 0) {
-                    if (localStorage.getItem(badgeKey) !== "TB") localStorage.setItem(badgeKey, "FC");
+                const fullCombo = (judgeStats.bad + judgeStats.miss) === 0 && totalMaxHits > 0;
+                const trollBeat = (judgeStats.absoluteSync + judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits && totalMaxHits > 0;
+                const absoluteSync = precisionPlayMode && judgeStats.absoluteSync === totalMaxHits && totalMaxHits > 0;
+                if (absoluteSync) localStorage.setItem(badgeKey, "SYNC");
+                else if (trollBeat) {
+                    if (localStorage.getItem(badgeKey) !== "SYNC") localStorage.setItem(badgeKey, "TB");
+                } else if (fullCombo && !["SYNC", "TB"].includes(localStorage.getItem(badgeKey))) {
+                    localStorage.setItem(badgeKey, "FC");
                 }
                 localStorage.setItem(detailKey, JSON.stringify({
                     score: secureScore, mode: scoreMode, maxCombo: secureMaxCombo, rate: finalRate,
@@ -4298,7 +4278,7 @@ function renderScreenEffects(ctx,gw,gh,ct){
             }
 
             // ── 서버 전송 ──
-            if (songParam && diffParam && userProfile && !isDebugPerfectRun) {
+            if (songParam && diffParam && !isDebugPerfectRun) {
                 try {
                     const response = await fetch(`${SERVER_BASE}/api/score`, {
                         method:"POST", headers:{"Content-Type":"application/json"},
@@ -4324,14 +4304,14 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 if (rankData.length > 0) {
                     const rows = rankData.slice(0,5).map((r, idx) => {
                         const medal = idx===0?'🥇':idx===1?'🥈':idx===2?'🥉':`#${idx+1}`;
-                        const isMe  = userProfile && r.userId === secureUserId;
+                        const isMe  = r.userId === secureUserId;
                         const fallbackGrade = thresholds.find(t => (parseInt(r.score, 10) || 0) >= t.min) || thresholds[thresholds.length - 1];
                         const fallbackKind = ({ 'S+':'grade-splus', 'S':'grade-s', 'A+':'grade-aplus', 'A':'grade-a', 'B':'grade-b', 'C':'grade-c', 'FAILED':'grade-failed', 'TB':'tb' })[fallbackGrade.grade] || 'grade';
                         const rankLabel = r.rankLabel || (precisionPlayMode ? 'SYNC' : fallbackGrade.grade);
                         const rankKind = r.rankKind || (precisionPlayMode ? 'sync' : fallbackKind);
                         return `<div class="res-rank-entry${isMe?' is-me':''}">
                             <span class="res-rank-medal">${medal}</span>
-                            <span class="res-rank-name">${r.userName}</span>
+                            <span class="res-rank-name">${escapeRankingText(r.userName || 'PLAYER')}</span>
                             <span class="res-rank-status ${rankKind}">${rankLabel}</span>
                             <span class="res-rank-score">${precisionPlayMode ? formatPrecisionPercent(r.score) : r.score}</span>
                         </div>`;
@@ -4345,12 +4325,17 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
             // ── badge ──
             let badgeHtml = '';
-            if (precisionPlayMode && judgeStats.absoluteSync === totalMaxHits && totalMaxHits > 0)
-                badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-sync">✦ |SYNC| ✦</span></div>`;
-            else if (!precisionPlayMode && (judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits && totalMaxHits > 0)
-                badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-tb">TROLL BEAT</span></div>`;
-            else if (!precisionPlayMode && (judgeStats.bad + judgeStats.miss) === 0 && totalMaxHits > 0)
-                badgeHtml = `<div class="res-badge-wrap"><span class="res-badge-fc">✦ FULL COMBO ✦</span></div>`;
+            const isFullCombo = (judgeStats.bad + judgeStats.miss) === 0 && totalMaxHits > 0;
+            const isTrollBeat = (judgeStats.absoluteSync + judgeStats.tpPerfect + judgeStats.perfect) === totalMaxHits && totalMaxHits > 0;
+            const isAbsoluteSync = precisionPlayMode && judgeStats.absoluteSync === totalMaxHits && totalMaxHits > 0;
+            if (isAbsoluteSync || isTrollBeat || isFullCombo) {
+                const badges = [
+                    isAbsoluteSync ? '<span class="res-badge-sync">✦ |SYNC| ✦</span>' : '',
+                    isTrollBeat ? '<span class="res-badge-tb">TROLL BEAT</span>' : '',
+                    !isTrollBeat && isFullCombo ? '<span class="res-badge-fc">✦ FULL COMBO ✦</span>' : ''
+                ].filter(Boolean).join('');
+                badgeHtml = `<div class="res-badge-wrap">${badges}</div>`;
+            }
 
             // ── PB diff 표시 ──
             let pbHtml = '';
@@ -4401,11 +4386,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
                     <span class="res-judge-count">${j.val}</span>
                 </div>`;
             }).join('');
-            // ── Google login ──
-            const loginHtml = (!userProfile)
-                ? `<div id="google-login-btn-result" style="margin-bottom:10px;display:flex;justify-content:center;min-height:40px;"></div>`
-                : '';
-
             // ── HTML 조립 ──
             resultOverlay.innerHTML = `
                 <div class="res-bg"></div>
@@ -4440,7 +4420,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
                         <div class="res-judge-title">판정 결과</div>
                         <div class="res-judge-grid">${judgeHtml}</div>
                         ${rankingHtml}
-                        ${loginHtml}
                         <div class="res-actions">
                             <button class="res-btn primary" onclick="location.href='select.html'">CONTINUE</button>
                             <button class="res-btn" onclick="location.reload()">RETRY</button>
@@ -4463,14 +4442,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 });
             }, 700);
 
-            // ── Google 버튼 ──
-            if (!userProfile && typeof google !== 'undefined') {
-                google.accounts.id.renderButton(
-                    document.getElementById("google-login-btn-result"),
-                    { theme:"filled_black", size:"large", shape:"pill" }
-                );
-            }
-
         } catch(e) {
             alert("Result Error: " + e.message);
             location.href = 'index.html';
@@ -4487,7 +4458,6 @@ function renderScreenEffects(ctx,gw,gh,ct){
     // ★ 외부 노출
     window.startGame               = startGame;
     window.togglePause             = togglePause;
-    window.handleCredentialResponse = handleCredentialResponse;
     window.WEBBEAT_DEBUG = Object.freeze({
         allPerfect: runAllPerfectPreview,
         absoluteSync: runAbsoluteSyncPreview,
