@@ -319,8 +319,8 @@ input[type=file]{display:none;}
   width:100%;text-align:center;pointer-events:none;z-index:70;
   font-size:44px;font-weight:900;color:#fff;
   text-shadow:0 0 18px var(--msg-color),0 0 36px var(--msg-color);
-  opacity:0;transition:opacity 0.2s,transform 0.2s;white-space:nowrap;}
-.msg-active{opacity:1!important;transform:translateX(-50%) scale(1.08)!important;}
+  opacity:0;white-space:nowrap;}
+.msg-active{opacity:1!important;transform:translateX(-50%)!important;}
 #result-overlay{position:absolute;inset:0;background:rgba(0,0,0,0.95);
   z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center;}
 #loading-screen{position:absolute;inset:0;background:#000;z-index:500;
@@ -5057,7 +5057,12 @@ function startTestMode(auto){
   window.activeMsgEvents=msgEvents.map(ev=>{
     const st=chartPositionToMs(ev.measureIdx,ev.pos)+mapOffset;
     const dur=chartSpanToMs(ev.measureIdx,ev.pos,ev.len);
-    return{...ev,time:Math.round(st),endTime:Math.round(st+dur)};
+    return{...ev,time:Math.round(st),endTime:Math.round(st+(dur||1000))};
+  }).sort((a,b)=>a.time-b.time);
+  // 테스트 플레이도 새 메시지가 시작되는 순간 이전 메시지를 즉시 종료한다.
+  window.activeMsgEvents.forEach((ev,index)=>{
+    const next=window.activeMsgEvents[index+1];
+    if(next)ev.endTime=Math.min(ev.endTime,next.time);
   });
 
   window.runtimeLineEvents=lineEvents.map(evArr=>evArr.map(kf=>({...kf})));
@@ -5144,7 +5149,11 @@ function gameLoop(){
     finishGame();
 
   if(window.activeMsgEvents){
-    const am=window.activeMsgEvents.find(ev=>currentTime>=ev.time&&currentTime<=(ev.len>0?ev.endTime:ev.time+1000));
+    // 겹친 메시지 중에서는 가장 나중에 시작한 문구를 바로 보여 준다.
+    const am=window.activeMsgEvents.reduce((latest,ev)=>{
+      if(currentTime<ev.time||currentTime>ev.endTime)return latest;
+      return !latest||ev.time>=latest.time?ev:latest;
+    },null);
     if(am){if(guideMsgEl.innerText!==am.text){guideMsgEl.innerText=am.text;guideMsgEl.classList.add('msg-active');}}
     else guideMsgEl.classList.remove('msg-active');
   }

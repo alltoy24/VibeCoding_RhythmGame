@@ -680,10 +680,10 @@
             width: 100%; text-align: center; pointer-events: none; z-index: 70;
             font-family: var(--ui-font); font-weight: 900; font-size: 48px; color: #fff;
             text-shadow: 0 0 20px #d084ff, 0 0 40px #d084ff;
-            opacity: 0; transition: opacity 0.2s, transform 0.2s;
+            opacity: 0;
             white-space: nowrap; letter-spacing: 2px;
         }
-        .msg-active { opacity: 1 !important; transform: translateX(-50%) scale(1.1) !important; }
+        .msg-active { opacity: 1 !important; transform: translateX(-50%) !important; }
 
         /* ★ 판정 팝업 오버레이 (canvas 위에 CSS로 표시) */
         #judge-display {
@@ -3118,6 +3118,12 @@ function renderScreenEffects(ctx,gw,gh,ct){
                 duration  = chartSpanToMs(ev.measureIdx, ev.pos, ev.len || 0);
             }
             return { ...ev, time: startTime + offset, endTime: startTime + offset + (duration || 1000) };
+        }).sort((a, b) => a.time - b.time);
+        // 메시지의 지정 길이가 다음 메시지까지 넘어가더라도, 새 문구가 시작되는 순간
+        // 이전 문구를 끝낸다. 따라서 1 → 2 → 3이 매 트리거에서 즉시 교체된다.
+        activeMsgEvents.forEach((ev, index) => {
+            const next = activeMsgEvents[index + 1];
+            if(next) ev.endTime = Math.min(ev.endTime, next.time);
         });
 
         if(guideMsgEl) { guideMsgEl.className = ''; guideMsgEl.innerText = ''; }
@@ -3415,7 +3421,11 @@ function renderScreenEffects(ctx,gw,gh,ct){
 
         // 메시지 이벤트
         if (activeMsgEvents.length > 0 && !gameFinished) {
-            const activeMsg = activeMsgEvents.find(ev => currentTime >= ev.time && currentTime <= ev.endTime);
+            // 기간이 겹치면 먼저 나온 문구를 붙잡지 않고, 방금 시작한 문구를 즉시 우선한다.
+            const activeMsg = activeMsgEvents.reduce((latest, ev) => {
+                if (currentTime < ev.time || currentTime > ev.endTime) return latest;
+                return !latest || ev.time >= latest.time ? ev : latest;
+            }, null);
             if (activeMsg) {
                 if (guideMsgEl.innerText !== activeMsg.text) {
                     guideMsgEl.innerText = activeMsg.text;
